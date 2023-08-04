@@ -3,7 +3,7 @@
 ## Overview
 * API/libraries contains library files that are used in the other scripts for handling CSV files and Fusion360 objects.
 * API/Scripts contains scripts that can run in Fusion360 to create objects like sketches, planes, lofts, bodies from CSV files.
-* F35B/ contains a design specific script that creates CSV files for F35B plane fuselage and wing. The F35B design shown below, can then be generated in Fusion360 from these CSV files, by running the AssembleF35bCSV Script in the Fusion360 GUI.
+* F35B/ contains a design specific script f35b_points.py, that creates CSV files for F35B plane fuselage and wing. First run 'python f35b_points.py' on the command line in a terminal. The F35B design shown below, can then be generated in Fusion360 from these CSV files, by running the AssembleF35bCSV Script in the Fusion360 GUI.
 ![F35B created from CSV files](doc/f35b_csv.jpg)
    
 ## API/libraries
@@ -27,16 +27,9 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 ### Design scripts
 * AssembleF35bCSV/ - Assemble F35B plane design in Fusion360 as defined in CSV files.
 
-### General scripts for processing one CSV file
-* ImportSketchCSV/ - Import sketch as defined in CSV file.
-* CreateLoftCSV/ - Create loft as defined in CSV file.
-* CreatePlaneCSV/ - Create plane as defined in CSV file.
-* SplitBodyCSV/ - Split body as defined in CSV file.
-* CombineBodiesCSV/ - Combine bodies as defined in CSV file.
-
-### General scripts for processing multiple CSV files in a folder
-* ImportSketchesCSV/
-* CreateLoftsCSV/
-* CreatePlanesCSV/
-* SplitBodyMultipleCSV/
-* CombineBodiesMultipleCSV/
+### General scripts for processing one CSV file, or multiple CSV files
+* ImportSketchCSV/, ImportSketchesCSV/ - Import sketch as defined in CSV file.
+* CreateLoftCSV/, CreateLoftsCSV - Create loft as defined in CSV file.
+* CreatePlaneCSV/, CreatePlanesCSV - Create plane as defined in CSV file.
+* SplitBodyCSV/, SplitBodyMultipleCSV - Split body as defined in CSV file.
+* CombineBodiesCSV, CombineBodiesMultipleCSV/ - Combine bodies as defined in CSV file.
