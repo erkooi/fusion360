@@ -18,7 +18,7 @@
 * combinebodies.py - combine bodies defined in a CSV file
 
 ## API/Scripts
-The path to the API/Scripts directory needs to be set in Fusion360 via Preferences/API in the Fusion360 GUI.
+The path to the API/Scripts directory needs to be set in Fusion360 via menu Preferences/General/API in the Fusion360 GUI.
 
 ### Example scripts
 * Example/ - Demonstrate some script development basics in Fusion360 by printing component names, as shown below.
