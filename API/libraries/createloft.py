@@ -1,0 +1,213 @@
+################################################################################
+# Copyright 2023 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 7 may 2023
+"""Module to create a loft from sketch profiles and rails defined in a csv file
+   into a component in Fusion360.
+
+Loft CSV file format:
+. comment lines or comment in line will be removed
+. first line: 'loft' as filetype
+. second line: loft name
+. profiles
+  - sketch name, optional item index  # one per line
+. rails
+  - sketch name, optional item index  # one per line
+. empty line ends file
+
+"""
+
+import adsk.fusion
+
+import interfacefiles
+import interface360
+import utilities360
+
+validLoftSketches = ['profiles', 'rails']
+
+
+def parse_csv_loft_file(ui, title, filename):
+    """Parse loft CSV file.
+
+    Reads loft name and sketch names for profiles and rails from csv file.
+
+    Input:
+    . filename: full path and name of CSV file
+    Return:
+    . result: True when valid, else False
+    . loftName: name for loft object
+    . profileTuples: list of profile sketches (sketch name, profile item index)
+    . railTuples: list of rail sketches (sketch name, rail item index)
+
+    Uses ui, title, filename to interact with user and report faults via
+    Fusion360 GUI.
+    """
+    # Read file and remove comment
+    fileLines = interfacefiles.read_data_lines_from_file(filename)
+
+    # Remove empty last line
+    fileLines.pop(-1)
+
+    # Parse fileLines for loft
+    resultFalse = (False, None, None, None)
+    for li, fLine in enumerate(fileLines):
+        lineArr = fLine.split(',')
+        lineWord = lineArr[0].strip()
+        itemIndex = 0
+        if len(lineArr) > 1:
+            itemIndex = int(lineArr[1])
+        if li == 0:
+            if lineWord != 'loft':
+                return resultFalse
+        elif li == 1:
+            profileTuples = []
+            railTuples = []
+            addProfiles = False
+            addRails = False
+            # Read loft name
+            loftName = lineWord
+        else:
+            # Read sketch names for profiles and rails
+            if lineWord == 'profiles':
+                addProfiles = True
+                addRails = False
+            elif lineWord == 'rails':
+                addProfiles = False
+                addRails = True
+            else:
+                if addProfiles:
+                    profileTuples.append((lineWord, itemIndex))
+                if addRails:
+                    railTuples.append((lineWord, itemIndex))
+
+    if len(profileTuples) < 2:
+        ui.messageBox('Not enough profiles for loft in %s' % filename, title)
+        return resultFalse
+
+    # Successfully reached end of file
+    return (True, loftName, profileTuples, railTuples)
+
+
+def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponent=False, verbosity=False):
+    """Create loft from CSV file, in hostComponent Bodies folder in Fusion360
+
+    Input:
+    . filename: full path and name of CSV file
+    . hostComponent: place the loft in hostComponent Bodies folder.
+    . loftNewComponent: when True create loft component, else create loft body
+    . verbosity: when False no print_text()
+    Return:
+    . True when loft was created, else False
+
+    Uses ui, title, filename to report faults via Fusion360 GUI.
+    """
+    # Parse CSV file
+    result, loftName, profileTuples, railTuples = parse_csv_loft_file(ui, title, filename)
+    if not result:
+        return False
+
+    interface360.print_text(ui, 'profileTuples: %s' % profileTuples, verbosity)
+    interface360.print_text(ui, 'railTuples   : %s' % railTuples, verbosity)
+
+    # Find profiles in sketches
+    profiles = []
+    for pt in profileTuples:
+        name = pt[0]
+        index = pt[1]
+        sketch = utilities360.find_sketch(hostComponent, name)
+        if sketch:
+            interface360.print_text(ui, name + ': %d profiles' % sketch.profiles.count, verbosity)
+            if index < sketch.profiles.count:
+                profiles.append((name, sketch.profiles.item(index)))
+            else:
+                interface360.error_text(ui, 'Sketch %s has no profile index %d' % (name, index))
+                return False
+        else:
+            interface360.error_text(ui, 'Profile sketch %s not found' % name)
+            return False
+
+    # Find rails in sketches
+    rails = []
+    for rt in railTuples:
+        name = rt[0]
+        index = rt[1]
+        sketch = utilities360.find_sketch(hostComponent, name)
+        if sketch:
+            interface360.print_text(ui, sketch.name + ': %d curves' % sketch.sketchCurves.count, verbosity)
+            if index < sketch.sketchCurves.count:
+                rails.append((name, sketch.sketchCurves.item(index)))
+            else:
+                interface360.error_text(ui, 'Schetch %s has no rail index %d' % (name, index))
+                return False
+        else:
+            interface360.error_text(ui, 'Rail sketch %s not found' % name)
+            return False
+    interface360.print_text(ui, '', verbosity)
+
+    # Create loft feature input
+    loftFeatures = hostComponent.features.loftFeatures
+    if loftNewComponent:
+        loftFeatureInput = loftFeatures.createInput(adsk.fusion.FeatureOperations.NewComponentFeatureOperation)
+    else:
+        loftFeatureInput = loftFeatures.createInput(adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    for profile in profiles:
+        if not loftFeatureInput.loftSections.add(profile[1]):
+            interface360.error_text(ui, 'Profile %s not added' % profile[0])
+            return False
+    for rail in rails:
+        if not loftFeatureInput.centerLineOrRails.addRail(rail[1]):
+            interface360.error_text(ui, 'Rail %s not added' % rail[0])
+            return False
+    loftFeatureInput.isSolid = True
+    loftFeatureInput.isClosed = False
+    loftFeatureInput.isTangentEdgesMerged = True
+
+    # Create loft feature
+    loftFeature = loftFeatures.add(loftFeatureInput)
+
+    # Rename loft result
+    if loftNewComponent:
+        loftFeature.parentComponent.name = loftName
+    else:
+        # loftFeature.name --> 'Loft1', 'Loft2', etc
+        bodies = loftFeature.bodies
+        body = bodies.item(0)
+        body.name = loftName
+        interface360.print_text(ui, 'body name: ' + body.name, verbosity)
+    return True
+
+
+def create_lofts_from_csv_files(ui, title, folderName, hostComponent, loftNewComponents=False):
+    """Create lofts from CSV files in folder, in hostComponent Bodies folder in Fusion360
+
+    Input:
+    . folderName: full path and folder name
+    . hostComponent: place the loft in hostComponent Bodies folder.
+    . loftNewComponents: when True create loft components, else create loft
+      bodies
+    Return: None
+
+    Uses ui, title, filename to report faults via Fusion360 GUI.
+    """
+    filenames = interfacefiles.get_list_of_files_in_folder(folderName)
+
+    if len(filenames) > 0:
+        for filename in filenames:
+            # Create loft from CSV file in hostComponent
+            interface360.print_text(ui, 'Create loft for ' + filename)
+            create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponents)
+    else:
+        ui.messageBox('No loft CSV files in %s' % folderName, title)
