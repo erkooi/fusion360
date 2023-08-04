@@ -1,5 +1,11 @@
 # Python compiled files
 *.pyc
 
+# Generated csv files
+python/csv
+
+# Pictures
+*.png
+
 # Windows temporary backup files
 *~$*
