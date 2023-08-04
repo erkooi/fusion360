@@ -2,7 +2,7 @@
 *.pyc
 
 # Generated csv files
-python/csv
+*/csv
 
 # Pictures
 *.png
