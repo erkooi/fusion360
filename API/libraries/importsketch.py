@@ -17,7 +17,8 @@
 # Date: 12 mar 2023
 """Module to import line segments from csv file into a sketch in Fusion360.
 
-See schemacsv360.py for coordinates and plane definitions.
+See schemacsv360.py for coordinates and plane definitions. Only sketches on
+planes that are parallel to the origin planes (xy, yz, and zx) are supported.
 
 Sketch CSV file format:
 . no comment lines or comment in line
@@ -30,7 +31,12 @@ Sketch CSV file format:
 . loop segments:
   - next line: segment type 'spline', 'line, 'offset_curve'
   - next lines: list of two or more 2D point coordinates in sketch plane
-    . per 2D point x, y coordinates, optional spline handle angle, length
+    . per 2D point x, y coordinates, optional spline handle angle in degrees
+      and spline length
+  - with offset_curve:
+    . defines an offset curve for the previous segments
+    . next line contains direction point (x, y) for offset direction and
+      offset distance
 . empty line ends file
 """
 
