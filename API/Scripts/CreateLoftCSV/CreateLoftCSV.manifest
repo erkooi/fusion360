@@ -1,0 +1,10 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"script",
+	"author":	"E. Kooistra",
+	"description":	{
+		"":	""
+	},
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}
