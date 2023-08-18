@@ -49,33 +49,31 @@ def parse_csv_split_body_file(ui, title, filename):
     Input:
     . filename: full path and name of CSV file
     Return:
-    . result: True when valid, else False
-    . splitBodyName: body name
-    . splitPlaneName: plane name
-    . splittedBodiesNames: list of body names, must match number of splitted
-      bodies that result after split body
-    . removeBodiesNames: list of body names, can be empty
+    . result: True when valid splitBodyTuple, else False with None
+    . splitBodyTuple:
+      - splitBodyName: body name
+      - splitPlaneName: plane name
+      - splittedBodiesNames: list of body names, must match number of splitted
+        bodies that result after split body
+      - removeBodiesNames: list of body names, can be empty
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
     """
     # Read file and remove comment
     fileLines = interfacefiles.read_data_lines_from_file(filename)
+    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
 
-    # Remove empty last line
-    fileLines.pop(-1)
-
-    # Parse fileLines for split body
-    resultFalse = (False, None, None, None, None)
+    # Parse file lines for split body
+    resultFalse = (False, None)
     splittedBodiesNames = []
     removeBodiesNames = []
     readSplittedBodies = False
     readRemoveBodies = False
-    for li, fLine in enumerate(fileLines):
-        lineArr = fLine.split(',')
-        lineWord0 = lineArr[0].strip()
+    for li, lineArr in enumerate(lineLists):
+        lineWord0 = lineArr[0]
         if len(lineArr) > 1:
-            lineWord1 = lineArr[1].strip()
+            lineWord1 = lineArr[1]
         if li == 0:
             if lineWord0 != 'split':
                 return resultFalse
@@ -108,7 +106,8 @@ def parse_csv_split_body_file(ui, title, filename):
                     removeBodiesNames.append(lineWord0)
 
     # Successfully reached end of file
-    return (True, splitBodyName, splitPlaneName, splittedBodiesNames, removeBodiesNames)
+    splitBodyTuple = (splitBodyName, splitPlaneName, splittedBodiesNames, removeBodiesNames)
+    return (True, splitBodyTuple)
 
 
 def split_body(ui, hostComponent, splitBody, splitPlane, splittedBodiesNames):
@@ -163,10 +162,10 @@ def split_body_from_csv_file(ui, title, filename, hostComponent):
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
     # Parse CSV file
-    result, splitBodyName, splitPlaneName, splittedBodiesNames, removeBodiesNames = \
-        parse_csv_split_body_file(ui, title, filename)
+    result, splitBodyTuple = parse_csv_split_body_file(ui, title, filename)
     if not result:
         return False
+    splitBodyName, splitPlaneName, splittedBodiesNames, removeBodiesNames = splitBodyTuple
 
     # Find split body in hostComponent Bodies folder
     splitBody = hostComponent.bRepBodies.itemByName(splitBodyName)

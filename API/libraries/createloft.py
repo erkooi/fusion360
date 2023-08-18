@@ -47,25 +47,24 @@ def parse_csv_loft_file(ui, title, filename):
     Input:
     . filename: full path and name of CSV file
     Return:
-    . result: True when valid, else False
-    . loftName: name for loft object
-    . profileTuples: list of profile sketches (sketch name, profile item index)
-    . railTuples: list of rail sketches (sketch name, rail item index)
+    . result: True when valid loftTuple, else False with None
+    . loftTuple:
+      - loftName: name for loft object
+      - profileTuples: list of profile sketches (sketch name, profile item
+        index)
+      - railTuples: list of rail sketches (sketch name, rail item index)
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
     """
     # Read file and remove comment
     fileLines = interfacefiles.read_data_lines_from_file(filename)
+    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
 
-    # Remove empty last line
-    fileLines.pop(-1)
-
-    # Parse fileLines for loft
-    resultFalse = (False, None, None, None)
-    for li, fLine in enumerate(fileLines):
-        lineArr = fLine.split(',')
-        lineWord = lineArr[0].strip()
+    # Parse file lines for loft
+    resultFalse = (False, None)
+    for li, lineArr in enumerate(lineLists):
+        lineWord = lineArr[0]
         itemIndex = 0
         if len(lineArr) > 1:
             itemIndex = int(lineArr[1])
@@ -98,7 +97,8 @@ def parse_csv_loft_file(ui, title, filename):
         return resultFalse
 
     # Successfully reached end of file
-    return (True, loftName, profileTuples, railTuples)
+    loftTuple = (loftName, profileTuples, railTuples)
+    return (True, loftTuple)
 
 
 def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponent=False, verbosity=False):
@@ -115,9 +115,10 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
     # Parse CSV file
-    result, loftName, profileTuples, railTuples = parse_csv_loft_file(ui, title, filename)
+    result, loftTuple = parse_csv_loft_file(ui, title, filename)
     if not result:
         return False
+    loftName, profileTuples, railTuples = loftTuple
 
     interface360.print_text(ui, 'profileTuples: %s' % profileTuples, verbosity)
     interface360.print_text(ui, 'railTuples   : %s' % railTuples, verbosity)

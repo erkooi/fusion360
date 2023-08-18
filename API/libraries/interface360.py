@@ -91,7 +91,8 @@ def prompt_string(ui, title, prompt, string=''):
     . prompt: request text to the user
     . string: default userInput string
     Return:
-    . userInput string when not isCancelled, else return empty string
+    . userInput string when user selected Ok, empty string when user
+      selected Cancel
     """
     # Get userInput string and a Ok or Cancel from the user.
     userInput, isCancelled = ui.inputBox(prompt, title, string)
@@ -114,7 +115,7 @@ def prompt_boolean_choice(ui, title, prompt):
     . title: title of dialog window
     . prompt: request text to the user
     Return:
-    . True when not isCancelled, else False
+    . True when user selected Ok, False when user selected Cancel.
     """
     # Get a Ok or Cancel from the user.
     userInput, isCancelled = ui.inputBox(prompt, title, '')

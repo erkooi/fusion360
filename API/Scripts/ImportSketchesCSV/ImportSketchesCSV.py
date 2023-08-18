@@ -55,7 +55,7 @@ def run(context):
         activeComponent = design.activeComponent
 
         # Prompt user for folder name
-        folderName = interface360.get_csv_folder_name(ui, title)
+        folderName = interface360.get_folder_name(ui, title)
         if folderName is None:
             return
 

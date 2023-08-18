@@ -52,19 +52,16 @@ import schemacsv360
 validSegmentTypes = ['spline', 'line', 'offset_curve']
 
 
-def read_segment_type(ui, title, filename, fLine):
-    """Read segment type from file fLine.
+def read_segment_type(ui, title, filename, lineWord):
+    """Read segment type from file line.
 
     Input:
-    . fLine: segmentType string
+    . lineWord: word from file line
     Return:
-    . result: True when valid, else False
+    . result: True when valid segmentType, else False with None
     . segmentType: string in validSegmentTypes
-
-    Uses ui, title, filename to report faults via Fusion360 GUI
     """
-    entries = fLine.split(',')
-    segmentType = entries[0].strip()
+    segmentType = lineWord
     if segmentType not in validSegmentTypes:
         ui.messageBox('No valid segment type %s in %s' % (segmentType, filename), title)
         return (False, None)
@@ -86,9 +83,10 @@ def get_segment_point(ui, title, filename, planeNormal, dataArr, scale):
         [3] = length of tangent handle at 2D spline point
     . scale: scale factor between dataArr unit and API cm unit
     Return:
-    . result: True when valid, else False
-    . point3D: point (x, y, z) coordinates in plane with z = 0.
-    . tangent: optional tangent (angle, length) of spline at point3D.
+    . result: True when valid pointTuple, else False with None
+    . pointTuple:
+      - point3D: point (x, y, z) coordinates in plane with z = 0.
+      - tangent: optional tangent (angle, length) of spline at point3D.
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
@@ -121,11 +119,14 @@ def get_segment_point(ui, title, filename, planeNormal, dataArr, scale):
         length = None
         if len(dataArr) > 3:
             length = float(dataArr[3]) * scale
+        if len(dataArr) > 4:
+            raise Exception
         tangent = (angle, length)
-        result = (True, point3D, tangent)
+        pointTuple = (point3D, tangent)
+        result = (True, pointTuple)
     except Exception:
         ui.messageBox('No valid 2D point in %s of %s' % (dataArr, filename), title)
-        result = (False, None, None)
+        result = (False, None)
     return result
 
 
@@ -139,9 +140,10 @@ def get_segment_offset(ui, title, filename, dataArr, scale):
         [2] = offset distance
     . scale: scale factor between dataArr unit and API cm unit
     Return:
-    . result: True when valid, else False
-    . directionPoint3D: scaled offset coordinates in plane (x, y, 0)
-    . offsetDistance: scaled offset distance
+    . result: True when valid offsetTuple, else False with None
+    . offsetTuple:
+      - directionPoint3D: scaled offset coordinates in plane (x, y, 0)
+      - offsetDistance: scaled offset distance
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
@@ -153,10 +155,11 @@ def get_segment_offset(ui, title, filename, dataArr, scale):
 
         # Get offset distance for offset_curve
         offsetDistance = float(dataArr[2]) * scale
-        result = (True, directionPoint3D, offsetDistance)
+        offsetTuple = (directionPoint3D, offsetDistance)
+        result = (True, offsetTuple)
     except Exception:
         ui.messageBox('No valid offset_curve parameters in %s of %s' % (dataArr, filename), title)
-        result = (False, None, None)
+        result = (False, None)
     return result
 
 
@@ -228,86 +231,207 @@ def adjust_spline_tangents(ui, planeNormal, spline, segmentTangents):
 def parse_csv_sketch_file(ui, title, filename):
     """Parse sketch CSV file.
 
-    Reads offset plane and sketch segments from csv file.
+    Reads offset plane and sketch segments from a sketch CSV file.
 
     Input:
-    . filename: full path and name of CSV file
+    . filename: full path and name of a sketch CSV file
     Return:
-    . result: True when valid, else False
-    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . planeOffset: offset from origin plane
-    . segments: list of (segmentType, directionPoint3D, offsetDistance)
+    . result: True when valid sketchTuple, else False with None
+    . sketchTuple:
+      - planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+      - planeOffset: offset from origin plane
+      - segments: list of (segmentType, ... segment data ...>)
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
     """
-    resultFalse = (False, None, None, None)
-    with open(filename, 'r') as fp:
-        # Read file type
-        fLine = fp.readline()
-        if fLine.strip() != 'sketch':
-            return resultFalse
+    # Read sketch CSV file and remove comments and empty lines
+    fileLines = interfacefiles.read_data_lines_from_file(filename)
+    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
 
-        # Read units
-        fLine = fp.readline()
-        result, scale = schemacsv360.read_units(ui, title, filename, fLine)
-        if not result:
-            return resultFalse
-
-        # Read plane normal axis and offset of the sketch plane from fLine
-        fLine = fp.readline()
-        result, planeNormal, planeOffset = schemacsv360.read_offset_plane(ui, title, filename, fLine, scale)
-        if not result:
-            return resultFalse
-
-        # Read sketch segments
-        segments = []
-        fLine = fp.readline()
-        while fLine:
-            # Read segment type from file fLine
-            result, segmentType = read_segment_type(ui, title, filename, fLine)
+    # Parse file lines for sketch sections
+    resultFalse = (False, None)
+    for li, lineArr in enumerate(lineLists):
+        lineWord = lineArr[0]
+        if li == 0:
+            # Read file type
+            if lineWord != 'sketch':
+                return resultFalse
+        elif li == 1:
+            # Read units
+            result, scale = schemacsv360.read_units(ui, title, filename, lineWord)
             if not result:
                 return resultFalse
-
-            if segmentType in ['spline', 'line']:
-                # Read segment points from file fLines, one 2D point per fLine
-                segmentPoints = adsk.core.ObjectCollection.create()
-                segmentTangents = []
-                fLine = fp.readline()
-
-                dataArr = fLine.split(',')
-                while len(dataArr) >= 2:
-                    # Read 2D point in offset plane
-                    result, point3D, tangent = get_segment_point(ui, title, filename, planeNormal, dataArr, scale)
-                    if not result:
-                        return resultFalse
-                    segmentPoints.add(point3D)
-                    segmentTangents.append(tangent)
-
-                    # Prepare for next 3D point or next segment or end of file
-                    fLine = fp.readline()
-                    dataArr = fLine.split(',')
-
-                # Check segment length
-                if segmentPoints.count < 2:
-                    ui.messageBox('Not enough points in segment in %s' % filename, title)
-                    return resultFalse
-
-                segments.append((segmentType, segmentPoints, segmentTangents))
-
-            if segmentType in ['offset_curve']:
-                # Read offset_curve location and offset from file fLines
-                fLine = fp.readline()
-                dataArr = fLine.split(',')
-                result, directionPoint3D, offsetDistance = get_segment_offset(ui, title, filename, dataArr, scale)
+        elif li == 2:
+            # Read plane normal axis and offset of the sketch plane from lineArr
+            result, planeTuple = schemacsv360.read_offset_plane(ui, title, filename, lineArr, scale)
+            if not result:
+                return resultFalse
+            planeNormal, planeOffset = planeTuple
+            # Prepare list with sketch segment locations
+            segmentType = ''
+            segmentLocations = []
+            liStart = li
+            liLast = li
+        else:
+            # Locate sketch segments in fileLines
+            if len(lineArr) == 1:
+                # Append location and type of previous sketch segment
+                if li > liStart + 1:
+                    segmentLocations.append((liStart, liLast, segmentType))
+                # Read new sketch segment type from file line
+                result, segmentType = read_segment_type(ui, title, filename, lineWord)
                 if not result:
                     return resultFalse
-                segments.append((segmentType, directionPoint3D, offsetDistance))
-                # Prepare for next segment or end of file
-                fLine = fp.readline()
+                liStart = li
+            else:
+                liLast = li
+    # Append location and type of last sketch segment
+    segmentLocations.append((liStart, liLast, segmentType))
+
+    # Parse file lines for sketch segments
+    segments = []
+    for (liStart, liLast, segmentType) in segmentLocations:
+        result = False
+        if segmentType == 'spline':
+            result, segmentTuple = parse_segment_spline(ui, title, filename, planeNormal, scale,
+                                                        liStart, liLast, lineLists)
+        elif segmentType == 'line':
+            result, segmentTuple = parse_segment_line(ui, title, filename, planeNormal, scale,
+                                                      liStart, liLast, lineLists)
+        elif segmentType == 'offset_curve':
+            result, segmentTuple = parse_segment_offset_curve(ui, title, filename, scale,
+                                                              liStart, lineLists)
+        if result:
+            segments.append(segmentTuple)
+        else:
+            return resultFalse
 
     # Successfully reached end of file
-    return (True, planeNormal, planeOffset, segments)
+    sketchTuple = (planeNormal, planeOffset, segments)
+    return (True, sketchTuple)
+
+
+def parse_segment_spline(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+    """Parse spline segment section from file lines [liStart : liLast + 1] in
+       lineLists.
+
+    Input:
+    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+    . scale: scale factor between dataArr unit and API cm unit
+    . liStart: file line index of segmentType 'spline' in lineLists, so file
+        line at liStart + 1 contains the point data for the first spline point
+    . liEnd: file line at liEnd index contains point data for the last spline
+        point
+    . lineLists: list of file line data lists
+    Return:
+    . result: True when valid segmentTuple, else False with None
+    . segmentTuple:
+      - segmentType: 'spline'
+      - segmentPoints: array of point3D
+      - segmentTangents: list of tangents (angle, length) per corresponding
+        point3D in segmentPoints. If tangent = (None, None) then Fusion360 will
+        define the tangent.
+
+    Uses ui, title, filename to interact with user and report faults via
+    Fusion360 GUI.
+    """
+    resultFalse = (False, None)
+    lineNr = liStart + 1  # index starts at 0, nr starts at 1
+    segmentPoints = adsk.core.ObjectCollection.create()
+    segmentTangents = []
+    # Check segment type
+    segmentType = lineLists[liStart][0]
+    if segmentType != 'spline':
+        ui.messageBox('No spline segment in %s at line %d' % (filename, lineNr), title)
+        return resultFalse
+    # Check segment length
+    if liLast - liStart < 2:
+        ui.messageBox('Not enough points in segment in %s at %d' % (filename, lineNr), title)
+        return resultFalse
+    # Read 2D point in offset plane, one 2D point per file line
+    for li in range(liStart + 1, liLast + 1):
+        dataArr = lineLists[li]
+        result, pointTuple = get_segment_point(ui, title, filename, planeNormal, dataArr, scale)
+        if not result:
+            return resultFalse
+        point3D, tangent = pointTuple
+        segmentPoints.add(point3D)
+        segmentTangents.append(tangent)
+    # Check segment length
+    if segmentPoints.count < 2:
+        ui.messageBox('Not enough points in segment in %s' % filename, title)
+        return resultFalse
+    segmentTuple = (segmentType, segmentPoints, segmentTangents)
+    return (True, segmentTuple)
+
+
+def parse_segment_line(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+    """Parse line segment section from lines [liStart : liLast + 1] in
+       lineLists.
+
+    Same interface as parse_segment_spline(), but only with segmentPoints, so
+    without segmentTangents.
+
+    """
+    resultFalse = (False, None)
+    lineNr = liStart + 1  # index starts at 0, nr starts at 1
+    segmentPoints = adsk.core.ObjectCollection.create()
+    # Check segment type
+    segmentType = lineLists[liStart][0]
+    if segmentType != 'line':
+        ui.messageBox('No line segment in %s at %d' % (filename, lineNr), title)
+        return resultFalse
+    # Check segment length
+    if liLast - liStart < 2:
+        ui.messageBox('Not enough points in segment in %s at %d' % (filename, lineNr), title)
+        return resultFalse
+    # Read 2D point in offset plane, one 2D point per file line
+    for li in range(liStart + 1, liLast + 1):
+        dataArr = lineLists[li]
+        result, pointTuple = get_segment_point(ui, title, filename, planeNormal, dataArr, scale)
+        if not result:
+            return resultFalse
+        point3D = pointTuple[0]
+        segmentPoints.add(point3D)
+    # Check segment length
+    if segmentPoints.count < 2:
+        ui.messageBox('Not enough points in segment in %s' % filename, title)
+        return resultFalse
+    segmentTuple = (segmentType, segmentPoints)
+    return (True, segmentTuple)
+
+
+def parse_segment_offset_curve(ui, title, filename, scale, liStart, lineLists):
+    """Parse offset_curve segment section from lines [liStart : liStart + 1] in
+       lineLists.
+
+    Same interface as parse_segment_spline() but with offset direction point
+    and offset distance for the offset curve.
+
+    Return:
+    . result: True when valid segmentTuple, else False with None
+    . segmentTuple:
+      - segmentType: 'offset_curve'
+      - directionPoint3D: scaled offset coordinates in plane (x, y, 0) for
+        offset direction with respect to the segments
+      - offsetDistance: scaled offset distance with respect to the segments
+    """
+    resultFalse = (False, None)
+    lineNr = liStart + 1  # index starts at 0, nr starts at 1
+    # Check segment type
+    segmentType = lineLists[liStart][0]
+    if segmentType != 'offset_curve':
+        ui.messageBox('No offset_curve segment in %s at %d' % (filename, lineNr), title)
+        return resultFalse
+    # Read 2D offset direction point and offset distance, in offset plane, from file line
+    dataArr = lineLists[liStart + 1]
+    result, offsetTuple = get_segment_offset(ui, title, filename, dataArr, scale)
+    if not result:
+        return resultFalse
+    directionPoint3D, offsetDistance = offsetTuple
+    segmentTuple = (segmentType, directionPoint3D, offsetDistance)
+    return (True, segmentTuple)
 
 
 def create_sketch_from_csv_file(ui, title, filename, hostComponent, verbosity=False):
@@ -324,9 +448,10 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent, verbosity=Fa
     verbosity = False  # no print_text()
 
     # Parse CSV file
-    result, planeNormal, planeOffset, segments = parse_csv_sketch_file(ui, title, filename)
+    result, sketchTuple = parse_csv_sketch_file(ui, title, filename)
     if not result:
         return
+    planeNormal, planeOffset, segments = sketchTuple
 
     # Use stripped filename as offset plane name and as sketch name
     basename = os.path.basename(filename)

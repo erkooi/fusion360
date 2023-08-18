@@ -46,7 +46,7 @@ def parse_csv_plane_file(ui, title, filename):
     Input:
     . filename: full path and name of CSV file
     Return:
-    . result: True when valid, else False
+    . result: True when valid threePoint3Ds, else False with None
     . threePoint3Ds: list of three point3D objects that define a plane
 
     Uses ui, title, filename to interact with user and report faults via
@@ -54,16 +54,13 @@ def parse_csv_plane_file(ui, title, filename):
     """
     # Read file and remove comment
     fileLines = interfacefiles.read_data_lines_from_file(filename)
+    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
 
-    # Remove empty last line
-    fileLines.pop(-1)
-
-    # Parse fileLines for plane
+    # Parse file lines for plane
     resultFalse = (False, None)
     threePoint3Ds = []
-    for li, fLine in enumerate(fileLines):
-        lineArr = fLine.split(',')
-        lineWord = lineArr[0].strip()
+    for li, lineArr in enumerate(lineLists):
+        lineWord = lineArr[0]
         if li == 0:
             # Read file type
             if lineWord != 'plane':
@@ -80,7 +77,7 @@ def parse_csv_plane_file(ui, title, filename):
                 return resultFalse
             threePoint3Ds.append(point3d)
         else:
-            # Too many lines in fileLines
+            # Too many lines in file
             return resultFalse
 
     # Successfully reached end of file
@@ -148,7 +145,7 @@ def create_plane_from_csv_file(ui, title, filename, hostComponent):
     . filename: full path and name of CSV file
     . hostComponent: place the plane in hostComponent Construction folder.
     Return:
-    . result: True when valid, else False
+    . result: True when valid plane, else False with None
     . plane: plane object
 
     Uses ui, title, filename to report faults via Fusion360 GUI.

@@ -70,7 +70,8 @@ def read_data_lines_from_file(filename):
     Remove comment lines,
     Remove comment from lines,
     Keep one empty line between sections with data,
-    Keep or insert one empty line at end
+    Keep or insert one empty line at end when file contains multiple sections,
+      else remove empty line at end for file with only one section.
 
     Input:
     . filename: full path and name of file
@@ -121,7 +122,54 @@ def read_data_lines_from_file(filename):
     # If necessary add empty line to mark end of last section in dataLines
     if dataLines[-1].strip():
         dataLines.append('')
+
+    # Count number of sections
+    sectionCnt = 0
+    sectionPart = False
+    for fLine in dataLines:
+        if fLine.strip():
+            # found section line
+            if not sectionPart:
+                sectionCnt += 1
+                sectionPart = True
+        else:
+            # found empty line
+            sectionPart = False
+
+    # If file only has one section, then remove empty last line
+    if sectionCnt == 1:
+        dataLines.pop(-1)
     return dataLines
+
+
+def get_file_line_entries(fLine):
+    """Strip comma separated values from file line.
+
+    Split lines at comma to get the values,
+    Remove leading and trailing whitespace characters from the values.
+
+    Input:
+    . fLine: one line from file
+    Return:
+    . entries: list of stripped values from comma separated fLine
+    """
+    entries = fLine.split(',')
+    entries = [e.strip() for e in entries]
+    return entries
+
+
+def convert_data_lines_to_lists(fileLines):
+    """Convert fileLines into dataLists using comma as separator.
+
+    Input:
+    . fileLines: read lines from comma separate values file
+    Return:
+    . dataLists: list of lists of data values per read line
+    """
+    dataLists = []
+    for fLine in fileLines:
+        dataLists.append(get_file_line_entries(fLine))
+    return dataLists
 
 
 def write_profile_sketch_files(fileLines):
@@ -143,8 +191,7 @@ def write_profile_sketch_files(fileLines):
             # . file type 'sketch',
             # . folder name for CSV file.
             # Skip lines for other file types.
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'sketch':
                 sketchFolder = create_folder(entries[1])
@@ -152,8 +199,7 @@ def write_profile_sketch_files(fileLines):
         elif li == 1:
             li += 1
             # Second line of a sketch in fileLines contains info for sketch filename
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             planeNormal = entries[0]
             planeOffset = entries[1]
             sketchName = entries[2]
@@ -167,14 +213,13 @@ def write_profile_sketch_files(fileLines):
         elif fLine.strip():
             li += 1
             # Pass on next fileLines until empty line of sketch in fileLines
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             segmentType = entries[0]
             if segmentType in validSegmentTypes:
                 # New segment line, only pass on segmentType, omit any other entries
                 sketchLines.append(segmentType + '\n')
             else:
-                # Values line, pass on as is
+                # Line with values, pass on as is
                 sketchLines.append(fLine)
         else:
             # Empty line marks end of sketch in fileLines
@@ -223,10 +268,11 @@ def determine_rail_point_xyz(planeNormal, planeOffset, railNormal, railOffset, a
 
 
 def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
-    """Get rail points from spline points in sketch profiles.
+    """Get rail points from points in sketch profiles in fileLines.
 
     Inputs:
-    . fileLines: sketch rails in lines from a points file
+    . fileLines: lines from a points file with multiple profile sketches, that
+        contain rail points for railName
     . planesNormal: 'x', 'y', or 'z'; selects sketches with planeNormal == planesNormal
     . railName: selects segments with railNames from fileLines
     . railNormal: 'x', 'y', or 'z'; must be != planesNormal
@@ -241,14 +287,10 @@ def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
     # Find sketches in fileLines, seperated by one empty line
     for fLine in fileLines:
         if li == 0:
-            # First line of a sketch in fileLines contains file type 'sketch', skip other lines
-            if fLine.strip() == 'sketch':
-                li += 1
             # First line of a sketch in fileLines contains file type 'sketch',
             # the folder name is not used to get_rail_points().
             # Skip lines for other file types.
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'sketch':
                 li += 1
@@ -256,16 +298,14 @@ def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
             li += 1
             # Second line of a sketch in fileLines contains plane info for sketch,
             # the sketch name info is not used to get_rail_points().
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             planeNormal = entries[0]
             planeOffset = float(entries[1])
         elif fLine.strip():
             li += 1
             if planeNormal == planesNormal:
                 # Parse line
-                entries = fLine.split(',')
-                entries = [e.strip() for e in entries]
+                entries = get_file_line_entries(fLine)
                 segmentType = entries[0]
                 if segmentType in validSegmentTypes:
                     # New segment line, get optional railNames
@@ -341,8 +381,7 @@ def write_loft_files(fileLines):
             # . file type 'loft',
             # . folder name for CSV file.
             # Skip lines for other file types.
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'loft':
                 loftFolder = create_folder(entries[1])
@@ -385,8 +424,7 @@ def write_plane_files(fileLines):
             # . file type 'plane',
             # . folder name for CSV file.
             # Skip lines for other file types.
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'plane':
                 planeFolder = create_folder(entries[1])
@@ -430,8 +468,7 @@ def write_combine_bodies_files(fileLines):
             # . file type 'combine',
             # . folder name for CSV file.
             # Skip lines for other file types.
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'combine':
                 combineFolder = create_folder(entries[1])
@@ -475,8 +512,7 @@ def write_split_body_files(fileLines):
             # . file type 'split',
             # . folder name for CSV file.
             # Skip lines for other file types.
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'split':
                 splitFolder = create_folder(entries[1])
@@ -485,8 +521,7 @@ def write_split_body_files(fileLines):
             li += 1
             # Second line of a split body section in fileLines contains
             # info for split body filename
-            entries = fLine.split(',')
-            entries = [e.strip() for e in entries]
+            entries = get_file_line_entries(fLine)
             splitBodyName = entries[1]
             splitFilename = 'split_' + splitBodyName + '.csv'
             splitFilename = os.path.join(splitFolder, splitFilename)

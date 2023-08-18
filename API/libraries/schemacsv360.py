@@ -25,7 +25,7 @@ Use right-handed coordinates X, Y, Z:
    /           . positive angle XY, planeNormal = 'z'
   x
 
-Offset plane with rerspect to normal origin plane YZ, ZX or XY.
+Offset plane with respect to normal origin plane YZ, ZX or XY.
 
 Use user unit 'mm' or 'cm' in CSV file, automatically scale to cm because
 Fusion360 API uses cm unit.
@@ -38,19 +38,19 @@ validUnits = ['mm', 'cm']
 validPlaneNormals = ['x', 'y', 'z']
 
 
-def read_units(ui, title, filename, fLine):
-    """Read unit from file fLine.
+def read_units(ui, title, filename, lineWord):
+    """Read unit from file line word.
 
     Input:
-    . fLine: 'mm' or 'cm', spaces are stripped
+    . lineWord: 'mm' or 'cm'
     Return:
-    . result: True when valid, else False
+    . result: True when valid scale, else False with None
     . scale: scale factor with respect to API cm unit
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
     result = (False, None)
-    unitStr = fLine.strip()
+    unitStr = lineWord
     if unitStr in validUnits:
         # Scale user units to cm unit used by API
         scale = 1
@@ -62,34 +62,35 @@ def read_units(ui, title, filename, fLine):
     return result
 
 
-def read_offset_plane(ui, title, filename, fLine, scale):
-    """Read normal axis and offset of the offset plane from file fLine.
+def read_offset_plane(ui, title, filename, lineWords, scale):
+    """Read normal axis and offset of the offset plane from file line.
 
     Input:
-    . fLine: planeNormal (= 'x', 'y' or 'z'), planeOffset (= float value)
+    . lineWords: list with words from file line:
+        [planeNormal (= 'x', 'y' or 'z'), planeOffset (= float value)]
     . scale: scale factor between dataArr unit and API cm unit
     Return:
-    . result: True when valid, else False
-    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . planeOffset: offset from origin plane
+    . result: True when valid planeTuple, else False with None
+    . planeTuple:
+      - planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+      - planeOffset: offset from origin plane
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
-    entries = fLine.split(',')
-    entries = [e.strip() for e in entries]
-    result = (False, None, None)
-    if len(entries) == 2:
+    result = (False, None)
+    if len(lineWords) == 2:
         # Get plane normal
-        planeNormal = entries[0]
+        planeNormal = lineWords[0]
         if planeNormal in validPlaneNormals:
             # Get plane offset
             try:
-                planeOffset = float(entries[1]) * scale
-                result = (True, planeNormal, planeOffset)
+                planeOffset = float(lineWords[1]) * scale
+                planeTuple = (planeNormal, planeOffset)
+                result = (True, planeTuple)
             except Exception:
                 pass
     if not result[0]:
-        ui.messageBox('No valid plane %s of %s' % (fLine, filename), title)
+        ui.messageBox('No valid plane in %s of %s' % (lineWords, filename), title)
     return result
 
 
@@ -103,7 +104,7 @@ def get_3d_point(ui, title, filename, dataArr, scale):
         [3] = z coordinate
     . scale: scale factor between dataArr unit and API cm unit
     Return:
-    . result: True when valid, else False
+    . result: True when valid point3D, else False with None
     . point3D: point3D object
 
     Uses ui, title, filename to report faults via Fusion360 GUI.

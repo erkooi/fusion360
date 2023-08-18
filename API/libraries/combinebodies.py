@@ -52,28 +52,26 @@ def parse_csv_combine_bodies_file(ui, title, filename):
     Input:
     . filename: full path and name of CSV file
     Return:
-    . result: True when valid, else False
-    . combineName: object name of combined bodies
-    . operation: 'join', 'cut', or 'intersect'
-    . targetBodyName: target body name
-    . toolBodyNames: list of tool body names
+    . result: True when valid combineBodiesTuple, else False with none
+    . combineBodiesTuple:
+      - combineName: object name of combined bodies
+      - operation: 'join', 'cut', or 'intersect'
+      - targetBodyName: target body name
+      - toolBodyNames: list of tool body names
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
     """
     # Read file and remove comment
     fileLines = interfacefiles.read_data_lines_from_file(filename)
+    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
 
-    # Remove empty last line
-    fileLines.pop(-1)
-
-    # Parse fileLines for combine bodies
-    resultFalse = (False, None, None, None, None)
-    for li, fLine in enumerate(fileLines):
-        lineArr = fLine.split(',')
-        lineWord0 = lineArr[0].strip()
+    # Parse file lines for combine bodies
+    resultFalse = (False, None)
+    for li, lineArr in enumerate(lineLists):
+        lineWord0 = lineArr[0]
         if len(lineArr) > 1:
-            lineWord1 = lineArr[1].strip()
+            lineWord1 = lineArr[1]
         if li == 0:
             if lineWord0 != 'combine':
                 return resultFalse
@@ -108,7 +106,8 @@ def parse_csv_combine_bodies_file(ui, title, filename):
         return resultFalse
 
     # Successfully reached end of file
-    return (True, combineName, operation, targetBodyName, toolBodyNames)
+    combineBodiesTuple = (combineName, operation, targetBodyName, toolBodyNames)
+    return (True, combineBodiesTuple)
 
 
 def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineName):
@@ -200,9 +199,10 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
     # Parse CSV file
-    result, combineName, operation, targetBodyName, toolBodyNames = parse_csv_combine_bodies_file(ui, title, filename)
+    result, combineBodiesTuple = parse_csv_combine_bodies_file(ui, title, filename)
     if not result:
         return False
+    combineName, operation, targetBodyName, toolBodyNames = combineBodiesTuple
 
     # Find body objects in hostComponent
     targetBody = hostComponent.bRepBodies.itemByName(targetBodyName)
