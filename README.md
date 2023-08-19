@@ -23,6 +23,8 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 ### Example scripts
 * Example/ - Demonstrate some script development basics in Fusion360 by printing component names, as shown below.
 ![Print text in TEXT COMMANDS window in Fusion360](doc/print_text_v2.jpg)
+* test/snail/snail_points.py - Demonstrate creating three sketch CSV files of a snail, in three different offset planes of the XY, YZ and ZX origin planes. One CSV file can be read into Fusion360 using the ImportSketchCSV/ script, or all three can be read at once into Fusion360 using the ImportSketchesCSV/ script.
+![Read sketches into Fusion360 from CSV files](doc/snail_3d_v2.jpg)
 
 ### Design scripts
 * AssembleF35bCSV/ - Assemble F35B plane design in Fusion360 as defined in CSV files.
