@@ -26,7 +26,6 @@ Combine bodies CSV file format:
 . target_body, body name
 . tool_bodies
   - one or more tool body names  # one per line
-. empty line ends file
 
 The tool_bodies are kept.
 The target_body is kept. This is default when the combined object is a new
@@ -40,8 +39,6 @@ new component also gets the combine name.
 import interfacefiles
 import interface360
 import utilities360
-
-validOperations = ['join', 'cut', 'intersect']
 
 
 def parse_csv_combine_bodies_file(ui, title, filename):
@@ -81,7 +78,7 @@ def parse_csv_combine_bodies_file(ui, title, filename):
         elif li == 2:
             # Read combine operation
             operation = lineWord0
-            if operation not in validOperations:
+            if operation not in interfacefiles.validOperations:
                 ui.messageBox('No valid combine operation %s in %s' % (operation, filename), title)
                 return resultFalse
         elif li == 3:

@@ -20,9 +20,12 @@
 
 import os.path
 
+# Lists of valid key words in CSV files for generating objects in Fusion360
 validFileTypes = ['sketch', 'plane', 'loft', 'combine', 'split']
+validUnits = ['mm', 'cm']
+validPlaneNormals = ['x', 'y', 'z']
+validSegmentTypes = ['spline', 'line', 'offset_curve', 'circle', 'point']
 validOperations = ['join', 'cut', 'intersect']
-validSegmentTypes = ['spline', 'line', 'offset_curve']
 
 
 def create_folder(folderStr):

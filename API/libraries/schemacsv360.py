@@ -15,7 +15,8 @@
 ################################################################################
 # Author: Eric Kooistra.
 # Date: 1 jun 2023
-"""Module with utilities to represent items defined in CSV schema file in Fusion360.
+"""Module with utilities to represent items defined in CSV schema file in
+Fusion360.
 
 Use right-handed coordinates X, Y, Z:
 
@@ -34,8 +35,7 @@ Fusion360 API uses cm unit.
 import adsk.core
 import math
 
-validUnits = ['mm', 'cm']
-validPlaneNormals = ['x', 'y', 'z']
+import interfacefiles
 
 
 def read_units(ui, title, filename, lineWord):
@@ -51,7 +51,7 @@ def read_units(ui, title, filename, lineWord):
     """
     result = (False, None)
     unitStr = lineWord
-    if unitStr in validUnits:
+    if unitStr in interfacefiles.validUnits:
         # Scale user units to cm unit used by API
         scale = 1
         if unitStr == 'mm':
@@ -62,13 +62,13 @@ def read_units(ui, title, filename, lineWord):
     return result
 
 
-def read_offset_plane(ui, title, filename, lineWords, scale):
+def read_offset_plane(ui, title, filename, scale, lineWords):
     """Read normal axis and offset of the offset plane from file line.
 
     Input:
+    . scale: scale factor between dataArr unit and API cm unit
     . lineWords: list with words from file line:
         [planeNormal (= 'x', 'y' or 'z'), planeOffset (= float value)]
-    . scale: scale factor between dataArr unit and API cm unit
     Return:
     . result: True when valid planeTuple, else False with None
     . planeTuple:
@@ -81,7 +81,7 @@ def read_offset_plane(ui, title, filename, lineWords, scale):
     if len(lineWords) == 2:
         # Get plane normal
         planeNormal = lineWords[0]
-        if planeNormal in validPlaneNormals:
+        if planeNormal in interfacefiles.validPlaneNormals:
             # Get plane offset
             try:
                 planeOffset = float(lineWords[1]) * scale
@@ -94,15 +94,15 @@ def read_offset_plane(ui, title, filename, lineWords, scale):
     return result
 
 
-def get_3d_point(ui, title, filename, dataArr, scale):
-    """Get 3D point x, y, z coordinates.
+def get_3d_point(ui, title, filename, scale, dataArr):
+    """Get 3D point x, y, z coordinates from 3 coordinates in dataArr.
 
     Input:
+    . scale: scale factor between dataArr unit and API cm unit
     . dataArr: 3D point
         [0] = x coordinate
         [1] = y coordinate
-        [3] = z coordinate
-    . scale: scale factor between dataArr unit and API cm unit
+        [2] = z coordinate
     Return:
     . result: True when valid point3D, else False with None
     . point3D: point3D object
@@ -118,6 +118,52 @@ def get_3d_point(ui, title, filename, dataArr, scale):
         result = (True, point3D)
     except Exception:
         ui.messageBox('No valid 3D point in %s of %s' % (dataArr, filename), title)
+        result = (False, None)
+    return result
+
+
+def get_3d_point_in_offset_plane(ui, title, filename, planeNormal, scale, dataArr):
+    """Get 3D point with z = 0 in offset plane from 2 coordinates in dataArr.
+
+    Map yz, zx, xy 2D point in dataArr to xy 3D point in offset plane with
+    z = 0.
+
+    Input:
+    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+    . scale: scale factor between dataArr unit and API cm unit
+    . dataArr: 2D point in offset plane
+        [0] = x coordinate in offset plane
+        [1] = y coordinate in offset plane
+    Return:
+    . result: True when valid point3D, else False with None
+    . point3D: point (x, y, z) coordinates in plane with z = 0.
+
+    Uses ui, title, filename to report faults via Fusion360 GUI.
+    """
+    try:
+        # Get point3D in offset plane
+        a = float(dataArr[0]) * scale
+        b = float(dataArr[1]) * scale
+        data2D = [0, 0]  # keep z = 0 in offset plane
+        if planeNormal == 'x':  # yz-plane
+            # sketch.xDirection.asArray() = [0, 0,-1]
+            # sketch.yDirection.asArray() = [0, 1, 0]
+            data2D[0] = -b
+            data2D[1] = a
+        elif planeNormal == 'y':  # zx-plane, so -y for xz-plane
+            # sketch.xDirection.asArray() = [1, 0, 0]
+            # sketch.yDirection.asArray() = [0, 0,-1]
+            data2D[0] = a
+            data2D[1] = -b
+        elif planeNormal == 'z':  # xy-plane
+            # sketch.xDirection.asArray() = [1, 0, 0]
+            # sketch.yDirection.asArray() = [0, 1, 0]
+            data2D[0] = a
+            data2D[1] = b
+        point3D = adsk.core.Point3D.create(data2D[0], data2D[1], 0)
+        result = (True, point3D)
+    except Exception:
+        ui.messageBox('No valid 2D point in %s of %s' % (dataArr, filename), title)
         result = (False, None)
     return result
 

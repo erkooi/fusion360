@@ -27,7 +27,6 @@ Plane CSV file format:
 . next line: first point coordinates x, y, z
 . next line: second point coordinates x, y, z
 . next line: third point coordinates x, y, z
-. empty line ends file
 """
 
 import os.path
@@ -72,7 +71,7 @@ def parse_csv_plane_file(ui, title, filename):
                 return resultFalse
         elif li <= 4:
             # Read the three points
-            result, point3d = schemacsv360.get_3d_point(ui, title, filename, lineArr, scale)
+            result, point3d = schemacsv360.get_3d_point(ui, title, filename, scale, lineArr)
             if not result:
                 return resultFalse
             threePoint3Ds.append(point3d)
@@ -106,7 +105,7 @@ def create_three_point_plane(hostComponent, planeName, threePoint3Ds):
         # . choose 'x' as planeNormal,
         # . use x coordinate as plane offset,
         # . x, y, z coordinates become -z, y, 0 in offset normal plane, as
-        #   explained for get_segment_point() in importsketch.py
+        #   explained for get_3d_point_in_offset_plane() in schemacsv360.py
         name = planeName + '_point_' + str(pIndex)
         offsetPlane = schemacsv360.create_offset_normal_plane(hostComponent, name, 'x', p3D.x)
         offsetPlane.isLightBulbOn = False

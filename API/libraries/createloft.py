@@ -26,7 +26,6 @@ Loft CSV file format:
   - sketch name, optional item index  # one per line
 . rails
   - sketch name, optional item index  # one per line
-. empty line ends file
 
 """
 

@@ -27,7 +27,6 @@ Split body CSV file format:
       trial run
 . remove_bodies
 .   - names of bodies to remove
-. empty line ends file
 
 The splitting tool is a plane.
 The bodyToSplit is kept, this is achieved by first copying the bodyToSplit and

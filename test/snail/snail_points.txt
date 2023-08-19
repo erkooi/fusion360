@@ -1,0 +1,226 @@
+################################################################################
+# Copyright 2023 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 19 Aug 2023
+#
+# Points file for snail sketches defines:
+# - sketch of snail using spline, line, circle and offset_curve.
+# - three similar sketches each on another origine offset plane.
+#
+# Points file can define multiple CSV files, each CSV file can only contain
+# one object from validFileTypes. A python script converts the points file
+# into separate CSV files that can be read into Fusion360. The points file
+# keeps all the objects for the design together, which is easier to maintain
+# then separate CSV files. The separate CSV files allow reading a single 
+# object into Fusion360 or a group of CSV files.
+#
+# Difference between points file and output CSV files:
+# - Omit units = 'mm', because it is defined in snail_points.py
+# - Specifiy destination folder of the CSV file after the file type
+# - Derive CSV sketch file name from planeNormal + '_' + planeOffset + '_' +
+#   sketchName. Omit sketchName string in the CSV file.
+
+# Snail in YZ-plane with small ball
+sketch, csv/sketches
+x, 200, snail
+spline  # spiral
+ 73, 10
+ 60,-40
+ 42,-40
+ 50,  0
+ 00, 50
+-50,  0
+ 00,-40
+ 30,  0
+ 00, 30
+-30,  0
+  0,-20
+ 10,  0
+ 00, 10
+-10,  0, -50, 30
+  0,  0
+  0,-10
+-20,  0
+  0, 20
+ 20,  0
+  0,-30
+-40,  0
+  0, 40
+ 40,-10,-100, 54
+-10,-55
+-10,-65
+ 10,-70, -14
+line  # bottom
+ 10,-70
+ 25,-70
+ 35,-65
+ 65,-65
+ 75,-70
+100,-70
+spline  # nose
+100,-70, 1
+120,-65
+110,-50
+ 95,-40
+spline  # front ear
+ 95,-40
+105,  0
+102,  5
+spline  # front ear
+102,  5
+ 95,  0
+ 85,-35
+spline  # back ear
+ 85,-35
+ 80,  0
+ 73, 10
+point
+ 25, 0, 2  # inside curve
+ 60, 0, 2  # ouside curve
+offset_curve
+# 25, 0, 2  # inside curve
+# 60, 0, 2  # ouside curve
+circle
+100,-50, 3  # eye
+130,-60, 10  # small ball
+
+# Snail in ZX-plane with medium ball
+sketch, csv/sketches
+y, 200, snail
+spline  # spiral
+ 73, 10
+ 60,-40
+ 42,-40
+ 50,  0
+ 00, 50
+-50,  0
+ 00,-40
+ 30,  0
+ 00, 30
+-30,  0
+  0,-20
+ 10,  0
+ 00, 10
+-10,  0, -50, 30
+  0,  0
+  0,-10
+-20,  0
+  0, 20
+ 20,  0
+  0,-30
+-40,  0
+  0, 40
+ 40,-10,-100, 54
+-10,-55
+-10,-65
+ 10,-70, -14
+line  # bottom
+ 10,-70
+ 25,-70
+ 35,-65
+ 65,-65
+ 75,-70
+100,-70
+spline  # nose
+100,-70, 1
+120,-65
+110,-50
+ 95,-40
+spline  # front ear
+ 95,-40
+105,  0
+102,  5
+spline  # front ear
+102,  5
+ 95,  0
+ 85,-35
+spline  # back ear
+ 85,-35
+ 80,  0
+ 73, 10
+point
+ 25, 0, 2  # inside curve
+ 60, 0, 2  # ouside curve
+offset_curve
+ 25, 0, 2  # inside curve
+# 60, 0, 2  # ouside curve
+circle
+100,-50, 3  # eye
+140,-50, 20  # medium ball
+
+# Snail in XY-plane with large ball
+sketch, csv/sketches
+z, 200, snail
+spline  # spiral
+ 73, 10
+ 60,-40
+ 42,-40
+ 50,  0
+ 00, 50
+-50,  0
+ 00,-40
+ 30,  0
+ 00, 30
+-30,  0
+  0,-20
+ 10,  0
+ 00, 10
+-10,  0, -50, 30
+  0,  0
+  0,-10
+-20,  0
+  0, 20
+ 20,  0
+  0,-30
+-40,  0
+  0, 40
+ 40,-10,-100, 54
+-10,-55
+-10,-65
+ 10,-70, -14
+line  # bottom
+ 10,-70
+ 25,-70
+ 35,-65
+ 65,-65
+ 75,-70
+100,-70
+spline  # nose
+100,-70, 1
+120,-65
+110,-50
+ 95,-40
+spline  # front ear
+ 95,-40
+105,  0
+102,  5
+spline  # front ear
+102,  5
+ 95,  0
+ 85,-35
+spline  # back ear
+ 85,-35
+ 80,  0
+ 73, 10
+point
+ 25, 0, 2  # inside curve
+ 60, 0, 2  # ouside curve
+offset_curve
+# 25, 0, 2  # inside curve
+ 60, 0, 2  # ouside curve
+circle
+100,-50, 3  # eye
+150,-40, 30  # large ball

@@ -29,10 +29,12 @@ import importlib
 
 # Import local from API\\libraries
 from . import append_sys_path_libraries  # noqa: F401
+import interfacefiles
 import interface360
 import utilities360
 import schemacsv360
 import importsketch
+importlib.reload(interfacefiles)
 importlib.reload(interface360)
 importlib.reload(utilities360)
 importlib.reload(schemacsv360)
