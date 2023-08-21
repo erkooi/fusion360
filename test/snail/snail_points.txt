@@ -90,7 +90,7 @@ spline  # back ear
 point
  25, 0, 2  # inside curve
  60, 0, 2  # ouside curve
-offset_curve
+#offset_curve
 # 25, 0, 2  # inside curve
 # 60, 0, 2  # ouside curve
 circle
