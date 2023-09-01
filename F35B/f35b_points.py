@@ -152,3 +152,6 @@ if __name__ == '__main__':
 
     # Write split body csv files into folder(s)
     interfacefiles.write_split_body_files(fileLines)
+
+    # Write assembly csv files into folder(s)
+    interfacefiles.write_assembly_files(fileLines)

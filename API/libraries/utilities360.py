@@ -151,7 +151,8 @@ def create_component(parentComponent, componentName, isLightBulbOn=False):
     Input:
     . parentComponent: parent component for the new component
     . componentName: name for new component
-    . isLightBulbOn: when True put light bulb of new component occurrence on, else off
+    . isLightBulbOn: when True put light bulb of new component occurrence on,
+      else off
     Return:
     . component object of the new component
     """
@@ -164,7 +165,8 @@ def create_component(parentComponent, componentName, isLightBulbOn=False):
 
 def find_or_create_component(parentComponent, componentName, isLightBulbOn=False):
     """Find component with componentName in parentComponent or else create
-       component with componentName in parentComponent.
+       component with componentName in parentComponent. If componentName is
+       name of parentComponent then return parentComponent.
 
     Input:
     . parentComponent: parent component to search for the component
@@ -172,8 +174,16 @@ def find_or_create_component(parentComponent, componentName, isLightBulbOn=False
     . isLightBulbOn: when True put light bulb of new component occurrence on,
       else off
     Return:
-    . component object of the component with componentName in parentComponent
+    . component object of the component with componentName in parentComponent,
+      or the parentComponent itself if it has componentName.
     """
+    # Check whether parentComponent has componentName
+    if parentComponent.name == componentName:
+        occurrence = parentComponent.occurrences[0]
+        occurrence.isLightBulbOn = isLightBulbOn
+        return parentComponent
+
+    # Look for componentName in parentComponent
     occurrences = find_occurrences(parentComponent, componentName)
     if len(occurrences) == 0:
         # Create new component in parentComponent
@@ -181,6 +191,7 @@ def find_or_create_component(parentComponent, componentName, isLightBulbOn=False
     else:
         # Found occurrence of componentName in parentComponent
         occurrence = occurrences[0]
+        occurrence.isLightBulbOn = isLightBulbOn
         component = occurrence.component
     return component
 

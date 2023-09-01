@@ -100,19 +100,20 @@ def parse_csv_loft_file(ui, title, filename):
     return (True, loftTuple)
 
 
-def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponent=False, verbosity=False):
+def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponent=False):
     """Create loft from CSV file, in hostComponent Bodies folder in Fusion360
 
     Input:
     . filename: full path and name of CSV file
     . hostComponent: place the loft in hostComponent Bodies folder.
     . loftNewComponent: when True create loft component, else create loft body
-    . verbosity: when False no print_text()
     Return:
     . True when loft was created, else False
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
+    verbosity = False  # no print_text()
+
     # Parse CSV file
     result, loftTuple = parse_csv_loft_file(ui, title, filename)
     if not result:

@@ -179,7 +179,7 @@ def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operatio
     combineBody.name = combineName
 
 
-def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewComponent=False, verbosity=False):
+def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewComponent=False):
     """Combine bodies from CSV file, in hostComponent in Fusion360
 
     Input:
@@ -189,7 +189,6 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
       combineNewComponent = False.
     . combineNewComponent: when True create new component in hostComponent,
       else create new body in hostComponent Bodies folder
-    . verbosity: when False no print_text()
     Return:
     . True when new combine object was created, else False
 

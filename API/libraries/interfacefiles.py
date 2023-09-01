@@ -21,11 +21,68 @@
 import os.path
 
 # Lists of valid key words in CSV files for generating objects in Fusion360
-validFileTypes = ['sketch', 'plane', 'loft', 'combine', 'split']
+validFileTypes = ['sketch', 'plane', 'loft', 'combine', 'split', 'assembly']
 validUnits = ['mm', 'cm']
 validPlaneNormals = ['x', 'y', 'z']
 validSegmentTypes = ['spline', 'line', 'offset_curve', 'circle', 'point']
 validOperations = ['join', 'cut', 'intersect']
+validAssemblyActions = ['import_sketch',
+                        'import_sketches',
+                        'create_plane',
+                        'create_planes',
+                        'create_loft',
+                        'create_lofts',
+                        'combine_bodies',
+                        'combine_bodies_multiple',
+                        'split_body',
+                        'split_body_multiple']
+
+
+def extract_object_name(filename):
+    """Extract object name for e.g. sketch or plane from filename.
+
+    For example:
+    . /a/b/c.csv -> objectName = 'c'
+    . /a/b/c -> objectName = '', because filename should have an extension
+    . c.txt -> objectName = 'c'
+
+    Input:
+    . filename: filename with extension and optional directory
+    Return:
+    . objectName: extracted name or empty string
+    """
+    # take part after last separator '/' in filename string, or filename string
+    # if there is no separator '/' in filename string.
+    basename = os.path.basename(filename)
+    # remove extension
+    objectName = basename.split('.')[0]
+    extension = basename.split('.')[1]
+    if extension:
+        return objectName
+    else:
+        return ''
+
+
+def extract_component_name(filepathname):
+    """Extract component name from sub directory in filepathname.
+
+    For example:
+    . /a/b/c.csv -> componentName = 'b'
+    . /a/b/c -> componentName = 'c'
+    . c -> componentName = 'c'
+    . c.txt -> componentName = ''
+
+    Input:
+    . filepathname: filename or directory name
+    Return:
+    . componentName: extracted name or empty string
+    """
+    # Directory name is last last part in filepathname, without the filename
+    basename = os.path.basename(filepathname)
+    if '.' in basename:
+        dirname = os.path.dirname(filepathname)
+        basename = os.path.basename(dirname)
+    return basename
 
 
 def create_folder(folderStr):
@@ -541,4 +598,47 @@ def write_split_body_files(fileLines):
             with open(splitFilename, 'w') as fp:
                 fp.writelines(splitLines)
             # . Prepare for next split bodies section in fileLines
+            li = 0
+
+
+def write_assembly_files(fileLines):
+    """Write assembly in fileLines into seperate assembly CSV files.
+
+    Input:
+    . fileLines: lines from file that define one or more assemblies
+    Return: None
+    """
+    li = 0
+
+    # Find assemblys in fileLines, seperated by one empty line
+    for fLine in fileLines:
+        if li == 0:
+            # First line of a assembly in fileLines contains:
+            # . file type 'assembly',
+            # . folder name for CSV file.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'assembly':
+                assemblyFolder = create_folder(entries[1])
+                li += 1
+        elif li == 1:
+            li += 1
+            # Second line of a assembly in fileLines contains assembly filename
+            assemblyName = fLine.strip()
+            assemblyFilename = assemblyName + '.csv'
+            assemblyFilename = os.path.join(assemblyFolder, assemblyFilename)
+            assemblyLines = []
+            assemblyLines.append('assembly\n')  # write file type
+            assemblyLines.append(assemblyName + '\n')  # write assembly name
+        elif fLine.strip():
+            # Pass on next fileLines until empty line of assembly in fileLines
+            assemblyLines.append(fLine)
+        else:
+            # Empty line marks end of assembly in fileLines
+            # . Write assembly file
+            print('write_assembly_files: %s' % assemblyFilename)
+            with open(assemblyFilename, 'w') as fp:
+                fp.writelines(assemblyLines)
+            # . Prepare for next assembly in fileLines
             li = 0

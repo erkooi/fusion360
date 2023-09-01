@@ -3398,3 +3398,28 @@ tool_bodies
   shell_inlet
   shell_fuselage
   shell_tail
+
+
+################################################################################
+# Assembly
+
+assembly, csv/
+F35B-CSV  # assembly name = csv filename = host component name
+  # Use separate group components, with their CSV sub directory name, for
+  # Sketches and Construction planes
+  import_sketches, sketches_fuselage_x
+  import_sketches, sketches_rails_y
+  import_sketches, sketches_rails_z
+  import_sketches, sketches_wing
+  import_sketches, sketches_cut_fuselage_x
+  import_sketches, sketches_cut_rails_y
+  import_sketches, sketches_cut_rails_z
+  create_planes, planes
+  # Use shared F35B-CSV host component for Bodies
+  create_lofts, loft_solids, F35B-CSV
+  create_lofts, loft_cuts, F35B-CSV
+  combine_bodies_multiple, combine_join_solids_for_split, F35B-CSV
+  split_body_multiple, split_solids, F35B-CSV
+  combine_bodies_multiple, combine_join_bodies, F35B-CSV
+  combine_bodies_multiple, combine_cut_shells, F35B-CSV
+  combine_bodies_multiple, combine_join_shells, F35B-CSV

@@ -45,7 +45,6 @@ Sketch CSV file format:
 """
 
 import adsk.core
-import os.path
 import math
 
 import interfacefiles
@@ -551,13 +550,12 @@ def parse_segment_point(ui, title, filename, planeNormal, scale, liStart, liLast
     return (True, segmentTuple)
 
 
-def create_sketch_from_csv_file(ui, title, filename, hostComponent, verbosity=False):
+def create_sketch_from_csv_file(ui, title, filename, hostComponent):
     """Create sketch from CSV file, in hostComponent in Fusion360
 
     Input:
     . filename: full path and name of CSV file
     . hostComponent: place the sketch in hostComponent Sketches folder
-    . verbosity: when False no print_text()
     Return: None
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
@@ -571,16 +569,15 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent, verbosity=Fa
     planeNormal, planeOffset, segments = sketchTuple
 
     # Use stripped filename as offset plane name and as sketch name
-    basename = os.path.basename(filename)
-    basename = basename.split('.')[0]
+    objectName = interfacefiles.extract_object_name(filename)
 
     # Create sketch if there are valid segments
     if len(segments) > 0:
         # Create offset normal plane in hostComponent
-        plane = schemacsv360.create_offset_normal_plane(hostComponent, basename, planeNormal, planeOffset)
+        plane = schemacsv360.create_offset_normal_plane(hostComponent, objectName, planeNormal, planeOffset)
 
         # Create sketch in offset plane
-        sketch = utilities360.create_sketch_in_plane(hostComponent, basename, plane)
+        sketch = utilities360.create_sketch_in_plane(hostComponent, objectName, plane)
         interface360.print_text(ui, 'sketch x = ' + str(sketch.xDirection.asArray()), verbosity)
         interface360.print_text(ui, 'sketch y = ' + str(sketch.yDirection.asArray()), verbosity)
 

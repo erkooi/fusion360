@@ -29,8 +29,6 @@ Plane CSV file format:
 . next line: third point coordinates x, y, z
 """
 
-import os.path
-
 import interfacefiles
 import interface360
 import utilities360
@@ -155,13 +153,12 @@ def create_plane_from_csv_file(ui, title, filename, hostComponent):
         return (False, None)
 
     # Use stripped filename as plane name
-    basename = os.path.basename(filename)
-    basename = basename.split('.')[0]
+    objectName = interfacefiles.extract_object_name(filename)
 
     # Create plane if there are valid points
     if len(threePoint3Ds) == 3:
         # Create plane in hostComponent
-        plane = create_three_point_plane(hostComponent, basename, threePoint3Ds)
+        plane = create_three_point_plane(hostComponent, objectName, threePoint3Ds)
         return (True, plane)
     else:
         ui.messageBox('No valid points in %s' % filename, title)
