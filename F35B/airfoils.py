@@ -17,17 +17,41 @@
 # Date: 5 Mar 2023
 """Airfoil
 
-Define airfoil coordinates (in mm) in xz-plane.
+Right-handed coordinates X, Y, Z:
+. right hand fingers point from X to Y points tumb to Z
+. screw from X to Y goes to Z
 
-- chord_len = chord length of profile.
-- edge_width = z-thickness of the wing rear edge. Applied by adding a
+    z
+    |          . angleYZ
+    |--- y     . angleZX
+   /           . angleXY
+  x
+
+Assume that the fuselage has nose at the origin (x, y, z) = (0, 0, 0) and tail
+at positive x and top in positive z direction. Then the wing profile is in the
+zx-plane, with left wing tip at negative y and rigth wing tip at positive y.
+Two wing profiles, one near the fuselage and one at the wing tip, are
+sufficient to create the wing body using a loft in Fusion360.
+
+First manually obtain normalized airfoil profile coordinates from
+http://airfoiltools.com/search/index and add it in args.profile options.
+
+Then run airfoils.py to scale and redefine and airfoil coordinates (in mm) in
+the zx-plane.
+
+- chord_len = chord length of profile scales the profile
+- edge_width = defines z-thickness of the wing rear edge. Applied by adding a
     linearly increasing z-offset from 0 at front edge to edge_width at rear
     edge. Separate for top and bottom profile, so rear edge width = 2 *
-    edge_width.
-- edge_twist = rear edge z-offset. Using same read edge offset causes that
-    the wing profile gets rotated along frint edge. The rotation increases
-    towards the wing tip, because the wing chord length decreases towards the
-    wing tip.
+    edge_width. Purpose of edge_width > 0 is to avoid knive sharp rear edge,
+    so to control how the rear edge will be 3D-printed.
+- edge_twist = defines rear edge z-offset. Using same rear edge offset along
+    the wing causes that the wing profile gets rotated along front edge. The
+    rotation increases towards the wing tip, because the wing chord length
+    decreases towards the wing tip, so atan(edge_twist / chord_len) increases.
+    Purpose of positive edge_twist is to ensure that the wing tip is the last
+    part of the wing surface to stall, see
+    https://en.wikipedia.org/wiki/Wing_twist
 - tx = x-offset for profile. To place wing at build location of fuselage.
 - tz = z-offset for profile. To place wing at build location of fuselage.
 - decimals = 2, for 0.01 mm accuracy in rounded airfoil profile coordinates.
@@ -38,6 +62,7 @@ Usage:
 >   cd "git\\<script dir>"
 # or:
 > cd /d/git/<script dir>
+# to recreate NACA-1408 profiles for f35b model:
 > python airfoils.py --chord_len 477 --edge_width 0.8 --edge_twist 4 --tx 746 --ty -175 --tz 19
 > python airfoils.py --chord_len 441 --edge_width 0.8 --edge_twist 4 --tx 772 --ty -213 --tz 19
 > python airfoils.py --chord_len 407 --edge_width 0.8 --edge_twist 4 --tx 797 --ty -250 --tz 19
@@ -56,17 +81,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import os.path
-
-################################################################################
-# Right-handed coordinates X, Y, Z:
-# . right hand fingers point from X to Y points tumb to Z
-# . screw from X to Y goes to Z
-#
-#     z
-#     |          . angleYZ
-#     |--- y     . angleZX
-#    /           . angleXY
-#   x
 
 ################################################################################
 # Constants
@@ -119,7 +133,7 @@ tz = args.tz
 # . y < 0 is left wing
 # . z > 0 is top of wing
 
-# NACA-1408
+# NACA-1408 from http://airfoiltools.com/airfoil/details?airfoil=naca1408-il
 naca_1408_top_x = np.flip(np.array(
                   [1.00000, 0.95016, 0.90027, 0.80039, 0.70041,
                    0.60034, 0.50020, 0.40000, 0.29950, 0.24926,
