@@ -28,7 +28,6 @@ import interfacefiles
 
 
 if __name__ == '__main__':
-    units = 'mm'
     pointsFilename = 'snail_points.txt'
 
     # Read points file
