@@ -35,12 +35,12 @@ Schema sections in txt file:
   Create sketch CSV files. The sketch files can be used for profiles and rails
   to use with loft. For the sketch sections the segmentType can have optional
   railName(s), that will not appear in the CSV file, but are used by
-  interfacefiles.get_rail_points() to include that segment point in a rail
+  interfacefiles.get_cross_rail_points() to include that segment point in a rail
   sketch. The rails are made between points with equal coordinate in different
   profile sketches.
   - interfacefiles.write_profile_sketch_files
-  - interfacefiles.get_rail_points() -->
-    interfacefiles.write_rail_sketch_file()
+  - interfacefiles.get_cross_rail_points() -->
+    interfacefiles.write_cross_rail_points_sketch_file()
 
 . Object keyword: loft
   Create loft CSV files to use with loft.
@@ -72,86 +72,104 @@ Usage on command line:
 
 import os
 import os.path
+import argparse
 import interfacefiles
 
 
 if __name__ == '__main__':
-    units = 'mm'
-    pointsFilename = 'f35b_points.txt'
+    # Parse arguments
+    _parser = argparse.ArgumentParser('f35b_points')
+    _parser.add_argument('-f', default='f35b_points.txt', type=str, help='Points file name')
+    args = _parser.parse_args()
+    pointsFilename = args.f
+
+    # Prepare derived rails
     yRailsFolder = interfacefiles.create_folder(os.path.join('csv', 'sketches_rails_y'))
-    yRails = [0, -63, -75, -90, -98, -112, -123, -138, -154, -175, -213, -250]
+    yRails = [0, -63, -75, -90, -98, -112, -123, -138, -154, -175, -200, -213, -250]
 
     yRailsCutFolder = interfacefiles.create_folder(os.path.join('csv', 'sketches_cut_rails_y'))
     yRailsCut = [0, -63, -75, -90, -98, -112, -123, -138, -154, -175, -213, -225, -250]
 
     zRailsFolder = interfacefiles.create_folder(os.path.join('csv', 'sketches_rails_z'))
-    zRails = [19]
+    zRails = [18.2, 19, 19.8]
 
     zRailsCutFolder = interfacefiles.create_folder(os.path.join('csv', 'sketches_cut_rails_z'))
     zRailsCut = [0, 19]
 
-    # Read points file for the planes, sketches and lofts
+    # Read points file for the planes, sketches, lofts, combine, etc
     fileLines = interfacefiles.read_data_lines_from_file(pointsFilename)
 
+    # Write csv files
+    nofFiles = 0
+
     # Write plane csv files into folder(s)
-    interfacefiles.write_plane_files(fileLines)
+    nofFiles += interfacefiles.write_plane_files(fileLines)
 
     # Write profile sketch csv files into folder(s)
-    interfacefiles.write_profile_sketch_files(fileLines)
+    nofFiles += interfacefiles.write_profile_sketch_files(fileLines)
 
-    # Get rail points for y rail sketches
+    # Write co rail sketches for sketch segments with a co_rail name
+    nofFiles += interfacefiles.write_co_rail_sketch_files(fileLines)
+
+    # Get cross rail points between x profile sketches for y rail sketches
     for y in yRails:
         railNames = ['top', 'bottom']
         for railName in railNames:
-            railPoints = interfacefiles.get_rail_points(fileLines, 'x', railName, 'y', y)
-            filename = 'y_' + str(abs(y)) + '_' + railName + '.csv'
+            railPoints = interfacefiles.get_cross_rail_points(fileLines, 'x', railName, 'y', y)
+            filename = 'y_' + interfacefiles.value_to_str(y) + '_' + railName + '.csv'
             filename = os.path.join(yRailsFolder, filename)
-            interfacefiles.write_rail_sketch_file('y', y, 'spline', railPoints, filename)
+            nofFiles += interfacefiles.write_cross_rail_points_sketch_file('y', y, 'spline', railPoints, filename)
             # print('y', y, railName, railPoints)
         # print('')
 
-    # Get rail points for z rail sketches
+    # Get cross rail points between x profile sketches for z rail sketches
     for z in zRails:
-        railNames = ['edge_point', 'edge_inlet', 'edge_bin', 'edge_wing']
+        railNames = ['edge_point', 'edge_inlet',
+                     'edge_xbin', 'edge_ybin',
+                     'edge_wing_front', 'edge_wing_xrear', 'edge_wing_yrear']
         for railName in railNames:
-            railPoints = interfacefiles.get_rail_points(fileLines, 'x', railName, 'z', z)
-            filename = 'z_' + str(abs(z)) + '_' + railName + '.csv'
+            railPoints = interfacefiles.get_cross_rail_points(fileLines, 'x', railName, 'z', z)
+            filename = 'z_' + interfacefiles.value_to_str(z) + '_' + railName + '.csv'
             filename = os.path.join(zRailsFolder, filename)
-            interfacefiles.write_rail_sketch_file('z', z, 'spline', railPoints, filename)
+            nofFiles += interfacefiles.write_cross_rail_points_sketch_file('z', z, 'spline', railPoints, filename)
             # print('z', z, railPoints)
         # print('')
 
-    # Get rail points for cut_y rail sketches
+    # Get cross rail points between x profile sketches for cut_y rail sketches
     for y in yRailsCut:
         railNames = ['cut_top', 'cut_bottom']
         for railName in railNames:
-            railPoints = interfacefiles.get_rail_points(fileLines, 'x', railName, 'y', y)
-            filename = 'cut_y_' + str(abs(y)) + '_' + railName + '.csv'
+            railPoints = interfacefiles.get_cross_rail_points(fileLines, 'x', railName, 'y', y)
+            filename = 'cut_y_' + interfacefiles.value_to_str(y) + '_' + railName + '.csv'
             filename = os.path.join(yRailsCutFolder, filename)
-            interfacefiles.write_rail_sketch_file('y', y, 'spline', railPoints, filename)
+            nofFiles += interfacefiles.write_cross_rail_points_sketch_file('y', y, 'spline', railPoints, filename)
             # print('y', y, railName, railPoints)
         # print('')
 
-    # Get rail points for z rail sketches
+    # Get cross rail points between x profile sketches for z rail sketches
     for z in zRailsCut:
-        railNames = ['cut_edge_nose', 'cut_edge_inlet', 'cut_edge_bin', 'cut_edge_wing', 'cut_edge_chord',
+        railNames = ['cut_edge_nose', 'cut_edge_inlet', 'cut_edge_bin',
+                     'cut_edge_wing_front', 'cut_edge_chord',
                      'cut_edge_bin_end']
         for railName in railNames:
-            railPoints = interfacefiles.get_rail_points(fileLines, 'x', railName, 'z', z)
-            filename = 'cut_z_' + str(abs(z)) + '_' + railName + '.csv'
+            railPoints = interfacefiles.get_cross_rail_points(fileLines, 'x', railName, 'z', z)
+            filename = 'cut_z_' + interfacefiles.value_to_str(z) + '_' + railName + '.csv'
             filename = os.path.join(zRailsCutFolder, filename)
-            interfacefiles.write_rail_sketch_file('z', z, 'spline', railPoints, filename)
+            nofFiles += interfacefiles.write_cross_rail_points_sketch_file('z', z, 'spline', railPoints, filename)
             # print('z', z, railPoints)
         # print('')
 
     # Write loft csv files into folder(s)
-    interfacefiles.write_loft_files(fileLines)
+    nofFiles += interfacefiles.write_loft_files(fileLines)
 
     # Write combine bodies csv files into folder(s)
-    interfacefiles.write_combine_bodies_files(fileLines)
+    nofFiles += interfacefiles.write_combine_bodies_files(fileLines)
 
     # Write split body csv files into folder(s)
-    interfacefiles.write_split_body_files(fileLines)
+    nofFiles += interfacefiles.write_split_body_files(fileLines)
 
     # Write assembly csv files into folder(s)
-    interfacefiles.write_assembly_files(fileLines)
+    nofFiles += interfacefiles.write_assembly_files(fileLines)
+
+    # Report
+    print('Written %d csv files for %s' % (nofFiles, pointsFilename))
