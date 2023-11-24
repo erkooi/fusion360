@@ -167,11 +167,6 @@ def construct_assembly_from_csv_file(ui, title, assemblyFilename, hostComponent)
         groupComponent = utilities360.find_or_create_component(assemblyComponent,
                                                                groupComponentName, isLightBulbOn=False)
 
-        interface360.print_text(ui, 'fullLocationName ' + fullLocationName)
-        interface360.print_text(ui, 'hostComponent.name ' + hostComponent.name)
-        interface360.print_text(ui, 'assemblyComponent.name ' + assemblyComponent.name)
-        interface360.print_text(ui, 'groupComponent.name ' + groupComponent.name)
-
         # Perform action in groupComponent
         # . Sketches and planes can be in seperate group components within the
         #   hostComponent.
