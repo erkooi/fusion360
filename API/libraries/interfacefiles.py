@@ -24,7 +24,8 @@ import os.path
 validFileTypes = ['sketch', 'plane', 'loft', 'combine', 'split', 'assembly']
 validUnits = ['mm', 'cm']
 validPlaneNormals = ['x', 'y', 'z']
-validSegmentTypes = ['spline', 'line', 'offset_curve', 'circle', 'point']
+validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
+validRailTypes = ['co_rail', 'cross_rails']
 validOperations = ['join', 'cut', 'intersect']
 validAssemblyActions = ['import_sketch',
                         'import_sketches',
@@ -36,6 +37,18 @@ validAssemblyActions = ['import_sketch',
                         'combine_bodies_multiple',
                         'split_body',
                         'split_body_multiple']
+
+
+def value_to_str(value, toAbs=True):
+    """Convert scalar value into string.
+
+    . Make value positive if toAbs = true, else keep '-' in string
+    . Replace '.' by '_' in case of float value.
+    """
+    if toAbs:
+        return str(abs(value)).replace('.', '_')
+    else:
+        return str(value).replace('.', '_')
 
 
 def extract_object_name(filename):
@@ -218,6 +231,28 @@ def get_file_line_entries(fLine):
     return entries
 
 
+def get_rail_names(entries, railType):
+    """Get railNames for certain railType from entries list.
+
+    The railType is one of validRailTypes. The entries after the railType are
+    the rail names for that rail type.
+
+    Return:
+    . railNames: list of found rail names from entries, or empty list
+    """
+    railNames = []
+    foundRailType = False
+    for entry in entries:
+        if entry == railType:
+            foundRailType = True
+        elif foundRailType:
+            if entry in validRailTypes:
+                foundRailType = False
+            else:
+                railNames.append(entry)
+    return railNames
+
+
 def convert_data_lines_to_lists(fileLines):
     """Convert fileLines into dataLists using comma as separator.
 
@@ -239,10 +274,11 @@ def write_profile_sketch_files(fileLines):
 
     Input:
     . fileLines: lines from file that define one or more profile sketches
-    Return: None
+    Return: number of files written
     """
     li = 0
     sketchLines = []
+    nofFiles = 0
 
     # Find sketches in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -287,9 +323,88 @@ def write_profile_sketch_files(fileLines):
             print('write_profile_sketch_files: %s' % sketchFilename)
             with open(sketchFilename, 'w') as fp:
                 fp.writelines(sketchLines)
+                nofFiles += 1
             # . Prepare for next sketch in fileLines
             li = 0
             sketchLines = []
+    return nofFiles
+
+
+def write_co_rail_sketch_files(fileLines):
+    """Write co rail sketches for segments with a co_rail name from sketches
+    in fileLines.
+
+    Inputs:
+    . fileLines: lines from a points file with sketches, that contain segments
+        with optional co_rail name.
+    Input:
+    . fileLines: lines from file that define one or more profile sketches
+    Return: number of files written
+    """
+    li = 0
+    sketchLines = []
+    nofFiles = 0
+
+    # Find sketches in fileLines, seperated by one empty line
+    for fLine in fileLines:
+        if li == 0:
+            # First line of a sketch in fileLines contains:
+            # . file type 'sketch',
+            # . folder name for CSV file.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'sketch':
+                coRailFolderStr = entries[1] + '_rails'
+                li += 1
+        elif li == 1:
+            li += 1
+            # Second line of a sketch in fileLines contains info for sketch filename
+            entries = get_file_line_entries(fLine)
+            planeNormal = entries[0]
+            planeOffset = entries[1]
+            sketchName = entries[2]
+            po = str(abs(int(planeOffset)))
+            sketchLines = []
+            sketchLines.append('sketch\n')  # write file type
+            sketchLines.append('mm\n')  # write units
+            sketchLines.append(planeNormal + ', ' + planeOffset + '\n')
+            coRailName = []
+            coRailFilename = ''
+            coRailLines = []
+        elif fLine.strip():
+            li += 1
+            # Process segments in fileLines until empty line of sketch in fileLines
+            entries = get_file_line_entries(fLine)
+            segmentType = entries[0]
+            if segmentType in validSegmentTypes:
+                if coRailName:
+                    # Write co rail sketch file for previous segment
+                    print('write_co_rail_sketch_files: %s' % coRailFilename)
+                    with open(coRailFilename, 'w') as fp:
+                        fp.writelines(sketchLines)
+                        fp.writelines(coRailLines)
+                        nofFiles += 2
+                # Get optional co_rail name
+                coRailName = get_rail_names(entries[1:], 'co_rail')
+                coRailFilename = ''
+                coRailLines = []
+                if coRailName:
+                    # Use new segment as co rail
+                    coRailFolder = create_folder(coRailFolderStr)
+                    coRailFilename = planeNormal + '_' + po + '_' + sketchName + '_' + coRailName[0] + '.csv'
+                    coRailFilename = os.path.join(coRailFolder, coRailFilename)
+                    coRailLines.append(segmentType + '\n')
+            else:
+                if coRailName:
+                    # Line with segment values for co rail, pass on as is
+                    coRailLines.append(fLine)
+        else:
+            # Empty line marks end of sketch in fileLines, prepare for next
+            # sketch in fileLines
+            li = 0
+            sketchLines = []
+    return nofFiles
 
 
 def determine_rail_point_xyz(planeNormal, planeOffset, railNormal, railOffset, a, b):
@@ -327,19 +442,24 @@ def determine_rail_point_xyz(planeNormal, planeOffset, railNormal, railOffset, a
     return railPoint
 
 
-def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
-    """Get rail points from points in sketch profiles in fileLines.
+def get_cross_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
+    """Get cross rail points for segments with railName from multiple sketches
+    in fileLines.
+
+    A segment can have one or more railNames, so be part of multiple cross
+    rails between profiles.
 
     Inputs:
     . fileLines: lines from a points file with multiple profile sketches, that
         contain rail points for railName
-    . planesNormal: 'x', 'y', or 'z'; selects sketches with planeNormal == planesNormal
+    . planesNormal: 'x', 'y', or 'z'; selects sketches with planeNormal ==
+        planesNormal
     . railName: selects segments with railNames from fileLines
     . railNormal: 'x', 'y', or 'z'; must be != planesNormal
     . railOffset: selects points in segments with railNormal coordinate value ==
         railOffset in the railNormal plane
     Return:
-    . result: list of rail points
+    . result: list of rail points for railName
     """
     li = 0
     railPoints = []
@@ -348,7 +468,7 @@ def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
     for fLine in fileLines:
         if li == 0:
             # First line of a sketch in fileLines contains file type 'sketch',
-            # the folder name is not used to get_rail_points().
+            # the folder name is not used to get_cross_rail_points().
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
@@ -357,7 +477,7 @@ def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
         elif li == 1:
             li += 1
             # Second line of a sketch in fileLines contains plane info for sketch,
-            # the sketch name info is not used to get_rail_points().
+            # the sketch name info is not used to get_cross_rail_points().
             entries = get_file_line_entries(fLine)
             planeNormal = entries[0]
             planeOffset = float(entries[1])
@@ -368,17 +488,18 @@ def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
                 entries = get_file_line_entries(fLine)
                 segmentType = entries[0]
                 if segmentType in validSegmentTypes:
-                    # New segment line, get optional railNames
-                    railNames = entries[1:]
-                elif railName in railNames:
-                    # Coordinates line, get rail point in railNames
+                    # New segment line, get optional cross rail names
+                    crossRailNames = get_rail_names(entries[1:], 'cross_rails')
+                elif railName in crossRailNames:
+                    # Coordinates line, get rail point in crossRailNames
                     a = float(entries[0])
                     b = float(entries[1])
                     railPoint = determine_rail_point_xyz(planeNormal, planeOffset, railNormal, railOffset, a, b)
                     if railPoint:
                         railPoints.append(railPoint)
         else:
-            # Empty line marks end of sketch in fileLines
+            # Empty line marks end of sketch in fileLines, prepare for next
+            # sketch in fileLines
             li = 0
         # Remove duplicate points from list (not use list(set()), because it
         # does not preserve order)
@@ -387,20 +508,21 @@ def get_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
     return result
 
 
-def write_rail_sketch_file(planeNormal, planeOffset, segmentType, railPoints, filename):
-    """Write loft rail of railPoints into sketch file.
+def write_cross_rail_points_sketch_file(planeNormal, planeOffset, segmentType, railPoints, filename):
+    """Write rail of railPoints into sketch file.
 
     Input:
     . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
     . planeOffset: offset from origin plane
     . segmentType: string in validSegmentTypes in importsketch.py
     . railPoints: list of rail point coordinates (x, y, z) obtained from
-        get_rail_points()
+        get_cross_rail_points()
     . filename: full path and name of file
-    Return: None
+    Return: number of files written
     """
-    if railPoints:
-        print('write_rail_sketch_file : %s' % filename)
+    nofFiles = 0
+    if len(railPoints) > 1:
+        print('write_cross_rail_points_sketch_file : %s' % filename)
         with open(filename, 'w') as fp:
             # Write file type
             fp.write('sketch\n')
@@ -421,8 +543,10 @@ def write_rail_sketch_file(planeNormal, planeOffset, segmentType, railPoints, fi
                     a = p[0]
                     b = p[1]
                 fp.write('%.2f, %.2f\n' % (a, b))  # use 0.01 mm resolution
+            nofFiles += 1
     else:
-        print('write_rail_sketch_file: no points for %s' % filename)
+        print('write_cross_rail_points_sketch_file: no points for %s' % filename)
+    return nofFiles
 
 
 def write_loft_files(fileLines):
@@ -430,9 +554,10 @@ def write_loft_files(fileLines):
 
     Input:
     . fileLines: lines from file that define one or more lofts
-    Return: None
+    Return: number of files written
     """
     li = 0
+    nofFiles = 0
 
     # Find lofts in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -464,8 +589,10 @@ def write_loft_files(fileLines):
             print('write_loft_files: %s' % loftFilename)
             with open(loftFilename, 'w') as fp:
                 fp.writelines(loftLines)
+                nofFiles += 1
             # . Prepare for next loft in fileLines
             li = 0
+    return nofFiles
 
 
 def write_plane_files(fileLines):
@@ -473,9 +600,10 @@ def write_plane_files(fileLines):
 
     Input:
     . fileLines: lines from file that define one or more planes
-    Return: None
+    Return: number of files written
     """
     li = 0
+    nofFiles = 0
 
     # Find planes in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -507,8 +635,10 @@ def write_plane_files(fileLines):
             print('write_plane_files: %s' % planeFilename)
             with open(planeFilename, 'w') as fp:
                 fp.writelines(planeLines)
+                nofFiles += 1
             # . Prepare for next plane in fileLines
             li = 0
+    return nofFiles
 
 
 def write_combine_bodies_files(fileLines):
@@ -516,10 +646,10 @@ def write_combine_bodies_files(fileLines):
 
     Input:
     . fileLines: lines from file that define one or more combine bodies sections
-    Return: None
-
+    Return: number of files written
     """
     li = 0
+    nofFiles = 0
 
     # Find combine bodies sections in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -552,8 +682,10 @@ def write_combine_bodies_files(fileLines):
             print('write_combine_bodies_files: %s' % combineFilename)
             with open(combineFilename, 'w') as fp:
                 fp.writelines(combineLines)
+                nofFiles += 1
             # . Prepare for next combine bodies section in fileLines
             li = 0
+    return nofFiles
 
 
 def write_split_body_files(fileLines):
@@ -561,9 +693,10 @@ def write_split_body_files(fileLines):
 
     Input:
     . fileLines: lines from file that define one or more split body sections
-    Return: None
+    Return: number of files written
     """
     li = 0
+    nofFiles = 0
 
     # Find split body sections in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -597,8 +730,10 @@ def write_split_body_files(fileLines):
             print('write_split_body_files: %s' % splitFilename)
             with open(splitFilename, 'w') as fp:
                 fp.writelines(splitLines)
+                nofFiles += 1
             # . Prepare for next split bodies section in fileLines
             li = 0
+    return nofFiles
 
 
 def write_assembly_files(fileLines):
@@ -606,9 +741,10 @@ def write_assembly_files(fileLines):
 
     Input:
     . fileLines: lines from file that define one or more assemblies
-    Return: None
+    Return: number of files written
     """
     li = 0
+    nofFiles = 0
 
     # Find assemblys in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -640,5 +776,7 @@ def write_assembly_files(fileLines):
             print('write_assembly_files: %s' % assemblyFilename)
             with open(assemblyFilename, 'w') as fp:
                 fp.writelines(assemblyLines)
+                nofFiles += 1
             # . Prepare for next assembly in fileLines
             li = 0
+    return nofFiles
