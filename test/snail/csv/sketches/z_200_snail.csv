@@ -53,8 +53,8 @@ spline
  80,  0
  73, 10
 point
- 25, 0, 2
- 60, 0, 2
+ 25, 0
+ 60, 0
 offset_curve
  60, 0, 2
 circle

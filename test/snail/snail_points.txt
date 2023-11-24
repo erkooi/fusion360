@@ -88,8 +88,8 @@ spline  # back ear
  80,  0
  73, 10
 point
- 25, 0, 2  # inside curve
- 60, 0, 2  # ouside curve
+ 25, 0
+ 60, 0
 #offset_curve
 # 25, 0, 2  # inside curve
 # 60, 0, 2  # ouside curve
@@ -152,8 +152,8 @@ spline  # back ear
  80,  0
  73, 10
 point
- 25, 0, 2  # inside curve
- 60, 0, 2  # ouside curve
+ 25, 0
+ 60, 0
 offset_curve
  25, 0, 2  # inside curve
 # 60, 0, 2  # ouside curve
@@ -216,8 +216,8 @@ spline  # back ear
  80,  0
  73, 10
 point
- 25, 0, 2  # inside curve
- 60, 0, 2  # ouside curve
+ 25, 0
+ 60, 0
 offset_curve
 # 25, 0, 2  # inside curve
  60, 0, 2  # ouside curve
