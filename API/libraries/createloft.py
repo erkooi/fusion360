@@ -18,6 +18,13 @@
 """Module to create a loft from sketch profiles and rails defined in a csv file
    into a component in Fusion360.
 
+The profile can be a sketch profile or a sketch point. The profile index is 0
+if there is only one profile:
+. If there are multiple sketch profiles, then manually find the index using the
+  Fusion360 GUI.
+. If the profile is a sketch point, then then the origin has index 0, so the
+  first user sketch point has index 1.
+
 Loft CSV file format:
 . comment lines or comment in line will be removed
 . first line: 'loft' as filetype
@@ -26,7 +33,6 @@ Loft CSV file format:
   - sketch name, optional item index  # one per line
 . rails
   - sketch name, optional item index  # one per line
-
 """
 
 import adsk.fusion
@@ -130,11 +136,16 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
         index = pt[1]
         sketch = utilities360.find_sketch(hostComponent, name)
         if sketch:
-            interface360.print_text(ui, name + ': %d profiles' % sketch.profiles.count, verbosity)
             if index < sketch.profiles.count:
+                # Loft profile is a sketch profile
+                interface360.print_text(ui, name + ': %d profiles' % sketch.profiles.count, verbosity)
                 profiles.append((name, sketch.profiles.item(index)))
+            elif index < sketch.sketchPoints.count:
+                # Loft profile is a sketch point
+                interface360.print_text(ui, name + ': %d points' % sketch.sketchPoints.count, verbosity)
+                profiles.append((name, sketch.sketchPoints.item(index)))
             else:
-                interface360.error_text(ui, 'Sketch %s has no profile index %d' % (name, index))
+                interface360.error_text(ui, 'Sketch %s has no profile or point index %d' % (name, index))
                 return False
         else:
             interface360.error_text(ui, 'Profile sketch %s not found' % name)
@@ -151,7 +162,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
             if index < sketch.sketchCurves.count:
                 rails.append((name, sketch.sketchCurves.item(index)))
             else:
-                interface360.error_text(ui, 'Schetch %s has no rail index %d' % (name, index))
+                interface360.error_text(ui, 'Sketch %s has no rail index %d' % (name, index))
                 return False
         else:
             interface360.error_text(ui, 'Rail sketch %s not found' % name)
