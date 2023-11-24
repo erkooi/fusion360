@@ -23,9 +23,9 @@ Combine bodies CSV file format:
 . first line: 'combine' as filetype
 . second line: combine name of combined bodies
 . third line: operation 'join', 'cut', 'intersect'
-. target_body, body name
-. tool_bodies
-  - one or more tool body names  # one per line
+. combine_bodies
+  - target body name, one first line
+  - one or more tool body names, one per line
 
 The tool_bodies are kept.
 The target_body is kept. This is default when the combined object is a new
@@ -67,8 +67,6 @@ def parse_csv_combine_bodies_file(ui, title, filename):
     resultFalse = (False, None)
     for li, lineArr in enumerate(lineLists):
         lineWord0 = lineArr[0]
-        if len(lineArr) > 1:
-            lineWord1 = lineArr[1]
         if li == 0:
             if lineWord0 != 'combine':
                 return resultFalse
@@ -82,24 +80,23 @@ def parse_csv_combine_bodies_file(ui, title, filename):
                 ui.messageBox('No valid combine operation %s in %s' % (operation, filename), title)
                 return resultFalse
         elif li == 3:
-            # Read target_body
-            if lineWord0 != 'target_body':
-                ui.messageBox('Expected target_body instead of %s in %s' % (lineWord0, filename), title)
+            # Read combine_bodies
+            if lineWord0 != 'combine_bodies':
+                ui.messageBox('Expected combine_bodies instead of %s in %s' % (lineWord0, filename), title)
                 return resultFalse
-            targetBodyName = lineWord1
-        elif li == 4:
-            # Read tool_bodies
-            if lineWord0 != 'tool_bodies':
-                ui.messageBox('Expected tool_bodies instead of %s in %s' % (lineWord0, filename), title)
-                return resultFalse
+            targetBodyName = ''
             toolBodyNames = []
+        elif li == 4:
+            # Read target body name
+            if lineWord0 != '':
+                targetBodyName = lineWord0
         else:
             # Read tool body names
             if lineWord0 != '':
                 toolBodyNames.append(lineWord0)
 
-    if len(toolBodyNames) == 0:
-        ui.messageBox('No tool bodies in %s' % filename, title)
+    if targetBodyName == '' or len(toolBodyNames) == 0:
+        ui.messageBox('Not enough bodies in %s' % filename, title)
         return resultFalse
 
     # Successfully reached end of file
