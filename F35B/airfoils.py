@@ -107,11 +107,11 @@ cd /d/git/<script dir>
 # Default wing profiles for fuselage, bin corners and wing tip at y = 175, 213,
 # 250, 526
 python airfoils.py --chord_len 477 --tx 746 --ty -175 --tz 19 --xfit --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,895,983,1100,1142,1204
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,820,895,983,1100,1142,1204
 python airfoils.py --chord_len 441 --tx 772 --ty -213 --tz 19 --xfit --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 783,797,895,983,1100,1142,1204
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 783,797,820,895,983,1100,1142,1204
 python airfoils.py --chord_len 407 --tx 797 --ty -250 --tz 19 --xfit --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 895,983,1100,1142
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 820,895,983,1100,1142
 python airfoils.py --chord_len 152 --tx 983 --ty -526 --tz 19 --xfit --rear_width 0.8 --rear_arc 0.6 --wing_twist 4 ^
                    --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 1100
 
@@ -119,10 +119,10 @@ python airfoils.py --chord_len 152 --tx 983 --ty -526 --tz 19 --xfit --rear_widt
 # is smoother without these intermediate profile
 python airfoils.py --chord_len 453.3 --tx 763.1 --ty -200 --tz 19 --xfit ^
                    --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,895,983,1100,1142,1204
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,820,895,983,1100,1142,1204
 python airfoils.py --chord_len 430.0 --tx 780.1 --ty -225 --tz 19 --xfit ^
                    --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 783,797,895,983,1100,1142,1204
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 783,797,820,895,983,1100,1142,1204
 
 # Thicker profiles to model bin bottom at y = 175, 213. Use NACA-1408 for top
 # and part of NACA-1416 with wider rear_width for bottom.
@@ -130,14 +130,14 @@ python airfoils.py --chord_len 430.0 --tx 780.1 --ty -225 --tz 19 --xfit ^
 #   bin shape, that is similar to F35B bottom bin shape
 python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 20 ^
                    --chord_len 477 --tx 746 --ty -175 --tz 19 --xfit --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,895,983,1100,1142,1204
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,820,895,983,1100,1142,1204
 # . For y = -213 choose same T, choose chord_len = 431 somewhere smaller than
 #   441 and longer than 1213 - 797 = 416 then choose rear_width 431 / 477 * 20
 #   ~= 18. Adapt tx = 782 to make sure rear coordinates match, so 782 + 431 =
 #   772 + 441 = 1213 of default wing profile.
 python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 18 ^
                    --chord_len 431 --tx 782 --ty -213 --tz 19 --xfit --wing_twist 0 ^
-                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 797,895,983,1100,1142,1204
+                   --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 797,820,895,983,1100,1142,1204
 
 # in iPython:
 import os
