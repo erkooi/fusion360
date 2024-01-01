@@ -50,6 +50,8 @@ Run airfoils.py to scale and redefine the airfoil coordinates (in mm) in the
 zx-plane.
 
 - chord_len = chord length of profile scales the profile
+- scale_z = scale factor for profile thickness, applied on profile before
+    applying rear_width_z.
 - rear_width_z = defines z-thickness of the wing rear edge. Applied by adding a
     linearly (when exponent_width = 1) increasing z-offset from 0 at rear edge
     to rear_width_z at rear edge. Separate for top and bottom profile, so
@@ -77,7 +79,7 @@ zx-plane.
     part of the wing surface to stall, see
     https://en.wikipedia.org/wiki/Wing_twist
 - tangent_angle = tangent angle for front point of spline, default=-90.0 for
-    round front edge
+    round front edge. If 0 then use default angle created by spline.
 - tangent_length = tangent length for front point of spline, default=0.0 to use
     default length created by spline
 - xn = normalized x coordinates in range 0 to 1.0
@@ -126,6 +128,11 @@ python airfoils.py --chord_len 430.0 --tx 780.1 --ty -225 --tz 19 --xfit ^
 
 # Thicker profiles to model bin bottom at y = 175, 213. Use NACA-1408 for top
 # and part of NACA-1416 with wider rear_width for bottom.
+# . Inreasing rear_width by 1 mm makes the bin bottom at the middle about 0.5
+#   mm lower, because exponent_width 1 applies rear_width linearly along the
+#   chord.
+# . Adapt some points z coordinate near end of chord to connect to z = 19 - 0.8
+#   = 18.2 at end of chord.
 # . For y = -175 choose T, exponent_width, rear_width to yield smooth bottom
 #   bin shape, that is similar to F35B bottom bin shape
 python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 20 ^
@@ -138,6 +145,9 @@ python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 20 ^
 python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 18 ^
                    --chord_len 431 --tx 782 --ty -213 --tz 19 --xfit --wing_twist 0 ^
                    --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 797,820,895,983,1100,1142,1204
+
+# GOE-444 ~= NACA-0006
+python airfoils.py --profile GOE-444 --chord_len 477 --rear_width 0.8 --exponent_width 0.5
 
 # in iPython:
 import os
@@ -480,7 +490,7 @@ def save_csv_wing_profile(args, filepathname, wingProfilesTuple, wingParametersT
         for i in range(N_top):
             x = wing_spline[i][0]
             z = wing_spline[i][1]
-            if i == N_top - 1:
+            if i == N_top - 1 and tangentAngle != 0:
                 # front edge point
                 fp.write('%.*f, %.*f, %.*f, %.*f\n' % (args.decimals, x,
                                                        args.decimals, z,
@@ -570,18 +580,23 @@ if __name__ == '__main__':
 
     tangentAngle = args.tangent_angle
     tangentLength = args.tangent_length
-    if int(tangentLength) == 0:
-        tangentLength = args.chord_len * args.scale_z / 6.0  # appropriate value for NACA-1408
+    if int(tangentAngle) != 0:
+        if int(tangentLength) == 0:
+            if args.profile == 'NACA':
+                tangentLength = args.chord_len * args.scale_z / 6.0  # appropriate value for NACA-1408
+            elif args.profile == 'GOE-444':
+                tangentLength = args.chord_len * args.scale_z / 13.0  # appropriate value for GOE-444
     twistAngle = calculate_twist_angle(args)
 
     xn = naca_four_digit.parse_range_string(args.xn)
     xa = naca_four_digit.parse_float_string(args.xa)
-    xe = xa - args.tx
-    xe = xe / args.chord_len
-    if np.min(xe) <= 0 or np.max(xe) >= 1:
-        sys.exit('Extra x coordinate out of range.')
-    xn = naca_four_digit.remove_array_coordinates(xn, xe)
-    xn = naca_four_digit.combine_array_coordinates(xn, xe)
+    if len(xa) > 0:
+        xe = xa - args.tx
+        xe = xe / args.chord_len
+        if np.min(xe) <= 0 or np.max(xe) >= 1:
+            sys.exit('Extra x coordinate out of range.')
+        xn = naca_four_digit.remove_array_coordinates(xn, xe)
+        xn = naca_four_digit.combine_array_coordinates(xn, xe)
 
     # Select wing profile
     # . NACA four digit:
