@@ -25,7 +25,7 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 
 ### 3.2 General scripts for processing one CSV file, or multiple CSV files
 * ImportSketchCSV, ImportSketchesCSV - Import sketch as defined in CSV file.
-* ExtrudeCSV - Extrude sketch profile as defined in CSV file.
+* ExtrudeCSV, ExtrudesCSV - Extrude sketch profile as defined in CSV file.
 * CreateLoftCSV, CreateLoftsCSV - Create loft as defined in CSV file.
 * CreatePlaneCSV, CreatePlanesCSV - Create plane as defined in CSV file.
 * SplitBodyCSV, SplitBodyMultipleCSV - Split body as defined in CSV file.
