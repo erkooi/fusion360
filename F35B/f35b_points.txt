@@ -4121,7 +4121,7 @@ solid_fuselage_tail_1230_1403
 join
 combine_bodies
   loft_solid_fuselage_exhaust  # 1230 - 1306
-  loft_solid_tail_all  # 1306 - 1403
+  split_solid_tail_all  # 1306 - 1403
 
 combine, csv/printing_parts
 shell_fuselage_tail_1230_1403
