@@ -159,10 +159,11 @@ def create_plane_from_csv_file(ui, title, filename, hostComponent):
     if len(threePoint3Ds) == 3:
         # Create plane in hostComponent
         plane = create_three_point_plane(hostComponent, objectName, threePoint3Ds)
-        return (True, plane)
     else:
         ui.messageBox('No valid points in %s' % filename, title)
         return (False, None)
+    interface360.print_text(ui, 'Created plane for ' + filename)
+    return (True, plane)
 
 
 def create_planes_from_csv_files(ui, title, folderName, hostComponent):
@@ -180,7 +181,6 @@ def create_planes_from_csv_files(ui, title, folderName, hostComponent):
     if len(filenames) > 0:
         for filename in filenames:
             # Create plane from CSV file in hostComponent
-            interface360.print_text(ui, 'Create plane for ' + filename)
-            create_plane_from_csv_file(ui, title, filename, hostComponent)
+            result, plane = create_plane_from_csv_file(ui, title, filename, hostComponent)
     else:
         ui.messageBox('No plane CSV files in %s' % folderName, title)

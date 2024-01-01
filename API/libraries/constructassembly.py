@@ -66,6 +66,7 @@ import utilities360
 import importsketch
 import createplane
 import createloft
+import extrude
 import combinebodies
 import splitbody
 
@@ -111,12 +112,16 @@ def parse_csv_assembly_file(ui, title, assemblyFilename):
             # Read assembly actions, one per line
             if lineWord not in interfacefiles.validAssemblyActions:
                 return resultFalse
+            echoString, locationName, groupComponentName = ('', '', '')
             action = lineWord
-            locationName = lineArr[1]
-            groupComponentName = interfacefiles.extract_component_name(locationName)
-            if len(lineArr) > 2:
-                groupComponentName = lineArr[2]
-            actionTuple = (action, locationName, groupComponentName)
+            if action == 'echo':
+                echoString = interfacefiles.convert_entries_to_single_string(lineArr[1:])
+            else:
+                locationName = lineArr[1]
+                groupComponentName = interfacefiles.extract_component_name(locationName)
+                if len(lineArr) > 2:
+                    groupComponentName = lineArr[2]
+            actionTuple = (action, echoString, locationName, groupComponentName)
             actions.append(actionTuple)
 
     if len(actions) == 0:
@@ -157,7 +162,11 @@ def construct_assembly_from_csv_file(ui, title, assemblyFilename, hostComponent)
 
     # Construct assembly by processing the actions
     for actionTuple in actions:
-        action, locationName, groupComponentName = actionTuple
+        action, echoString, locationName, groupComponentName = actionTuple
+
+        if action == 'echo':
+            interface360.print_text(ui, 'Echo: ' + echoString)
+            continue
 
         # Derive full location name of action CSV files folder or of single
         # action CSV file
@@ -181,6 +190,10 @@ def construct_assembly_from_csv_file(ui, title, assemblyFilename, hostComponent)
 
         # . Bodies need to be in the groupComponent = hostComponent, because
         #   they build upon on sketches, planes and bodies.
+        elif action == 'extrude':
+            extrude.extrude_from_csv_file(ui, title, fullLocationName, groupComponent)
+        elif action == 'extrudes':
+            extrude.extrudes_from_csv_files(ui, title, fullLocationName, groupComponent)
         elif action == 'create_loft':
             createloft.create_loft_from_csv_file(ui, title, fullLocationName, groupComponent)
         elif action == 'create_lofts':
@@ -193,6 +206,8 @@ def construct_assembly_from_csv_file(ui, title, assemblyFilename, hostComponent)
             splitbody.split_body_from_csv_file(ui, title, fullLocationName, groupComponent)
         elif action == 'split_body_multiple':
             splitbody.split_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
+    interface360.print_text(ui, 'Created assembly for ' + assemblyFilename)
+    return True
 
 
 def construct_assemblies_from_csv_files(ui, title, folderName, hostComponent):
@@ -210,7 +225,6 @@ def construct_assemblies_from_csv_files(ui, title, folderName, hostComponent):
     if len(filenames) > 0:
         for filename in filenames:
             # Construct assembly from CSV file in hostComponent
-            interface360.print_text(ui, 'Create assembly for ' + filename)
             construct_assembly_from_csv_file(ui, title, filename, hostComponent)
     else:
         ui.messageBox('No assembly CSV files in %s' % folderName, title)

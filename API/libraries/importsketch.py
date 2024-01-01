@@ -626,7 +626,7 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
     Input:
     . filename: full path and name of CSV file
     . hostComponent: place the sketch in hostComponent Sketches folder
-    Return: None
+    Return: True CSV file is a valid sketch file, else False.
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
@@ -635,7 +635,7 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
     # Parse CSV file
     result, sketchTuple = parse_csv_sketch_file(ui, title, filename)
     if not result:
-        return
+        return False
     planeNormal, planeOffset, segments = sketchTuple
 
     # Use stripped filename as offset plane name and as sketch name
@@ -711,6 +711,9 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
                     points.add(point3D)
     else:
         ui.messageBox('No valid points in %s' % filename, title)
+        return False
+    interface360.print_text(ui, 'Created sketch for ' + filename)
+    return True
 
 
 def create_sketches_from_csv_files(ui, title, folderName, hostComponent):
@@ -727,7 +730,6 @@ def create_sketches_from_csv_files(ui, title, folderName, hostComponent):
     if len(filenames) > 0:
         for filename in filenames:
             # Create sketch from CSV file in hostComponent
-            interface360.print_text(ui, 'Create sketch for ' + filename)
             create_sketch_from_csv_file(ui, title, filename, hostComponent)
     else:
         ui.messageBox('No sketch CSV files in %s' % folderName, title)

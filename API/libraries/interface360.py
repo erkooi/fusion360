@@ -43,6 +43,7 @@ def print_text(ui, message, verbosity=True):
 def error_text(ui, message):
     """Print error message in Text Commands window of the Fusion360 GUI."""
     print_text(ui, message, verbosity=True)
+    return False
 
 
 def get_folder_name(ui, title):
@@ -122,3 +123,13 @@ def prompt_boolean_choice(ui, title, prompt):
 
     # Parse user input, ignore userInput string
     return not isCancelled
+
+
+def get_object_basename(objectName):
+    """Get basename of object name
+
+    Strip version '(nr)' and occurrence index ':nr' from end of objectName.
+    """
+    basename = objectName.split('(')[0]
+    basename = basename.split(':')[0]
+    return basename.strip()

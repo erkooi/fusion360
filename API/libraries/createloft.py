@@ -33,6 +33,10 @@ Loft CSV file format:
   - sketch name, optional item index  # one per line
 . rails
   - sketch name, optional item index  # one per line
+
+Remark:
+. Loft between profiles with a hole does still create a fully filled body, so
+  the hole in the profile is ignored.
 """
 
 import adsk.fusion
@@ -134,7 +138,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     for pt in profileTuples:
         name = pt[0]
         index = pt[1]
-        sketch = utilities360.find_sketch(hostComponent, name)
+        sketch = utilities360.find_sketch_anywhere(hostComponent, name)
         if sketch:
             if index < sketch.profiles.count:
                 # Loft profile is a sketch profile
@@ -156,7 +160,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     for rt in railTuples:
         name = rt[0]
         index = rt[1]
-        sketch = utilities360.find_sketch(hostComponent, name)
+        sketch = utilities360.find_sketch_anywhere(hostComponent, name)
         if sketch:
             interface360.print_text(ui, sketch.name + ': %d curves' % sketch.sketchCurves.count, verbosity)
             if index < sketch.sketchCurves.count:
@@ -167,7 +171,6 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
         else:
             interface360.error_text(ui, 'Rail sketch %s not found' % name)
             return False
-    interface360.print_text(ui, '', verbosity)
 
     # Create loft feature input
     loftFeatures = hostComponent.features.loftFeatures
@@ -176,10 +179,12 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     else:
         loftFeatureInput = loftFeatures.createInput(adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
     for profile in profiles:
+        # profile = (name, object)
         if not loftFeatureInput.loftSections.add(profile[1]):
             interface360.error_text(ui, 'Profile %s not added' % profile[0])
             return False
     for rail in rails:
+        # rail = (name, object)
         if not loftFeatureInput.centerLineOrRails.addRail(rail[1]):
             interface360.error_text(ui, 'Rail %s not added' % rail[0])
             return False
@@ -199,6 +204,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
         body = bodies.item(0)
         body.name = loftName
         interface360.print_text(ui, 'body name: ' + body.name, verbosity)
+    interface360.print_text(ui, 'Created loft for ' + filename)
     return True
 
 
@@ -219,7 +225,6 @@ def create_lofts_from_csv_files(ui, title, folderName, hostComponent, loftNewCom
     if len(filenames) > 0:
         for filename in filenames:
             # Create loft from CSV file in hostComponent
-            interface360.print_text(ui, 'Create loft for ' + filename)
             create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponents)
     else:
         ui.messageBox('No loft CSV files in %s' % folderName, title)

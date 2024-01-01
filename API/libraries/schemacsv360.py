@@ -42,7 +42,7 @@ def read_units(ui, title, filename, lineWord):
     """Read unit from file line word.
 
     Input:
-    . lineWord: 'mm' or 'cm'
+    . lineWord: 'm', 'cm' or 'mm'
     Return:
     . result: True when valid scale, else False with None
     . scale: scale factor with respect to API cm unit
@@ -53,9 +53,11 @@ def read_units(ui, title, filename, lineWord):
     unitStr = lineWord
     if unitStr in interfacefiles.validUnits:
         # Scale user units to cm unit used by API
-        scale = 1
-        if unitStr == 'mm':
-            scale = 0.1
+        scale = 1  # default centimeters
+        if unitStr == 'm':
+            scale = 100  # meters
+        elif unitStr == 'mm':
+            scale = 0.1  # millimeters
         result = (True, scale)
     if not result[0]:
         ui.messageBox('No valid unit %s in %s' % (unitStr, filename), title)
@@ -120,6 +122,20 @@ def get_3d_point(ui, title, filename, scale, dataArr):
         ui.messageBox('No valid 3D point in %s of %s' % (dataArr, filename), title)
         result = (False, None)
     return result
+
+
+def get_3d_vector(ui, title, filename, scale, dataArr):
+    """Get 3D vector x, y, z coordinates from 3 coordinates in dataArr.
+
+    Same interface as get_3d_point(), but return vector3D object. Zero vector
+    is not allowed.
+    """
+    if [float(dataArr[0]), float(dataArr[1]), float(dataArr[2])] == [0, 0, 0]:
+        ui.messageBox('Not supported translate zero vector in %s' % filename, title)
+        return (False, None)
+
+    result, point3D = get_3d_point(ui, title, filename, scale, dataArr)
+    return (result, point3D.asVector())
 
 
 def get_3d_point_in_offset_plane(ui, title, filename, planeNormal, scale, dataArr):

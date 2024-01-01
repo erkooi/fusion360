@@ -26,13 +26,19 @@ validUnits = ['mm', 'cm']
 validPlaneNormals = ['x', 'y', 'z']
 validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
 validRailTypes = ['co_rail', 'cross_rails']
-validOperations = ['join', 'cut', 'intersect']
-validAssemblyActions = ['import_sketch',
+validCombineOperations = ['join', 'cut', 'intersect']
+validSplitToolTypes = ['plane', 'body']
+validMoveObjects = ['component', 'body']
+validMoveOperations = ['move', 'copy', 'remove', 'translate', 'rotate']
+validAssemblyActions = ['echo',
+                        'import_sketch',
                         'import_sketches',
                         'create_plane',
                         'create_planes',
                         'create_loft',
                         'create_lofts',
+                        'extrude',
+                        'extrudes',
                         'combine_bodies',
                         'combine_bodies_multiple',
                         'split_body',
@@ -44,11 +50,31 @@ def value_to_str(value, toAbs=True):
 
     . Make value positive if toAbs = true, else keep '-' in string
     . Replace '.' by '_' in case of float value.
+    . If float value is an integer, then convert to integer string
     """
-    if toAbs:
-        return str(abs(value)).replace('.', '_')
-    else:
-        return str(value).replace('.', '_')
+    val = abs(value) if toAbs else value
+    valStr = str(val).replace('.', '_')
+    if valStr[-2:] == '_0':
+        valStr = valStr[0:-2]
+    return valStr
+
+
+def convert_entries_to_integers(entries):
+    """Convert list of strings into list of integers."""
+    return [int(s) for s in entries]
+
+
+def convert_entries_to_floats(entries):
+    """Convert list of strings into list of floats."""
+    return [float(s) for s in entries]
+
+
+def convert_entries_to_single_string(entries):
+    """Convert list of strings into single string with comma's."""
+    s = entries[0]
+    for ei in entries[1:]:
+        s += ', %s' % ei
+    return s
 
 
 def extract_object_name(filename):
@@ -268,7 +294,7 @@ def convert_data_lines_to_lists(fileLines):
 
 
 def write_profile_sketch_files(fileLines):
-    """Write profile sketches in fileLines into seperate CSV sketch files.
+    """Write profile sketches in fileLines into seperate CSV files.
 
     Sketch CSV files are put in folder specified per file.
 
@@ -308,7 +334,7 @@ def write_profile_sketch_files(fileLines):
             sketchLines.append(planeNormal + ', ' + planeOffset + '\n')
         elif fLine.strip():
             li += 1
-            # Pass on next fileLines until empty line of sketch in fileLines
+            # Pass on next fileLines until empty line in fileLines
             entries = get_file_line_entries(fLine)
             segmentType = entries[0]
             if segmentType in validSegmentTypes:
@@ -318,7 +344,7 @@ def write_profile_sketch_files(fileLines):
                 # Line with values, pass on as is
                 sketchLines.append(fLine)
         else:
-            # Empty line marks end of sketch in fileLines
+            # Empty line marks end of section in fileLines
             # . Write sketch file
             print('write_profile_sketch_files: %s' % sketchFilename)
             with open(sketchFilename, 'w') as fp:
@@ -327,6 +353,7 @@ def write_profile_sketch_files(fileLines):
             # . Prepare for next sketch in fileLines
             li = 0
             sketchLines = []
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_profile_sketch_files'))
     return nofFiles
 
 
@@ -384,7 +411,7 @@ def write_co_rail_sketch_files(fileLines):
                     with open(coRailFilename, 'w') as fp:
                         fp.writelines(sketchLines)
                         fp.writelines(coRailLines)
-                        nofFiles += 2
+                        nofFiles += 1
                 # Get optional co_rail name
                 coRailName = get_rail_names(entries[1:], 'co_rail')
                 coRailFilename = ''
@@ -400,49 +427,193 @@ def write_co_rail_sketch_files(fileLines):
                     # Line with segment values for co rail, pass on as is
                     coRailLines.append(fLine)
         else:
-            # Empty line marks end of sketch in fileLines, prepare for next
-            # sketch in fileLines
+            # Empty line marks end of section in fileLines, prepare for next
+            # sketch section in fileLines
             li = 0
             sketchLines = []
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_co_rail_sketch_files'))
     return nofFiles
 
 
-def determine_rail_point_xyz(planeNormal, planeOffset, railNormal, railOffset, a, b):
+def determine_rail_point_xyz(profilePlaneNormal, profilePlaneOffset, railPlaneNormal, railPlaneOffset, a, b):
     """Determine rail point 3D coordinates
 
     Inputs:
-    . planeNormal: 'x', 'y', or 'z' normal of profile sketch plane
-    . planeOffset: x, y or z coordinate of profile sketch plane
-    . railNormal: 'x', 'y', or 'z' normal of rail plane, must be != planeNormal
-    . railOffset: x, y or z coordinate of rail sketch plane.
+    . profilePlaneNormal: 'x', 'y', or 'z' normal of profile sketch plane
+    . profilePlaneOffset: x, y or z coordinate of profile sketch plane
+    . railPlaneNormal: 'x', 'y', or 'z' normal of rail plane, must be != profilePlaneNormal
+    . railPlaneOffset: x, y or z coordinate of rail sketch plane.
     . a, b: 2D point coordinates in the profile sketch plane
     Return:
     . rail point 3D coordinates tuple or None when there is no rail point for
       profile sketch plane point (a, b).
     """
     railPoint = None
-    if planeNormal == 'x':
-        x = planeOffset
-        if railNormal == 'y' and a == railOffset:
+    if profilePlaneNormal == 'x':
+        x = profilePlaneOffset
+        if railPlaneNormal == 'y' and a == railPlaneOffset:
             railPoint = (x, a, b)
-        elif railNormal == 'z' and b == railOffset:
+        elif railPlaneNormal == 'z' and b == railPlaneOffset:
             railPoint = (x, a, b)
-    elif planeNormal == 'y':
-        y = planeOffset
-        if railNormal == 'x' and a == railOffset:
+    elif profilePlaneNormal == 'y':
+        y = profilePlaneOffset
+        if railPlaneNormal == 'x' and a == railPlaneOffset:
             railPoint = (a, y, b)
-        elif railNormal == 'z' and b == railOffset:
+        elif railPlaneNormal == 'z' and b == railPlaneOffset:
             railPoint = (a, y, b)
-    elif planeNormal == 'z':
-        z = planeOffset
-        if railNormal == 'x' and a == railOffset:
+    elif profilePlaneNormal == 'z':
+        z = profilePlaneOffset
+        if railPlaneNormal == 'x' and a == railPlaneOffset:
             railPoint = (a, b, z)
-        elif railNormal == 'y' and b == railOffset:
+        elif railPlaneNormal == 'y' and b == railPlaneOffset:
             railPoint = (a, b, z)
     return railPoint
 
 
-def get_cross_rail_points(fileLines, planesNormal, railName, railNormal, railOffset):
+def _get_cross_rails_rail_names(fLine, ln):
+    """Get rail_names from fLine, for cross rails definitions.
+
+    Input: File line fLine, at line number ln.
+    Return: rail_names.
+    """
+    entries = get_file_line_entries(fLine)
+    if entries[0] == 'rail_names':
+        return entries[1:]  # OK
+    else:
+        print('ERROR line %d: missing rail_names' % ln)
+        return []
+
+
+def _get_cross_rails_plane_normal(fLine, ln, planeType):
+    """Get plane_normal from fLine, for cross rails definitions.
+
+    Input:
+    . File line fLine, at line number ln.
+    . Plane type is 'profile'or 'rail'.
+    Return: plane type plane_normal
+    """
+    if planeType not in ['profile', 'rail']:
+        print('ERROR invalid plane type for _get_cross_rails_plane_normal()')
+        return ''
+    entries = get_file_line_entries(fLine)
+    if entries[0] == planeType + '_plane_normal':
+        planeNormal = entries[1]
+        if planeNormal not in validPlaneNormals:
+            print('ERROR line %d: invalid %s plane normal %s.' % (ln, planeType, planeNormal))
+            return ''
+        return planeNormal  # OK
+    else:
+        print('ERROR line %d: missing %s_plane_normal' % (ln, planeType))
+        return ''
+
+
+def _get_cross_rails_rail_plane_offsets(fLine, ln):
+    """Get rail_plane_offsets from fLine, for cross rails definitions.
+
+    Input: File line fLine, at line number ln.
+    Return: rail_plane_offsets
+    """
+    entries = get_file_line_entries(fLine)
+    if entries[0] == 'rail_plane_offsets':
+        railPlaneOffsets = convert_entries_to_floats(entries[1:])
+        return railPlaneOffsets  # OK
+    else:
+        print('ERROR line %d: missing rail_plane_offsets')
+        return []
+
+
+def _get_cross_rails_rail_segment_type(fLine, ln):
+    """Get rail_segment_type from fLine, for cross rails definitions.
+
+    Input: File line fLine, at line number ln.
+    Return: rail_segment_type
+    """
+    entries = get_file_line_entries(fLine)
+    if entries[0] == 'rail_segment_type':
+        railSegmentType = entries[1]
+        if railSegmentType not in validSegmentTypes:
+            print('ERROR line %d: invalid rail segment type %s.' % (ln, railSegmentType))
+            return ''
+        return railSegmentType  # OK
+    else:
+        print('ERROR line %d: missing rail_segment_type')
+        return ''
+
+
+def read_cross_rails_definitions(fileLines):
+    """Read cross rails definitions from fileLines.
+
+    Format for cross_rails definition section in fileLines:
+    . cross_rails, <rails folder>, <optional rail filename prefix>
+    . rail_names, <strings>
+    . profile_plane_normal, <x, y, or z>
+    . rail_plane_normal, <x, y, or z>
+    . rail_plane_offsets, <integers>
+    . rail_segment_type, <spline>
+
+    Inputs:
+    . fileLines: lines from a points file with cross rails definitions, that
+      define profile sketches and cross rails between them.
+    Return: List of crossRailsTuples():
+      . railsFolder
+      . railFilenamePrefix
+      . railNames[]
+      . profilePlaneNormal
+      . railPlaneNormal
+      . railPlaneOffsets
+      . railSegmentType
+    """
+    li = 0
+    crossRailsTuples = []
+
+    # Find cross rails definitions in fileLines, seperated by one empty line
+    for ln, fLine in enumerate(fileLines):
+        if li == 0:
+            # First line of a cross_rails in fileLines contains:
+            # . file type 'cross_rails',
+            # . folder name for CSV files.
+            # . optional prefix for rails filename.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'cross_rails':
+                railsFolder = create_folder(entries[1])
+                railFilenamePrefix = ''
+                if len(entries) > 2:
+                    railFilenamePrefix = entries[2]
+                li += 1
+        elif li == 1:
+            li += 1
+            railNames = _get_cross_rails_rail_names(fLine, ln)
+        elif li == 2:
+            li += 1
+            profilePlaneNormal = _get_cross_rails_plane_normal(fLine, ln, 'profile')
+        elif li == 3:
+            li += 1
+            railPlaneNormal = _get_cross_rails_plane_normal(fLine, ln, 'rail')
+        elif li == 4:
+            li += 1
+            railPlaneOffsets = _get_cross_rails_rail_plane_offsets(fLine, ln)
+        elif li == 5:
+            li += 1
+            railSegmentType = _get_cross_rails_rail_segment_type(fLine, ln)
+            # Add cross_rails definition to crossRailsTuples list
+            crossRailsTuple = (railsFolder, railFilenamePrefix, railNames,
+                               profilePlaneNormal, railPlaneNormal, railPlaneOffsets,
+                               railSegmentType)
+            crossRailsTuples.append(crossRailsTuple)
+        elif fLine.strip():
+            li += 1
+            print('ERROR line %d: unexpected line in cross_rails section' % ln)
+        else:
+            # Empty line marks end of section in fileLines, prepare for next
+            # cross_rails section in fileLines
+            li = 0
+    print('Found %d cross_rails sections by read_cross_rails_definitions' % len(crossRailsTuples))
+    return crossRailsTuples
+
+
+def get_cross_rail_points(fileLines, profilePlaneNormal, railName, railPlaneNormal, railPlaneOffset):
     """Get cross rail points for segments with railName from multiple sketches
     in fileLines.
 
@@ -452,12 +623,12 @@ def get_cross_rail_points(fileLines, planesNormal, railName, railNormal, railOff
     Inputs:
     . fileLines: lines from a points file with multiple profile sketches, that
         contain rail points for railName
-    . planesNormal: 'x', 'y', or 'z'; selects sketches with planeNormal ==
-        planesNormal
+    . profilePlaneNormal: 'x', 'y', or 'z'; selects sketches with
+        sketchPlaneNormal == profilePlaneNormal
     . railName: selects segments with railNames from fileLines
-    . railNormal: 'x', 'y', or 'z'; must be != planesNormal
-    . railOffset: selects points in segments with railNormal coordinate value ==
-        railOffset in the railNormal plane
+    . railPlaneNormal: 'x', 'y', or 'z'; must be != profilePlaneNormal
+    . railPlaneOffset: selects points in segments with railPlaneNormal
+        coordinate value == railPlaneOffset in the railPlaneNormal plane
     Return:
     . result: list of rail points for railName
     """
@@ -479,11 +650,11 @@ def get_cross_rail_points(fileLines, planesNormal, railName, railNormal, railOff
             # Second line of a sketch in fileLines contains plane info for sketch,
             # the sketch name info is not used to get_cross_rail_points().
             entries = get_file_line_entries(fLine)
-            planeNormal = entries[0]
-            planeOffset = float(entries[1])
+            sketchPlaneNormal = entries[0]
+            sketchPlaneOffset = float(entries[1])
         elif fLine.strip():
             li += 1
-            if planeNormal == planesNormal:
+            if sketchPlaneNormal == profilePlaneNormal:
                 # Parse line
                 entries = get_file_line_entries(fLine)
                 segmentType = entries[0]
@@ -494,12 +665,13 @@ def get_cross_rail_points(fileLines, planesNormal, railName, railNormal, railOff
                     # Coordinates line, get rail point in crossRailNames
                     a = float(entries[0])
                     b = float(entries[1])
-                    railPoint = determine_rail_point_xyz(planeNormal, planeOffset, railNormal, railOffset, a, b)
+                    railPoint = determine_rail_point_xyz(sketchPlaneNormal, sketchPlaneOffset,
+                                                         railPlaneNormal, railPlaneOffset, a, b)
                     if railPoint:
                         railPoints.append(railPoint)
         else:
-            # Empty line marks end of sketch in fileLines, prepare for next
-            # sketch in fileLines
+            # Empty line marks end of section in fileLines, prepare for next
+            # sketch section in fileLines
             li = 0
         # Remove duplicate points from list (not use list(set()), because it
         # does not preserve order)
@@ -508,12 +680,12 @@ def get_cross_rail_points(fileLines, planesNormal, railName, railNormal, railOff
     return result
 
 
-def write_cross_rail_points_sketch_file(planeNormal, planeOffset, segmentType, railPoints, filename):
+def write_cross_rail_points_sketch_file(railPlaneNormal, railPlaneOffset, segmentType, railPoints, filename):
     """Write rail of railPoints into sketch file.
 
     Input:
-    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . planeOffset: offset from origin plane
+    . railPlaneNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+    . railPlaneOffset: offset from origin plane
     . segmentType: string in validSegmentTypes in importsketch.py
     . railPoints: list of rail point coordinates (x, y, z) obtained from
         get_cross_rail_points()
@@ -529,17 +701,17 @@ def write_cross_rail_points_sketch_file(planeNormal, planeOffset, segmentType, r
             # Write units
             fp.write('mm\n')
             # Write plane normal and offset
-            fp.write(planeNormal + ', ' + str(planeOffset) + '\n')
+            fp.write(railPlaneNormal + ', ' + str(railPlaneOffset) + '\n')
             # Write points with segmentType
             fp.write(segmentType + '\n')
             for p in railPoints:
-                if planeNormal == 'x':
+                if railPlaneNormal == 'x':
                     a = p[1]
                     b = p[2]
-                elif planeNormal == 'y':
+                elif railPlaneNormal == 'y':
                     a = p[0]
                     b = p[2]
-                elif planeNormal == 'z':
+                elif railPlaneNormal == 'z':
                     a = p[0]
                     b = p[1]
                 fp.write('%.2f, %.2f\n' % (a, b))  # use 0.01 mm resolution
@@ -549,8 +721,52 @@ def write_cross_rail_points_sketch_file(planeNormal, planeOffset, segmentType, r
     return nofFiles
 
 
+def write_cross_rail_points_sketch_files(fileLines):
+    """Get railPoints and write rail of railPoints into sketch file, for all
+    cross_rails definitions in fileLines.
+
+    Loop over all cross_rails definitions. Each cross_rails definition defines
+    rails between profile sketches. The cross rails are in parallel planes.
+    The list of cross_rails definitions are read from fileLines with
+    read_cross_rails_definitions().
+
+    Within a cross_rails defintion loop over railPlaneOffsets and then write
+    one cross rail sketch file per each railName in railNames. Combines
+    get_cross_rail_points() and write_cross_rail_points_sketch_file() for list
+    of railPlaneOffsets and railNames.
+    """
+    nofFiles = 0
+
+    # Get cross_rails definitions
+    crossRailsTuples = read_cross_rails_definitions(fileLines)
+
+    # Process per cross_rails definition
+    for crossRailsTuple in crossRailsTuples:
+        # Extract cross_rails definition
+        railsFolder, railFilenamePrefix, railNames, \
+                profilePlaneNormal, railPlaneNormal, railPlaneOffsets, railSegmentType = crossRailsTuple
+
+        # Write CSV sketch files for cross_rails definition
+        for railPlaneOffset in railPlaneOffsets:
+            for railName in railNames:
+                # Get railPoints
+                railPoints = get_cross_rail_points(fileLines, profilePlaneNormal,
+                                                   railName, railPlaneNormal, railPlaneOffset)
+                # Construct filename
+                filename = ''
+                if railFilenamePrefix:
+                    filename = railFilenamePrefix + '_'
+                filename += railPlaneNormal + '_' + value_to_str(railPlaneOffset) + '_' + railName + '.csv'
+                filename = os.path.join(railsFolder, filename)
+                # Write sketch file
+                nofFiles += write_cross_rail_points_sketch_file(railPlaneNormal, railPlaneOffset,
+                                                                railSegmentType, railPoints, filename)
+        print('Wrote %d csv files in %s with %s' % (nofFiles, railsFolder, 'write_cross_rail_points_sketch_files'))
+    return nofFiles
+
+
 def write_loft_files(fileLines):
-    """Write lofts in fileLines into seperate loft CSV files.
+    """Write lofts in fileLines into seperate CSV files.
 
     Input:
     . fileLines: lines from file that define one or more lofts
@@ -581,22 +797,23 @@ def write_loft_files(fileLines):
             loftLines.append('loft\n')  # write file type
             loftLines.append(loftName + '\n')  # write loft name
         elif fLine.strip():
-            # Pass on next fileLines until empty line of loft in fileLines
+            # Pass on next fileLines until empty line in fileLines
             loftLines.append(fLine)
         else:
-            # Empty line marks end of loft in fileLines
+            # Empty line marks end of section in fileLines
             # . Write loft file
             print('write_loft_files: %s' % loftFilename)
             with open(loftFilename, 'w') as fp:
                 fp.writelines(loftLines)
                 nofFiles += 1
-            # . Prepare for next loft in fileLines
+            # . Prepare for next loft section in fileLines
             li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_loft_files'))
     return nofFiles
 
 
 def write_plane_files(fileLines):
-    """Write planes in fileLines into seperate plane CSV files.
+    """Write planes in fileLines into seperate CSV files.
 
     Input:
     . fileLines: lines from file that define one or more planes
@@ -627,17 +844,62 @@ def write_plane_files(fileLines):
             planeLines.append('plane\n')  # write file type
             planeLines.append('mm\n')  # write units
         elif fLine.strip():
-            # Pass on next fileLines until empty line of plane in fileLines
+            # Pass on next fileLines until empty line in fileLines
             planeLines.append(fLine)
         else:
-            # Empty line marks end of plane in fileLines
+            # Empty line marks end of section in fileLines
             # . Write plane file
             print('write_plane_files: %s' % planeFilename)
             with open(planeFilename, 'w') as fp:
                 fp.writelines(planeLines)
                 nofFiles += 1
-            # . Prepare for next plane in fileLines
+            # . Prepare for next plane section in fileLines
             li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_plane_files'))
+    return nofFiles
+
+
+def write_extrude_files(fileLines):
+    """Write extrude sections in fileLines into seperate extrude CSV files.
+
+    Input:
+    . fileLines: lines from file that define one or more extrude sections
+    Return: number of files written
+    """
+    li = 0
+    nofFiles = 0
+
+    # Find extrude sections in fileLines, seperated by one empty line
+    for fLine in fileLines:
+        if li == 0:
+            # First line of a extrude section in fileLines contains:
+            # . file type 'extrude',
+            # . folder name for CSV file,
+            # . filename for CSV file.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'extrude':
+                extrudeFolder = create_folder(entries[1])
+                extrudeFilename = entries[2] + '.csv'
+                extrudeFilename = os.path.join(extrudeFolder, extrudeFilename)
+                extrudeLines = []
+                extrudeLines.append('extrude\n')  # write file type
+                extrudeLines.append('mm\n')  # write units
+                li += 1
+        elif fLine.strip():
+            # Pass on next fileLines until empty line in fileLines
+            extrudeLines.append(fLine)
+        else:
+            # Empty line marks end of section in fileLines
+            # . Write extrude file
+            print('write_extrude_files: %s' % extrudeFilename)
+            with open(extrudeFilename, 'w') as fp:
+                fp.writelines(extrudeLines)
+                nofFiles += 1
+            # . Prepare for next extrude section in fileLines
+            li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_extrude_bodies_files'))
     return nofFiles
 
 
@@ -674,10 +936,10 @@ def write_combine_bodies_files(fileLines):
             combineLines.append('combine\n')  # write file type
             combineLines.append(combineName + '\n')  # write combine name
         elif fLine.strip():
-            # Pass on next fileLines until empty line of plane in fileLines
+            # Pass on next fileLines until empty line in fileLines
             combineLines.append(fLine)
         else:
-            # Empty line marks end of plane in fileLines
+            # Empty line marks end of section in fileLines
             # . Write combine bodies file
             print('write_combine_bodies_files: %s' % combineFilename)
             with open(combineFilename, 'w') as fp:
@@ -685,11 +947,12 @@ def write_combine_bodies_files(fileLines):
                 nofFiles += 1
             # . Prepare for next combine bodies section in fileLines
             li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_combine_bodies_files'))
     return nofFiles
 
 
 def write_split_body_files(fileLines):
-    """Write split body sections in fileLines into seperate plane CSV files.
+    """Write split body sections in fileLines into seperate CSV files.
 
     Input:
     . fileLines: lines from file that define one or more split body sections
@@ -722,10 +985,10 @@ def write_split_body_files(fileLines):
             splitLines.append('split\n')  # write file type
             splitLines.append(fLine)  # pass on fLine
         elif fLine.strip():
-            # Pass on next fileLines until empty line of plane in fileLines
+            # Pass on next fileLines until empty line in fileLines
             splitLines.append(fLine)
         else:
-            # Empty line marks end of plane in fileLines
+            # Empty line marks end of section in fileLines
             # . Write split body file
             print('write_split_body_files: %s' % splitFilename)
             with open(splitFilename, 'w') as fp:
@@ -733,6 +996,58 @@ def write_split_body_files(fileLines):
                 nofFiles += 1
             # . Prepare for next split bodies section in fileLines
             li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_split_body_files'))
+    return nofFiles
+
+
+def write_movecopy_files(fileLines):
+    """Write move or copy sections in fileLines into seperate CSV files.
+
+    Input:
+    . fileLines: lines from file that define one or more move or copy sections
+    Return: number of files written
+    """
+    li = 0
+    nofFiles = 0
+
+    # Find move or copy sections in fileLines, seperated by one empty line
+    for fLine in fileLines:
+        if li == 0:
+            # First line of a move or copy section in fileLines contains:
+            # . file type 'movecopy',
+            # . folder name for CSV file.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'movecopy':
+                moveCopyFolder = create_folder(entries[1])
+                li += 1
+        elif li == 1:
+            li += 1
+            # Second line of a move or copy section in fileLines contains
+            # info for move or copy filename
+            entries = get_file_line_entries(fLine)
+            objectType = entries[0]
+            objectName = entries[1]
+            moveCopyFilename = 'movecopy_' + objectType + '_' + objectName + '.csv'
+            moveCopyFilename = os.path.join(moveCopyFolder, moveCopyFilename)
+            moveCopyLines = []
+            moveCopyLines.append('movecopy\n')  # write file type
+            moveCopyLines.append('mm\n')  # write units
+            moveCopyLines.append(objectType + ', ' + objectName + '\n')  # write object type
+        elif fLine.strip():
+            # Pass on next fileLines until empty line in fileLines
+            moveCopyLines.append(fLine)
+        else:
+            # Empty line marks end of section in fileLines
+            # . Write move or copy file
+            print('write_movecopy_files: %s' % moveCopyFilename)
+            with open(moveCopyFilename, 'w') as fp:
+                fp.writelines(moveCopyLines)
+                nofFiles += 1
+            # . Prepare for next move or copy section in fileLines
+            li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_movecopy_files'))
     return nofFiles
 
 
@@ -746,37 +1061,39 @@ def write_assembly_files(fileLines):
     li = 0
     nofFiles = 0
 
-    # Find assemblys in fileLines, seperated by one empty line
+    # Find assemblies in fileLines, seperated by one empty line
     for fLine in fileLines:
         if li == 0:
             # First line of a assembly in fileLines contains:
             # . file type 'assembly',
             # . folder name for CSV file.
+            # . filename for CSV file.
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'assembly':
                 assemblyFolder = create_folder(entries[1])
+                assemblyFilename = entries[2] + '.csv'
+                assemblyFilename = os.path.join(assemblyFolder, assemblyFilename)
                 li += 1
         elif li == 1:
             li += 1
-            # Second line of a assembly in fileLines contains assembly filename
-            assemblyName = fLine.strip()
-            assemblyFilename = assemblyName + '.csv'
-            assemblyFilename = os.path.join(assemblyFolder, assemblyFilename)
+            # Second line of a assembly component name
+            assemblyComponentName = fLine.strip()
             assemblyLines = []
             assemblyLines.append('assembly\n')  # write file type
-            assemblyLines.append(assemblyName + '\n')  # write assembly name
+            assemblyLines.append(assemblyComponentName + '\n')  # write assembly name
         elif fLine.strip():
-            # Pass on next fileLines until empty line of assembly in fileLines
+            # Pass on next fileLines until empty line in fileLines
             assemblyLines.append(fLine)
         else:
-            # Empty line marks end of assembly in fileLines
+            # Empty line marks end of section in fileLines
             # . Write assembly file
             print('write_assembly_files: %s' % assemblyFilename)
             with open(assemblyFilename, 'w') as fp:
                 fp.writelines(assemblyLines)
                 nofFiles += 1
-            # . Prepare for next assembly in fileLines
+            # . Prepare for next assembly section in fileLines
             li = 0
+    print('Wrote %d csv files for %s' % (nofFiles, 'write_assembly_files'))
     return nofFiles

@@ -76,7 +76,7 @@ def parse_csv_combine_bodies_file(ui, title, filename):
         elif li == 2:
             # Read combine operation
             operation = lineWord0
-            if operation not in interfacefiles.validOperations:
+            if operation not in interfacefiles.validCombineOperations:
                 ui.messageBox('No valid combine operation %s in %s' % (operation, filename), title)
                 return resultFalse
         elif li == 3:
@@ -112,7 +112,7 @@ def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, ope
     . targetBody, toolBodies:
       * combineBody = result of targetBody operation toolBodies
       * Keep targetBody and keep toolBodies.
-    . operation: combine operation from validOperations
+    . operation: combine operation from validCombineOperations
     . combineName : name for combineComponent and for combineBody in combineComponent
     Return: None
     """
@@ -142,7 +142,7 @@ def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, ope
 
     # Move new occurrence to hostOccurrence
     hostOccurrence = utilities360.get_last_occurrence(hostComponent)
-    utilities360.move_occurrence(combineOccurrence, hostOccurrence)
+    utilities360.move_occurrence_to_occurrence(combineOccurrence, hostOccurrence)
 
 
 def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineName):
@@ -154,13 +154,13 @@ def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operatio
     . targetBody, toolBodies:
       * combineBody = targetBody operation toolBodies
       * Keep targetBody and keep toolBodies.
-    . operation: combine operation from validOperations
+    . operation: combine operation from validCombineOperations
     . combineName: name for combineBody
     Return: None
     """
     # Copy target body in hostOccurrence, because it is used as result for combine body
     hostOccurrence = utilities360.get_last_occurrence(hostComponent)
-    combineBody = utilities360.copy_body(targetBody, hostOccurrence)
+    combineBody = utilities360.copy_body_to_occurrence(targetBody, hostOccurrence)
 
     # Prepare combineFeatureInput for result in new body.
     combineFeatures = hostComponent.features.combineFeatures
@@ -198,7 +198,7 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     combineName, operation, targetBodyName, toolBodyNames = combineBodiesTuple
 
     # Find body objects in hostComponent
-    targetBody = hostComponent.bRepBodies.itemByName(targetBodyName)
+    targetBody = utilities360.find_body(hostComponent, targetBodyName)
     if not targetBody:
         interface360.error_text(ui, 'Target body %s not found' % targetBodyName)
         return False
@@ -212,6 +212,7 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
         combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineName)
     else:
         combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineName)
+    interface360.print_text(ui, 'Combined bodies for ' + filename)
     return True
 
 
@@ -234,7 +235,6 @@ def combine_bodies_from_csv_files(ui, title, folderName, hostComponent, combineN
     if len(filenames) > 0:
         for filename in filenames:
             # Combine bodies from CSV file in hostComponent
-            interface360.print_text(ui, 'Combine bodies for ' + filename)
             combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewComponents)
     else:
         ui.messageBox('No combine bodies CSV files in %s' % folderName, title)
