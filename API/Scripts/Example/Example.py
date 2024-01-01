@@ -18,6 +18,8 @@
 """Example script to demonstrate some script development basics Fusion360.
 """
 
+import math
+
 # Fusion360
 import adsk.core
 import adsk.fusion
@@ -39,7 +41,8 @@ def run(context):
         ui = app.userInterface
 
         # Print in TEXT COMMAND box to indicate new run
-        interface360.print_text(ui, 'New run')
+        interface360.print_text(ui, 'New run - printed with: interface360.print_text()')
+        adsk.core.Application.log('New run - printed with: adsk.core.Application.log()')
 
         # Get active component in the active design
         product = app.activeProduct
@@ -50,9 +53,41 @@ def run(context):
         rootComponent = design.rootComponent
         activeComponent = design.activeComponent
 
-        # Print component names
-        interface360.print_text(ui, 'Root component name: ' + rootComponent.name)
-        interface360.print_text(ui, 'Active component name: ' + activeComponent.name)
+        designType = 'direct' if design.designType == 0 else 'parametric'
+
+        document = design.parentDocument
+        application = document.parent  # = app
+
+        # Print some design and component info
+        interface360.print_text(ui, 'application.version %s' % application.version)
+        interface360.print_text(ui, '. application.pointTolerance = %e m = %f nm' %
+                                (application.pointTolerance / 100, application.pointTolerance * 10000000))
+        interface360.print_text(ui, '. application.vectorAngleTolerance = %e rad = %e degrees' %
+                                (application.vectorAngleTolerance, math.degrees(application.vectorAngleTolerance)))
+
+        interface360.print_text(ui, 'document.name %s' % document.name)
+        interface360.print_text(ui, '. document.version %s' % document.version)
+        interface360.print_text(ui, '. document.objectType %s' % document.objectType)
+        interface360.print_text(ui, '. document.products.count %d' % document.products.count)
+
+        interface360.print_text(ui, 'product has no name')
+        interface360.print_text(ui, '. product.objectType %s' % product.objectType)
+        interface360.print_text(ui, '. product.productType %s' % product.productType)
+
+        interface360.print_text(ui, 'design has no name')
+        interface360.print_text(ui, '. design.objectType %s' % design.objectType)
+        interface360.print_text(ui, '. design.designType %d = %s modelling' % (design.designType, designType))
+        interface360.print_text(ui, '. design.allComponents.count %d' % design.allComponents.count)
+
+        interface360.print_text(ui, 'rootComponent.name %s' % rootComponent.name)
+        interface360.print_text(ui, '. rootComponent.objectType %s' % rootComponent.objectType)
+        interface360.print_text(ui, '. rootComponent.revisionId %s' % rootComponent.revisionId)
+        interface360.print_text(ui, '. rootComponent.allOccurrences.count %d' % rootComponent.allOccurrences.count)
+
+        interface360.print_text(ui, 'activeComponent.name %s' % activeComponent.name)
+        interface360.print_text(ui, '. activeComponent.objectType %s' % activeComponent.objectType)
+        interface360.print_text(ui, '. activeComponent.revisionId %s' % activeComponent.revisionId)
+        interface360.print_text(ui, '. activeComponent.allOccurrences.count %d' % activeComponent.allOccurrences.count)
 
     except Exception:
         if ui:
