@@ -10,6 +10,7 @@
 * utilities360.py - functions for handling objects in Fusion360.
 * schemacsv360.py - functions to represent items defined in CSV schema files in Fusion360.
 * importsketch.py - import a sketch from a CSV file.
+* extrude.py  - extrude sketch profile defined in a CSV file.
 * createloft.py  - create a loft from sketch profiles and rails defined in a CSV file.
 * createplane.py - create a plane from three points defined in a CSV file.
 * splitbody.py - split body defined in a CSV file.
@@ -25,6 +26,7 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 
 ### 3.2 General scripts for processing one CSV file, or multiple CSV files
 * ImportSketchCSV, ImportSketchesCSV - Import sketch as defined in CSV file.
+* ExtrudeCSV - Extrude sketch profile as defined in CSV file.
 * CreateLoftCSV, CreateLoftsCSV - Create loft as defined in CSV file.
 * CreatePlaneCSV, CreatePlanesCSV - Create plane as defined in CSV file.
 * SplitBodyCSV, SplitBodyMultipleCSV - Split body as defined in CSV file.
