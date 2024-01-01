@@ -22,6 +22,10 @@ three sketches of a snail, each on another origine offset plane.
 
 Usage on command line:
 > python snail_points.py
+
+Or use the general csv_points360.py script to create the CSV files for the
+design:
+> python ../../csv_points360.py -f snail_points.txt
 """
 
 import interfacefiles
