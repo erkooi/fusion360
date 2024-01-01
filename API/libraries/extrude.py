@@ -288,14 +288,6 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     offset, extentType, distanceVales, toBodyName = extentTuple
     operation, participantBodyNames, resultBodyNames = operationTuple
 
-    interface360.print_text(ui, 'sketchName ' + profileTuple[0])
-    interface360.print_text(ui, 'profileIndices ' + str(profileTuple[1]))
-    interface360.print_text(ui, 'extentType ' + extentType)
-    interface360.print_text(ui, 'distanceVales ' + str(distanceVales))
-    interface360.print_text(ui, 'toBodyName ' + toBodyName)
-    interface360.print_text(ui, 'operation ' + operation)
-    interface360.print_text(ui, 'resultBodyNames ' + str(resultBodyNames))
-
     # Find profile(s) in sketch and update profileTuple
     sketch = utilities360.find_sketch_anywhere(hostComponent, sketchName)
     if not sketch:
