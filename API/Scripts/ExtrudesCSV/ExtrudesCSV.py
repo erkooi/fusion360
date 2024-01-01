@@ -15,8 +15,8 @@
 ################################################################################
 # Author: Eric Kooistra.
 # Date: 27 Dec 2023
-"""Extrude from sketch profile defined in an extrude csv file into a component
-in Fusion360.
+"""Create extrudes from extrude csv files in folder, in active component in
+Fusion360.
 
 See API/libraries/extrude.py
 """
@@ -30,10 +30,8 @@ import importlib
 # Import local from API\\libraries
 from . import append_sys_path_libraries  # noqa: F401
 import interface360
-import utilities360
 import extrude
 importlib.reload(interface360)
-importlib.reload(utilities360)
 importlib.reload(extrude)
 
 
@@ -41,7 +39,7 @@ def run(context):
     """Run script as Fusion360 API\\Script."""
     ui = None
     try:
-        title = 'Extrude from csv file'
+        title = 'Create extrudes from extrude csv files in folder'
         app = adsk.core.Application.get()
         ui = app.userInterface
         interface360.print_text(ui, 'New run', True)
@@ -54,13 +52,13 @@ def run(context):
             return
         activeComponent = design.activeComponent
 
-        # Prompt user for CSV filename
-        filename = interface360.get_csv_filename(ui, title)
-        if filename is None:
+        # Prompt user for folder name
+        folderName = interface360.get_folder_name(ui, title)
+        if folderName is None:
             return
 
-        # Extrude from CSV file in activeComponent
-        extrude.extrude_from_csv_file(ui, title, filename, activeComponent)
+        # Create extrudes in activeComponent from CSV files in folderName
+        extrude.extrudes_from_csv_files(ui, title, folderName, activeComponent)
 
     except Exception:
         if ui:
