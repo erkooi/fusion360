@@ -144,8 +144,9 @@ def find_body_anywhere(component, bodyName):
     return None
 
 
-def find_bodies_collection(ui, component, bodyNames):
-    """Find collection of bodies in component that match the bodyNames
+def find_bodies_collection_anywhere(ui, component, bodyNames):
+    """Find collection of bodies that match the bodyNames, anywhere in
+    component.
 
     Input:
     . component: component Bodies folder to look in
@@ -159,7 +160,7 @@ def find_bodies_collection(ui, component, bodyNames):
     result = True
     bodies = adsk.core.ObjectCollection.create()
     for bodyName in bodyNames:
-        body = find_body(component, bodyName)
+        body = find_body_anywhere(component, bodyName)
         if body:
             bodies.add(body)
         else:

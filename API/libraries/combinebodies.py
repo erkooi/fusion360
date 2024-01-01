@@ -203,7 +203,7 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
         interface360.error_text(ui, 'Target body %s not found' % targetBodyName)
         return False
 
-    result, toolBodies = utilities360.find_bodies_collection(ui, hostComponent, toolBodyNames)
+    result, toolBodies = utilities360.find_bodies_collection_anywhere(ui, hostComponent, toolBodyNames)
     if not result:
         return False
 
