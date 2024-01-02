@@ -26,6 +26,8 @@ Combine bodies CSV file format:
 . combine_bodies
   - target body name, one first line
   - one or more tool body names, one per line
+. remove_bodies
+  - names of bodies to remove
 
 The tool_bodies are kept.
 The target_body is kept. This is default when the combined object is a new
@@ -65,6 +67,12 @@ def parse_csv_combine_bodies_file(ui, title, filename):
 
     # Parse file lines for combine bodies
     resultFalse = (False, None)
+    targetBodyName = ''
+    toolBodyNames = []
+    removeBodiesNames = []
+    readTargetBody = False
+    readToolBodies = False
+    readRemoveBodies = False
     for li, lineArr in enumerate(lineLists):
         lineWord0 = lineArr[0]
         if li == 0:
@@ -79,28 +87,34 @@ def parse_csv_combine_bodies_file(ui, title, filename):
             if operation not in interfacefiles.validCombineOperations:
                 ui.messageBox('No valid combine operation %s in %s' % (operation, filename), title)
                 return resultFalse
-        elif li == 3:
-            # Read combine_bodies
-            if lineWord0 != 'combine_bodies':
-                ui.messageBox('Expected combine_bodies instead of %s in %s' % (lineWord0, filename), title)
-                return resultFalse
-            targetBodyName = ''
-            toolBodyNames = []
-        elif li == 4:
-            # Read target body name
-            if lineWord0 != '':
-                targetBodyName = lineWord0
         else:
-            # Read tool body names
-            if lineWord0 != '':
-                toolBodyNames.append(lineWord0)
+            # Read lists for:
+            # . combine_bodies
+            # . remove_bodies
+            if lineWord0 == 'combine_bodies':
+                readTargetBody = True
+                readToolBodies = False
+                readRemoveBodies = False
+            elif lineWord0 == 'remove_bodies':
+                readTargetBody = False
+                readToolBodies = False
+                readRemoveBodies = True
+            else:
+                if readTargetBody:
+                    targetBodyName = lineWord0
+                    readTargetBody = False
+                    readToolBodies = True
+                elif readToolBodies:
+                    toolBodyNames.append(lineWord0)
+                elif readRemoveBodies:
+                    removeBodiesNames.append(lineWord0)
 
     if targetBodyName == '' or len(toolBodyNames) == 0:
         ui.messageBox('Not enough bodies in %s' % filename, title)
         return resultFalse
 
     # Successfully reached end of file
-    combineBodiesTuple = (combineName, operation, targetBodyName, toolBodyNames)
+    combineBodiesTuple = (combineName, operation, targetBodyName, toolBodyNames, removeBodiesNames)
     return (True, combineBodiesTuple)
 
 
@@ -195,7 +209,7 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     result, combineBodiesTuple = parse_csv_combine_bodies_file(ui, title, filename)
     if not result:
         return False
-    combineName, operation, targetBodyName, toolBodyNames = combineBodiesTuple
+    combineName, operation, targetBodyName, toolBodyNames, removeBodiesNames = combineBodiesTuple
 
     # Find body objects in hostComponent
     targetBody = utilities360.find_body(hostComponent, targetBodyName)
@@ -212,6 +226,9 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
         combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineName)
     else:
         combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineName)
+
+    # Remove bodies
+    utilities360.remove_bodies_anywhere(ui, hostComponent, removeBodiesNames)
     interface360.print_text(ui, 'Combined bodies for ' + filename)
     return True
 

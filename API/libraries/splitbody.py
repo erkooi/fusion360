@@ -104,7 +104,7 @@ def parse_csv_split_body_file(ui, title, filename):
             elif lineWord0 == 'remove_bodies':
                 readSplittedBodies = False
                 readRemoveBodies = True
-            elif lineWord0 != '':
+            else:
                 if readSplittedBodies:
                     splittedBodiesNames.append(lineWord0)
                 if readRemoveBodies:
@@ -199,15 +199,7 @@ def split_body_from_csv_file(ui, title, filename, hostComponent):
         return False
 
     # Remove bodies
-    if len(removeBodiesNames) > 0:
-        removeFeatures = hostComponent.features.removeFeatures
-        for bodyName in removeBodiesNames:
-            body = hostComponent.bRepBodies.itemByName(bodyName)
-            if body:
-                removeFeatures.add(body)
-            else:
-                interface360.error_text(ui, 'Remove body %s not found' % bodyName)
-                return False
+    utilities360.remove_bodies_anywhere(ui, hostComponent, removeBodiesNames)
     interface360.print_text(ui, 'Splitted body for ' + filename)
     return True
 

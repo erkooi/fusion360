@@ -423,6 +423,27 @@ def move_body_to_occurrence(body, target):
     return movedBody
 
 
+def remove_bodies_anywhere(ui, component, bodyNames):
+    """Remove bodies from anywhere in component.
+
+    Input:
+    . component: host component where the bodies are searched in
+    . bodyNames: list of names of bodies to remove from component
+    Return: True when bodies were removed, else false
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    if len(bodyNames) > 0:
+        removeFeatures = component.features.removeFeatures
+        for bodyName in bodyNames:
+            body = find_body_anywhere(component, bodyName)
+            if body:
+                removeFeatures.add(body)
+            else:
+                interface360.error_text(ui, 'Remove body %s not found in %s' % (bodyName, component.name))
+                return False
+
+
 ################################################################################
 # Transform object in design 3d space
 

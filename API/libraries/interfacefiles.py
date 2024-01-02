@@ -967,23 +967,17 @@ def write_split_body_files(fileLines):
             # First line of a split body section in fileLines contains:
             # . file type 'split',
             # . folder name for CSV file.
+            # . filename for CSV file.
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'split':
                 splitFolder = create_folder(entries[1])
+                splitFilename = entries[2] + '.csv'
+                splitFilename = os.path.join(splitFolder, splitFilename)
+                splitLines = []
+                splitLines.append('split\n')  # write file type
                 li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a split body section in fileLines contains
-            # info for split body filename
-            entries = get_file_line_entries(fLine)
-            splitBodyName = entries[1]
-            splitFilename = 'split_' + splitBodyName + '.csv'
-            splitFilename = os.path.join(splitFolder, splitFilename)
-            splitLines = []
-            splitLines.append('split\n')  # write file type
-            splitLines.append(fLine)  # pass on fLine
         elif fLine.strip():
             # Pass on next fileLines until empty line in fileLines
             splitLines.append(fLine)
@@ -1075,14 +1069,9 @@ def write_assembly_files(fileLines):
                 assemblyFolder = create_folder(entries[1])
                 assemblyFilename = entries[2] + '.csv'
                 assemblyFilename = os.path.join(assemblyFolder, assemblyFilename)
+                assemblyLines = []
+                assemblyLines.append('assembly\n')  # write file type
                 li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a assembly component name
-            assemblyComponentName = fLine.strip()
-            assemblyLines = []
-            assemblyLines.append('assembly\n')  # write file type
-            assemblyLines.append(assemblyComponentName + '\n')  # write assembly name
         elif fLine.strip():
             # Pass on next fileLines until empty line in fileLines
             assemblyLines.append(fLine)
