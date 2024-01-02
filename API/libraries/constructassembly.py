@@ -47,6 +47,8 @@ Assembly CSV file format:
     . combine_bodies_multiple, 'combine_bodies_multiple csv directory name'
     . split_body, 'split_body csv filename path'
     . split_body_multiple, 'split_body_multiple csv directory name'
+    . movecopy, 'movecopy csv filename path'
+    . movecopy_multiple, 'movecopy_multiple csv directory name'
 
 Remarks:
 . Sketches and planes can be in seperate group components within the
@@ -69,6 +71,7 @@ import createloft
 import extrude
 import combinebodies
 import splitbody
+import movecopy
 
 
 def parse_csv_assembly_file(ui, title, assemblyFilename):
@@ -111,6 +114,7 @@ def parse_csv_assembly_file(ui, title, assemblyFilename):
         else:
             # Read assembly actions, one per line
             if lineWord not in interfacefiles.validAssemblyActions:
+                ui.messageBox('Not a valid action %s in %s' % (lineWord, assemblyFilename), title)
                 return resultFalse
             echoString, locationName, groupComponentName = ('', '', '')
             action = lineWord
@@ -131,6 +135,54 @@ def parse_csv_assembly_file(ui, title, assemblyFilename):
     # Successfully reached end of file
     assemblyTuple = (assemblyComponentName, actions)
     return (True, assemblyTuple)
+
+
+def perform_action(ui, title, fullLocationName, groupComponent, action):
+    """Perform action in groupComponent
+
+    Input:
+    . action: Fusion 360 command, specified in CSV file
+    . fullLocationName: full location name for CSV directory or file
+    . groupComponent: group component name for action results
+
+    Return: True when action is done, else False
+    """
+    # . Sketches and planes can be in seperate group components within the
+    #   hostComponent.
+    if action == 'import_sketch':
+        importsketch.create_sketch_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'import_sketches':
+        importsketch.create_sketches_from_csv_files(ui, title, fullLocationName, groupComponent)
+    elif action == 'create_plane':
+        createplane.create_plane_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'create_planes':
+        createplane.create_planes_from_csv_files(ui, title, fullLocationName, groupComponent)
+
+    # . Bodies need to be in the groupComponent = hostComponent, because
+    #   they build upon on sketches, planes and bodies.
+    elif action == 'extrude':
+        extrude.extrude_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'extrudes':
+        extrude.extrudes_from_csv_files(ui, title, fullLocationName, groupComponent)
+    elif action == 'create_loft':
+        createloft.create_loft_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'create_lofts':
+        createloft.create_lofts_from_csv_files(ui, title, fullLocationName, groupComponent)
+    elif action == 'combine_bodies':
+        combinebodies.combine_bodies_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'combine_bodies_multiple':
+        combinebodies.combine_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
+    elif action == 'split_body':
+        splitbody.split_body_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'split_body_multiple':
+        splitbody.split_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
+    elif action == 'movecopy':
+        movecopy.movecopy_from_csv_file(ui, title, fullLocationName, groupComponent)
+    elif action == 'movecopy_multiple':
+        movecopy.movecopy_from_csv_files(ui, title, fullLocationName, groupComponent)
+    else:
+        return False
+    return True
 
 
 def construct_assembly_from_csv_file(ui, title, assemblyFilename, hostComponent):
@@ -175,37 +227,8 @@ def construct_assembly_from_csv_file(ui, title, assemblyFilename, hostComponent)
         # Create group component for action result, if it does not already exist
         groupComponent = utilities360.find_or_create_component(assemblyComponent,
                                                                groupComponentName, isLightBulbOn=False)
-
-        # Perform action in groupComponent
-        # . Sketches and planes can be in seperate group components within the
-        #   hostComponent.
-        if action == 'import_sketch':
-            importsketch.create_sketch_from_csv_file(ui, title, fullLocationName, groupComponent)
-        elif action == 'import_sketches':
-            importsketch.create_sketches_from_csv_files(ui, title, fullLocationName, groupComponent)
-        elif action == 'create_plane':
-            createplane.create_plane_from_csv_file(ui, title, fullLocationName, groupComponent)
-        elif action == 'create_planes':
-            createplane.create_planes_from_csv_files(ui, title, fullLocationName, groupComponent)
-
-        # . Bodies need to be in the groupComponent = hostComponent, because
-        #   they build upon on sketches, planes and bodies.
-        elif action == 'extrude':
-            extrude.extrude_from_csv_file(ui, title, fullLocationName, groupComponent)
-        elif action == 'extrudes':
-            extrude.extrudes_from_csv_files(ui, title, fullLocationName, groupComponent)
-        elif action == 'create_loft':
-            createloft.create_loft_from_csv_file(ui, title, fullLocationName, groupComponent)
-        elif action == 'create_lofts':
-            createloft.create_lofts_from_csv_files(ui, title, fullLocationName, groupComponent)
-        elif action == 'combine_bodies':
-            combinebodies.combine_bodies_from_csv_file(ui, title, fullLocationName, groupComponent)
-        elif action == 'combine_bodies_multiple':
-            combinebodies.combine_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
-        elif action == 'split_body':
-            splitbody.split_body_from_csv_file(ui, title, fullLocationName, groupComponent)
-        elif action == 'split_body_multiple':
-            splitbody.split_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
+        # Perform Fusion 360 command in groupComponent
+        perform_action(ui, title, fullLocationName, groupComponent, action)
     interface360.print_text(ui, 'Created assembly for ' + assemblyFilename)
     return True
 

@@ -42,7 +42,9 @@ validAssemblyActions = ['echo',
                         'combine_bodies',
                         'combine_bodies_multiple',
                         'split_body',
-                        'split_body_multiple']
+                        'split_body_multiple',
+                        'movecopy',
+                        'movecopy_multiple']
 
 
 def value_to_str(value, toAbs=True):
