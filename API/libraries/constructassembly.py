@@ -37,18 +37,20 @@ Assembly CSV file format:
   - create objects in the Sketches, Bodies or Construction of the group
     component
   - assembly actions:
-    . import_sketch, 'sketch csv filename path'
-    . import_sketches, 'sketches csv directory name'
+    . create_sketch, 'sketch csv filename path'
+    . multiple_create_sketch, 'sketches csv directory name'
     . create_plane, 'plane csv filename path'
-    . create_planes, 'planes csv directory name'
+    . multiple_create_plane, 'planes csv directory name'
     . create_loft, 'loft csv filename path'
-    . create_lofts, 'lofts csv directory name'
-    . combine_bodies, 'combine_body csv filename path'
-    . combine_bodies_multiple, 'combine_bodies_multiple csv directory name'
-    . split_body, 'split_body csv filename path'
-    . split_body_multiple, 'split_body_multiple csv directory name'
-    . movecopy, 'movecopy csv filename path'
-    . movecopy_multiple, 'movecopy_multiple csv directory name'
+    . multiple_create_loft, 'lofts csv directory name'
+    . run_extrude, 'extrude csv filename path'
+    . multiple_run_extrude, 'extrudes csv directory name'
+    . run_combine, 'combine_bodies csv filename path'
+    . multiple_run_combine, 'combine_bodies csv directory name'
+    . run_split, 'split_body csv filename path'
+    . multiple_run_split, 'split_body csv directory name'
+    . run_movecopy, 'movecopy csv filename path'
+    . multiple_run_movecopy, 'movecopy csv directory name'
 
 Remarks:
 . Sketches and planes can be in seperate group components within the
@@ -125,6 +127,8 @@ def parse_csv_assembly_file(ui, title, assemblyFilename):
                 groupComponentName = interfacefiles.extract_component_name(locationName)
                 if len(lineArr) > 2:
                     groupComponentName = lineArr[2]
+                if not groupComponentName:
+                    ui.messageBox('Missing group component name in %s' % assemblyFilename, title)
             actionTuple = (action, echoString, locationName, groupComponentName)
             actions.append(actionTuple)
 
@@ -149,36 +153,36 @@ def perform_action(ui, title, fullLocationName, groupComponent, action):
     """
     # . Sketches and planes can be in seperate group components within the
     #   hostComponent.
-    if action == 'import_sketch':
+    if action == 'create_sketch':
         importsketch.create_sketch_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'import_sketches':
+    elif action == 'multiple_create_sketch':
         importsketch.create_sketches_from_csv_files(ui, title, fullLocationName, groupComponent)
     elif action == 'create_plane':
         createplane.create_plane_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'create_planes':
+    elif action == 'multiple_create_plane':
         createplane.create_planes_from_csv_files(ui, title, fullLocationName, groupComponent)
 
     # . Bodies need to be in the groupComponent = hostComponent, because
     #   they build upon on sketches, planes and bodies.
-    elif action == 'extrude':
+    elif action == 'run_extrude':
         extrude.extrude_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'extrudes':
+    elif action == 'multiple_run_extrude':
         extrude.extrudes_from_csv_files(ui, title, fullLocationName, groupComponent)
     elif action == 'create_loft':
         createloft.create_loft_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'create_lofts':
+    elif action == 'multiple_create_loft':
         createloft.create_lofts_from_csv_files(ui, title, fullLocationName, groupComponent)
-    elif action == 'combine_bodies':
+    elif action == 'run_combine':
         combinebodies.combine_bodies_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'combine_bodies_multiple':
+    elif action == 'multiple_run_combine':
         combinebodies.combine_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
-    elif action == 'split_body':
+    elif action == 'run_split':
         splitbody.split_body_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'split_body_multiple':
+    elif action == 'multiple_run_split':
         splitbody.split_bodies_from_csv_files(ui, title, fullLocationName, groupComponent)
-    elif action == 'movecopy':
+    elif action == 'run_movecopy':
         movecopy.movecopy_from_csv_file(ui, title, fullLocationName, groupComponent)
-    elif action == 'movecopy_multiple':
+    elif action == 'multiple_run_movecopy':
         movecopy.movecopy_from_csv_files(ui, title, fullLocationName, groupComponent)
     else:
         return False

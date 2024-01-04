@@ -22,6 +22,7 @@ See schemacsv360.py for coordinates and plane definitions.
 
 Plane CSV file format:
 . comment lines or comment in line will be removed
+. use stripped filename as plane name
 . first line: 'plane' as filetype
 . second line: resolution 'mm' or 'cm'
 . next line: first point coordinates x, y, z

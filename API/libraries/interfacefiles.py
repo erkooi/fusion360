@@ -21,8 +21,8 @@
 import os.path
 
 # Lists of valid key words in CSV files for generating objects in Fusion360
-validFileTypes = ['sketch', 'plane', 'loft', 'combine', 'split', 'assembly']
-validUnits = ['mm', 'cm']
+validCsvFileTypes = ['sketch', 'plane', 'loft', 'extrude', 'combine', 'split', 'movecopy', 'assembly']
+validUnits = ['mm', 'cm', 'm']
 validPlaneNormals = ['x', 'y', 'z']
 validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
 validRailTypes = ['co_rail', 'cross_rails']
@@ -30,21 +30,23 @@ validCombineOperations = ['join', 'cut', 'intersect']
 validSplitToolTypes = ['plane', 'body']
 validMoveObjects = ['component', 'body']
 validMoveOperations = ['move', 'copy', 'remove', 'translate', 'rotate']
+# For assembly create actions the order is dont care, for assembly run actions
+# the order can matter.
 validAssemblyActions = ['echo',
-                        'import_sketch',
-                        'import_sketches',
+                        'create_sketch',
+                        'multiple_create_sketch',
                         'create_plane',
-                        'create_planes',
+                        'multiple_create_plane',
                         'create_loft',
-                        'create_lofts',
-                        'extrude',
-                        'extrudes',
-                        'combine_bodies',
-                        'combine_bodies_multiple',
-                        'split_body',
-                        'split_body_multiple',
-                        'movecopy',
-                        'movecopy_multiple']
+                        'multiple_create_loft',
+                        'run_extrude',
+                        'multiple_run_extrude',
+                        'run_combine',
+                        'multiple_run_combine',
+                        'run_split',
+                        'multiple_run_split',
+                        'run_movecopy',
+                        'multiple_run_movecopy']
 
 
 def value_to_str(value, toAbs=True):
@@ -90,7 +92,7 @@ def extract_object_name(filename):
     Input:
     . filename: filename with extension and optional directory
     Return:
-    . objectName: extracted name or empty string
+    . objectName: extracted name, or empty string when filename as no extension
     """
     # take part after last separator '/' in filename string, or filename string
     # if there is no separator '/' in filename string.
@@ -116,7 +118,8 @@ def extract_component_name(filepathname):
     Input:
     . filepathname: filename or directory name
     Return:
-    . componentName: extracted name or empty string
+    . componentName: extracted name or empty string when filepathname contains
+      no directory
     """
     # Directory name is last last part in filepathname, without the filename
     basename = os.path.basename(filepathname)
@@ -295,77 +298,14 @@ def convert_data_lines_to_lists(fileLines):
     return dataLists
 
 
-def write_profile_sketch_files(fileLines):
-    """Write profile sketches in fileLines into seperate CSV files.
-
-    Sketch CSV files are put in folder specified per file.
-
-    Input:
-    . fileLines: lines from file that define one or more profile sketches
-    Return: number of files written
-    """
-    li = 0
-    sketchLines = []
-    nofFiles = 0
-
-    # Find sketches in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a sketch in fileLines contains:
-            # . file type 'sketch',
-            # . folder name for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'sketch':
-                sketchFolder = create_folder(entries[1])
-                li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a sketch in fileLines contains info for sketch filename
-            entries = get_file_line_entries(fLine)
-            planeNormal = entries[0]
-            planeOffset = entries[1]
-            sketchName = entries[2]
-            po = str(abs(int(planeOffset)))
-            sketchFilename = planeNormal + '_' + po + '_' + sketchName + '.csv'
-            sketchFilename = os.path.join(sketchFolder, sketchFilename)
-            sketchLines = []
-            sketchLines.append('sketch\n')  # write file type
-            sketchLines.append('mm\n')  # write units
-            sketchLines.append(planeNormal + ', ' + planeOffset + '\n')
-        elif fLine.strip():
-            li += 1
-            # Pass on next fileLines until empty line in fileLines
-            entries = get_file_line_entries(fLine)
-            segmentType = entries[0]
-            if segmentType in validSegmentTypes:
-                # New segment line, only pass on segmentType, omit any other entries
-                sketchLines.append(segmentType + '\n')
-            else:
-                # Line with values, pass on as is
-                sketchLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write sketch file
-            print('write_profile_sketch_files: %s' % sketchFilename)
-            with open(sketchFilename, 'w') as fp:
-                fp.writelines(sketchLines)
-                nofFiles += 1
-            # . Prepare for next sketch in fileLines
-            li = 0
-            sketchLines = []
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_profile_sketch_files'))
-    return nofFiles
-
-
-def write_co_rail_sketch_files(fileLines):
+def write_co_rail_sketch_csv_files(fileLines, units):
     """Write co rail sketches for segments with a co_rail name from sketches
     in fileLines.
 
     Inputs:
     . fileLines: lines from a points file with sketches, that contain segments
         with optional co_rail name.
+    . units: units from validUnits
     Input:
     . fileLines: lines from file that define one or more profile sketches
     Return: number of files written
@@ -380,11 +320,13 @@ def write_co_rail_sketch_files(fileLines):
             # First line of a sketch in fileLines contains:
             # . file type 'sketch',
             # . folder name for CSV file.
+            # . filename for CSV file.
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'sketch':
                 coRailFolderStr = entries[1] + '_rails'
+                sketchName = entries[2]
                 li += 1
         elif li == 1:
             li += 1
@@ -392,11 +334,10 @@ def write_co_rail_sketch_files(fileLines):
             entries = get_file_line_entries(fLine)
             planeNormal = entries[0]
             planeOffset = entries[1]
-            sketchName = entries[2]
-            po = str(abs(int(planeOffset)))
             sketchLines = []
             sketchLines.append('sketch\n')  # write file type
-            sketchLines.append('mm\n')  # write units
+            if units in validUnits:
+                sketchLines.append(units + '\n')  # write units
             sketchLines.append(planeNormal + ', ' + planeOffset + '\n')
             coRailName = []
             coRailFilename = ''
@@ -409,7 +350,7 @@ def write_co_rail_sketch_files(fileLines):
             if segmentType in validSegmentTypes:
                 if coRailName:
                     # Write co rail sketch file for previous segment
-                    print('write_co_rail_sketch_files: %s' % coRailFilename)
+                    print('write_co_rail_sketch_csv_files: %s' % coRailFilename)
                     with open(coRailFilename, 'w') as fp:
                         fp.writelines(sketchLines)
                         fp.writelines(coRailLines)
@@ -421,7 +362,7 @@ def write_co_rail_sketch_files(fileLines):
                 if coRailName:
                     # Use new segment as co rail
                     coRailFolder = create_folder(coRailFolderStr)
-                    coRailFilename = planeNormal + '_' + po + '_' + sketchName + '_' + coRailName[0] + '.csv'
+                    coRailFilename = sketchName + '_' + coRailName[0] + '.csv'
                     coRailFilename = os.path.join(coRailFolder, coRailFilename)
                     coRailLines.append(segmentType + '\n')
             else:
@@ -433,7 +374,7 @@ def write_co_rail_sketch_files(fileLines):
             # sketch section in fileLines
             li = 0
             sketchLines = []
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_co_rail_sketch_files'))
+    print('write_co_rail_sketch_csv_files: Wrote %d CSV files' % nofFiles)
     return nofFiles
 
 
@@ -495,7 +436,7 @@ def _get_cross_rails_plane_normal(fLine, ln, planeType):
     Return: plane type plane_normal
     """
     if planeType not in ['profile', 'rail']:
-        print('ERROR invalid plane type for _get_cross_rails_plane_normal()')
+        print('ERROR line %d: invalid plane type for _get_cross_rails_plane_normal()' % ln)
         return ''
     entries = get_file_line_entries(fLine)
     if entries[0] == planeType + '_plane_normal':
@@ -520,7 +461,7 @@ def _get_cross_rails_rail_plane_offsets(fLine, ln):
         railPlaneOffsets = convert_entries_to_floats(entries[1:])
         return railPlaneOffsets  # OK
     else:
-        print('ERROR line %d: missing rail_plane_offsets')
+        print('ERROR line %d: missing rail_plane_offsets' % ln)
         return []
 
 
@@ -538,7 +479,7 @@ def _get_cross_rails_rail_segment_type(fLine, ln):
             return ''
         return railSegmentType  # OK
     else:
-        print('ERROR line %d: missing rail_segment_type')
+        print('ERROR line %d: missing rail_segment_type' % ln)
         return ''
 
 
@@ -611,7 +552,7 @@ def read_cross_rails_definitions(fileLines):
             # Empty line marks end of section in fileLines, prepare for next
             # cross_rails section in fileLines
             li = 0
-    print('Found %d cross_rails sections by read_cross_rails_definitions' % len(crossRailsTuples))
+    print('read_cross_rails_definitions: Found %d cross_rails sections' % len(crossRailsTuples))
     return crossRailsTuples
 
 
@@ -682,26 +623,28 @@ def get_cross_rail_points(fileLines, profilePlaneNormal, railName, railPlaneNorm
     return result
 
 
-def write_cross_rail_points_sketch_file(railPlaneNormal, railPlaneOffset, segmentType, railPoints, filename):
+def write_cross_rail_sketch_csv_file(filename, units, railPlaneNormal, railPlaneOffset, segmentType, railPoints):
     """Write rail of railPoints into sketch file.
 
     Input:
+    . filename: full path and name of file
+    . units: units from validUnits
     . railPlaneNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
     . railPlaneOffset: offset from origin plane
     . segmentType: string in validSegmentTypes in importsketch.py
     . railPoints: list of rail point coordinates (x, y, z) obtained from
         get_cross_rail_points()
-    . filename: full path and name of file
     Return: number of files written
     """
     nofFiles = 0
     if len(railPoints) > 1:
-        print('write_cross_rail_points_sketch_file : %s' % filename)
+        print('write_cross_rail_sketch_csv_file: %s' % filename)
         with open(filename, 'w') as fp:
             # Write file type
             fp.write('sketch\n')
             # Write units
-            fp.write('mm\n')
+            if units in validUnits:
+                fp.write(units + '\n')
             # Write plane normal and offset
             fp.write(railPlaneNormal + ', ' + str(railPlaneOffset) + '\n')
             # Write points with segmentType
@@ -719,11 +662,11 @@ def write_cross_rail_points_sketch_file(railPlaneNormal, railPlaneOffset, segmen
                 fp.write('%.2f, %.2f\n' % (a, b))  # use 0.01 mm resolution
             nofFiles += 1
     else:
-        print('write_cross_rail_points_sketch_file: no points for %s' % filename)
+        print('write_cross_rail_sketch_csv_file: no points for %s' % filename)
     return nofFiles
 
 
-def write_cross_rail_points_sketch_files(fileLines):
+def write_cross_rail_sketch_csv_files(fileLines, units):
     """Get railPoints and write rail of railPoints into sketch file, for all
     cross_rails definitions in fileLines.
 
@@ -734,8 +677,10 @@ def write_cross_rail_points_sketch_files(fileLines):
 
     Within a cross_rails defintion loop over railPlaneOffsets and then write
     one cross rail sketch file per each railName in railNames. Combines
-    get_cross_rail_points() and write_cross_rail_points_sketch_file() for list
-    of railPlaneOffsets and railNames.
+    get_cross_rail_points() and write_cross_rail_sketch_csv_file() for list of
+    railPlaneOffsets and railNames.
+
+    Units from validUnits.
     """
     nofFiles = 0
 
@@ -761,330 +706,55 @@ def write_cross_rail_points_sketch_files(fileLines):
                 filename += railPlaneNormal + '_' + value_to_str(railPlaneOffset) + '_' + railName + '.csv'
                 filename = os.path.join(railsFolder, filename)
                 # Write sketch file
-                nofFiles += write_cross_rail_points_sketch_file(railPlaneNormal, railPlaneOffset,
-                                                                railSegmentType, railPoints, filename)
-        print('Wrote %d csv files in %s with %s' % (nofFiles, railsFolder, 'write_cross_rail_points_sketch_files'))
+                nofFiles += write_cross_rail_sketch_csv_file(filename, units,
+                                                             railPlaneNormal, railPlaneOffset,
+                                                             railSegmentType, railPoints)
+        print('write_cross_rail_sketch_csv_files: Wrote %d CSV files in %s' % (nofFiles, railsFolder))
     return nofFiles
 
 
-def write_loft_files(fileLines):
-    """Write lofts in fileLines into seperate CSV files.
+def write_csv_files(fileLines, csvFileType, units=''):
+    """Write csvFileType sections in fileLines into seperate CSV files.
 
     Input:
-    . fileLines: lines from file that define one or more lofts
-    Return: number of files written
+    . fileLines: lines from points file that define CSV file sections
+    . csvFileType: specific CSV file type section to find and write
+    . units: units from validUnits, or empty string when not applicable.
+    Return: number of CSV files written
     """
     li = 0
     nofFiles = 0
 
-    # Find lofts in fileLines, seperated by one empty line
+    # Find CSV file sections in fileLines, seperated by one empty line
     for fLine in fileLines:
         if li == 0:
-            # First line of a loft in fileLines contains:
-            # . file type 'loft',
-            # . folder name for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'loft':
-                loftFolder = create_folder(entries[1])
-                li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a loft in fileLines contains loft filename
-            loftName = fLine.strip()
-            loftFilename = loftName + '.csv'
-            loftFilename = os.path.join(loftFolder, loftFilename)
-            loftLines = []
-            loftLines.append('loft\n')  # write file type
-            loftLines.append(loftName + '\n')  # write loft name
-        elif fLine.strip():
-            # Pass on next fileLines until empty line in fileLines
-            loftLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write loft file
-            print('write_loft_files: %s' % loftFilename)
-            with open(loftFilename, 'w') as fp:
-                fp.writelines(loftLines)
-                nofFiles += 1
-            # . Prepare for next loft section in fileLines
-            li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_loft_files'))
-    return nofFiles
-
-
-def write_plane_files(fileLines):
-    """Write planes in fileLines into seperate CSV files.
-
-    Input:
-    . fileLines: lines from file that define one or more planes
-    Return: number of files written
-    """
-    li = 0
-    nofFiles = 0
-
-    # Find planes in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a plane in fileLines contains:
-            # . file type 'plane',
-            # . folder name for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'plane':
-                planeFolder = create_folder(entries[1])
-                li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a plane in fileLines contains plane filename
-            planeName = fLine.strip()
-            planeFilename = planeName + '.csv'
-            planeFilename = os.path.join(planeFolder, planeFilename)
-            planeLines = []
-            planeLines.append('plane\n')  # write file type
-            planeLines.append('mm\n')  # write units
-        elif fLine.strip():
-            # Pass on next fileLines until empty line in fileLines
-            planeLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write plane file
-            print('write_plane_files: %s' % planeFilename)
-            with open(planeFilename, 'w') as fp:
-                fp.writelines(planeLines)
-                nofFiles += 1
-            # . Prepare for next plane section in fileLines
-            li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_plane_files'))
-    return nofFiles
-
-
-def write_extrude_files(fileLines):
-    """Write extrude sections in fileLines into seperate extrude CSV files.
-
-    Input:
-    . fileLines: lines from file that define one or more extrude sections
-    Return: number of files written
-    """
-    li = 0
-    nofFiles = 0
-
-    # Find extrude sections in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a extrude section in fileLines contains:
-            # . file type 'extrude',
+            # First line of a CSV file section in fileLines contains:
+            # . CSV file type,
             # . folder name for CSV file,
             # . filename for CSV file.
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
-            if fileType == 'extrude':
-                extrudeFolder = create_folder(entries[1])
-                extrudeFilename = entries[2] + '.csv'
-                extrudeFilename = os.path.join(extrudeFolder, extrudeFilename)
-                extrudeLines = []
-                extrudeLines.append('extrude\n')  # write file type
-                extrudeLines.append('mm\n')  # write units
+            if fileType == csvFileType:
+                csvFolder = create_folder(entries[1])
+                csvFilename = entries[2] + '.csv'
+                csvFilename = os.path.join(csvFolder, csvFilename)
+                csvLines = []
+                csvLines.append(csvFileType + '\n')  # write CSV file type
+                if units:
+                    csvLines.append(units + '\n')  # write units
                 li += 1
         elif fLine.strip():
             # Pass on next fileLines until empty line in fileLines
-            extrudeLines.append(fLine)
+            csvLines.append(fLine)
         else:
             # Empty line marks end of section in fileLines
-            # . Write extrude file
-            print('write_extrude_files: %s' % extrudeFilename)
-            with open(extrudeFilename, 'w') as fp:
-                fp.writelines(extrudeLines)
+            # . Write CSV file
+            with open(csvFilename, 'w') as fp:
+                fp.writelines(csvLines)
                 nofFiles += 1
-            # . Prepare for next extrude section in fileLines
+            print('write_csv_files %s: %s' % (csvFileType, csvFilename))
+            # . Prepare for next CSV section in fileLines
             li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_extrude_bodies_files'))
-    return nofFiles
-
-
-def write_combine_bodies_files(fileLines):
-    """Write combine bodies sections in fileLines into seperate combine bodies CSV files.
-
-    Input:
-    . fileLines: lines from file that define one or more combine bodies sections
-    Return: number of files written
-    """
-    li = 0
-    nofFiles = 0
-
-    # Find combine bodies sections in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a combine bodies section in fileLines contains:
-            # . file type 'combine',
-            # . folder name for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'combine':
-                combineFolder = create_folder(entries[1])
-                li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a combine bodies section in fileLines contains
-            # combine bodies filename
-            combineName = fLine.strip()
-            combineFilename = combineName + '.csv'
-            combineFilename = os.path.join(combineFolder, combineFilename)
-            combineLines = []
-            combineLines.append('combine\n')  # write file type
-            combineLines.append(combineName + '\n')  # write combine name
-        elif fLine.strip():
-            # Pass on next fileLines until empty line in fileLines
-            combineLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write combine bodies file
-            print('write_combine_bodies_files: %s' % combineFilename)
-            with open(combineFilename, 'w') as fp:
-                fp.writelines(combineLines)
-                nofFiles += 1
-            # . Prepare for next combine bodies section in fileLines
-            li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_combine_bodies_files'))
-    return nofFiles
-
-
-def write_split_body_files(fileLines):
-    """Write split body sections in fileLines into seperate CSV files.
-
-    Input:
-    . fileLines: lines from file that define one or more split body sections
-    Return: number of files written
-    """
-    li = 0
-    nofFiles = 0
-
-    # Find split body sections in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a split body section in fileLines contains:
-            # . file type 'split',
-            # . folder name for CSV file.
-            # . filename for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'split':
-                splitFolder = create_folder(entries[1])
-                splitFilename = entries[2] + '.csv'
-                splitFilename = os.path.join(splitFolder, splitFilename)
-                splitLines = []
-                splitLines.append('split\n')  # write file type
-                li += 1
-        elif fLine.strip():
-            # Pass on next fileLines until empty line in fileLines
-            splitLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write split body file
-            print('write_split_body_files: %s' % splitFilename)
-            with open(splitFilename, 'w') as fp:
-                fp.writelines(splitLines)
-                nofFiles += 1
-            # . Prepare for next split bodies section in fileLines
-            li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_split_body_files'))
-    return nofFiles
-
-
-def write_movecopy_files(fileLines):
-    """Write move or copy sections in fileLines into seperate CSV files.
-
-    Input:
-    . fileLines: lines from file that define one or more move or copy sections
-    Return: number of files written
-    """
-    li = 0
-    nofFiles = 0
-
-    # Find move or copy sections in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a move or copy section in fileLines contains:
-            # . file type 'movecopy',
-            # . folder name for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'movecopy':
-                moveCopyFolder = create_folder(entries[1])
-                li += 1
-        elif li == 1:
-            li += 1
-            # Second line of a move or copy section in fileLines contains
-            # info for move or copy filename
-            entries = get_file_line_entries(fLine)
-            objectType = entries[0]
-            objectName = entries[1]
-            moveCopyFilename = 'movecopy_' + objectType + '_' + objectName + '.csv'
-            moveCopyFilename = os.path.join(moveCopyFolder, moveCopyFilename)
-            moveCopyLines = []
-            moveCopyLines.append('movecopy\n')  # write file type
-            moveCopyLines.append('mm\n')  # write units
-            moveCopyLines.append(objectType + ', ' + objectName + '\n')  # write object type
-        elif fLine.strip():
-            # Pass on next fileLines until empty line in fileLines
-            moveCopyLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write move or copy file
-            print('write_movecopy_files: %s' % moveCopyFilename)
-            with open(moveCopyFilename, 'w') as fp:
-                fp.writelines(moveCopyLines)
-                nofFiles += 1
-            # . Prepare for next move or copy section in fileLines
-            li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_movecopy_files'))
-    return nofFiles
-
-
-def write_assembly_files(fileLines):
-    """Write assembly in fileLines into seperate assembly CSV files.
-
-    Input:
-    . fileLines: lines from file that define one or more assemblies
-    Return: number of files written
-    """
-    li = 0
-    nofFiles = 0
-
-    # Find assemblies in fileLines, seperated by one empty line
-    for fLine in fileLines:
-        if li == 0:
-            # First line of a assembly in fileLines contains:
-            # . file type 'assembly',
-            # . folder name for CSV file.
-            # . filename for CSV file.
-            # Skip lines for other file types.
-            entries = get_file_line_entries(fLine)
-            fileType = entries[0]
-            if fileType == 'assembly':
-                assemblyFolder = create_folder(entries[1])
-                assemblyFilename = entries[2] + '.csv'
-                assemblyFilename = os.path.join(assemblyFolder, assemblyFilename)
-                assemblyLines = []
-                assemblyLines.append('assembly\n')  # write file type
-                li += 1
-        elif fLine.strip():
-            # Pass on next fileLines until empty line in fileLines
-            assemblyLines.append(fLine)
-        else:
-            # Empty line marks end of section in fileLines
-            # . Write assembly file
-            print('write_assembly_files: %s' % assemblyFilename)
-            with open(assemblyFilename, 'w') as fp:
-                fp.writelines(assemblyLines)
-                nofFiles += 1
-            # . Prepare for next assembly section in fileLines
-            li = 0
-    print('Wrote %d csv files for %s' % (nofFiles, 'write_assembly_files'))
+    print('write_csv_files %s: Wrote %d CSV files' % (csvFileType, nofFiles))
     return nofFiles

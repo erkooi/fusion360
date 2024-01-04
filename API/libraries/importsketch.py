@@ -72,14 +72,14 @@ def read_segment_type(ui, title, filename, lineWord):
     return (True, segmentType)
 
 
-def get_segment_spline_point(ui, title, filename, planeNormal, scale, dataArr):
+def get_segment_spline_point(ui, title, filename, planeNormal, unitScale, dataArr):
     """Get 2D point in offset plane with optional tangent angle and length.
 
     Map yz, zx, xy 2D point in dataArr to xy point in offset plane with z = 0.
 
     Input:
     . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . scale: scale factor between dataArr unit and API cm unit
+    . unitScale: scale factor between dataArr unit and API cm unit
     . dataArr: 2D point in offset plane
         [0] = x coordinate in offset plane
         [1] = y coordinate in offset plane
@@ -96,7 +96,8 @@ def get_segment_spline_point(ui, title, filename, planeNormal, scale, dataArr):
     """
     try:
         # Get point3D in offset plane
-        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename, planeNormal, scale, dataArr)
+        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                    planeNormal, unitScale, dataArr)
         if not result:
             raise Exception
         # Get optional point tangent angle and length
@@ -105,7 +106,7 @@ def get_segment_spline_point(ui, title, filename, planeNormal, scale, dataArr):
             angle = float(dataArr[2])
         length = None
         if len(dataArr) > 3:
-            length = float(dataArr[3]) * scale
+            length = float(dataArr[3]) * unitScale
         if len(dataArr) > 4:
             raise Exception
         tangent = (angle, length)
@@ -117,12 +118,12 @@ def get_segment_spline_point(ui, title, filename, planeNormal, scale, dataArr):
     return result
 
 
-def get_segment_offset(ui, title, filename, planeNormal, scale, dataArr):
+def get_segment_offset(ui, title, filename, planeNormal, unitScale, dataArr):
     """Get offset parameters for offset_curve segment
 
     Input:
     . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . scale: scale factor between dataArr unit and API cm unit
+    . unitScale: scale factor between dataArr unit and API cm unit
     . dataArr:
         [0] = x coordinate in plane, for offset direction of offset_curve
         [1] = y coordinate in plane, for offset direction of offset_curve
@@ -138,11 +139,11 @@ def get_segment_offset(ui, title, filename, planeNormal, scale, dataArr):
     try:
         # Get point3D for offset direction of offset_curve in offset plane
         result, directionPoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
-                                                                             planeNormal, scale, dataArr)
+                                                                             planeNormal, unitScale, dataArr)
         if not result:
             raise Exception
         # Get offset distance for offset_curve
-        offsetDistance = float(dataArr[2]) * scale
+        offsetDistance = float(dataArr[2]) * unitScale
         offsetTuple = (directionPoint3D, offsetDistance)
         result = (True, offsetTuple)
     except Exception:
@@ -151,12 +152,12 @@ def get_segment_offset(ui, title, filename, planeNormal, scale, dataArr):
     return result
 
 
-def get_segment_circle(ui, title, filename, planeNormal, scale, dataArr):
+def get_segment_circle(ui, title, filename, planeNormal, unitScale, dataArr):
     """Get circle parameters for circle segment.
 
     Input:
     . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . scale: scale factor between dataArr unit and API cm unit
+    . unitScale: scale factor between dataArr unit and API cm unit
     . dataArr:
         [0] = center x coordinate in plane
         [1] = center y coordinate in plane
@@ -172,11 +173,11 @@ def get_segment_circle(ui, title, filename, planeNormal, scale, dataArr):
     try:
         # Get point3D for center of circle in offset plane
         result, centerPoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
-                                                                          planeNormal, scale, dataArr)
+                                                                          planeNormal, unitScale, dataArr)
         if not result:
             raise Exception
         # Get radius of circle
-        radius = float(dataArr[2]) * scale
+        radius = float(dataArr[2]) * unitScale
         circleTuple = (centerPoint3D, radius)
         result = (True, circleTuple)
     except Exception:
@@ -258,7 +259,7 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
     Return:
     . result: True when valid locationsTuple, else False with None
     . locationsTuple:
-      - scale: scale factor between sketch unit and API cm unit
+      - unitScale: scale factor between sketch unit and API cm unit
       - planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
       - planeOffset: offset from origin plane
       - segmentLocations: list of sketch segment sections in lineLists, with
@@ -276,12 +277,12 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
                 return resultFalse
         elif li == 1:
             # Read units
-            result, scale = schemacsv360.read_units(ui, title, filename, lineWord)
+            result, unitScale = schemacsv360.read_units(ui, title, filename, lineWord)
             if not result:
                 return resultFalse
         elif li == 2:
             # Read plane normal axis and offset of the sketch plane from lineArr
-            result, planeTuple = schemacsv360.read_offset_plane(ui, title, filename, scale, lineArr)
+            result, planeTuple = schemacsv360.read_offset_plane(ui, title, filename, unitScale, lineArr)
             if not result:
                 return resultFalse
             planeNormal, planeOffset = planeTuple
@@ -292,7 +293,7 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
             liLast = li
         else:
             # Locate sketch segments in fileLines
-            if len(lineArr) == 1:
+            if lineWord in interfacefiles.validSegmentTypes:
                 # Append location and type of previous sketch segment
                 if li > liStart + 1:
                     segmentLocations.append((liStart, liLast, segmentType))
@@ -302,21 +303,22 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
                     return resultFalse
                 liStart = li
             else:
+                # Continue with current sketch segment
                 liLast = li
     # Append location and type of last sketch segment
     segmentLocations.append((liStart, liLast, segmentType))
     # Successfully reached end of file
-    locationsTuple = (scale, planeNormal, planeOffset, segmentLocations)
+    locationsTuple = (unitScale, planeNormal, planeOffset, segmentLocations)
     return (True, locationsTuple)
 
 
-def parse_sketch_segment_sections(ui, title, filename, planeNormal, scale, lineLists, segmentLocations):
+def parse_sketch_segment_sections(ui, title, filename, planeNormal, unitScale, lineLists, segmentLocations):
     """Parse sketch segment sections in lineLists. The sketch segments sections
     are identified by a list of segmentLocations.
 
     Input:
     . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . scale: scale factor between sketch unit and API cm unit
+    . unitScale: scale factor between sketch unit and API cm unit
     . lineLists: list of lists of data values per read line
     . segmentLocations: list of sketch segment sections in lineLists, with
       start line index, end line index and segmentType per section.
@@ -332,22 +334,22 @@ def parse_sketch_segment_sections(ui, title, filename, planeNormal, scale, lineL
     for (liStart, liLast, segmentType) in segmentLocations:
         result = False
         if segmentType == 'spline':
-            result, segmentTuple = parse_segment_spline(ui, title, filename, planeNormal, scale,
+            result, segmentTuple = parse_segment_spline(ui, title, filename, planeNormal, unitScale,
                                                         liStart, liLast, lineLists)
         elif segmentType == 'line':
-            result, segmentTuple = parse_segment_line(ui, title, filename, planeNormal, scale,
+            result, segmentTuple = parse_segment_line(ui, title, filename, planeNormal, unitScale,
                                                       liStart, liLast, lineLists)
         elif segmentType == 'arc':
-            result, segmentTuple = parse_segment_arc(ui, title, filename, planeNormal, scale,
+            result, segmentTuple = parse_segment_arc(ui, title, filename, planeNormal, unitScale,
                                                      liStart, liLast, lineLists)
         elif segmentType == 'offset_curve':
-            result, segmentTuple = parse_segment_offset_curve(ui, title, filename, planeNormal, scale,
+            result, segmentTuple = parse_segment_offset_curve(ui, title, filename, planeNormal, unitScale,
                                                               liStart, lineLists)
         elif segmentType == 'circle':
-            result, segmentTuple = parse_segment_circle(ui, title, filename, planeNormal, scale,
+            result, segmentTuple = parse_segment_circle(ui, title, filename, planeNormal, unitScale,
                                                         liStart, liLast, lineLists)
         elif segmentType == 'point':
-            result, segmentTuple = parse_segment_point(ui, title, filename, planeNormal, scale,
+            result, segmentTuple = parse_segment_point(ui, title, filename, planeNormal, unitScale,
                                                        liStart, liLast, lineLists)
         if result:
             segments.append(segmentTuple)
@@ -384,14 +386,14 @@ def parse_csv_sketch_file(ui, title, filename):
     result, locationsTuple = find_sketch_segment_sections(ui, title, filename, lineLists)
     if not result:
         return resultFalse
-    scale = locationsTuple[0]
+    unitScale = locationsTuple[0]
     planeNormal = locationsTuple[1]
     planeOffset = locationsTuple[2]
     segmentLocations = locationsTuple[3]
 
     # Parse sketch segment sections
     result, segments = parse_sketch_segment_sections(ui, title, filename,
-                                                     planeNormal, scale, lineLists, segmentLocations)
+                                                     planeNormal, unitScale, lineLists, segmentLocations)
     if not result:
         return resultFalse
     # Successfully reached end of file
@@ -399,13 +401,13 @@ def parse_csv_sketch_file(ui, title, filename):
     return (True, sketchTuple)
 
 
-def parse_segment_spline(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+def parse_segment_spline(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
     """Parse spline segment section from file lines [liStart : liLast + 1] in
        lineLists.
 
     Input:
     . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
-    . scale: scale factor between sketch unit and API cm unit
+    . unitScale: scale factor between sketch unit and API cm unit
     . liStart: file line index of segmentType 'spline' in lineLists, so file
         line at liStart + 1 contains the point data for the first spline point
     . liEnd: file line at liEnd index contains point data for the last spline
@@ -439,7 +441,7 @@ def parse_segment_spline(ui, title, filename, planeNormal, scale, liStart, liLas
     # Read 2D point in offset plane, one 2D point per file line
     for li in range(liStart + 1, liLast + 1):
         dataArr = lineLists[li]
-        result, pointTuple = get_segment_spline_point(ui, title, filename, planeNormal, scale, dataArr)
+        result, pointTuple = get_segment_spline_point(ui, title, filename, planeNormal, unitScale, dataArr)
         if not result:
             return resultFalse
         point3D, tangent = pointTuple
@@ -453,7 +455,7 @@ def parse_segment_spline(ui, title, filename, planeNormal, scale, liStart, liLas
     return (True, segmentTuple)
 
 
-def parse_segment_line(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+def parse_segment_line(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
     """Parse line segment section from lines [liStart : liLast + 1] in
        lineLists.
 
@@ -475,7 +477,8 @@ def parse_segment_line(ui, title, filename, planeNormal, scale, liStart, liLast,
     # Read 2D point in offset plane, one 2D point per file line
     for li in range(liStart + 1, liLast + 1):
         dataArr = lineLists[li]
-        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename, planeNormal, scale, dataArr)
+        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                    planeNormal, unitScale, dataArr)
         if not result:
             return resultFalse
         segmentPoints.add(point3D)
@@ -487,7 +490,7 @@ def parse_segment_line(ui, title, filename, planeNormal, scale, liStart, liLast,
     return (True, segmentTuple)
 
 
-def parse_segment_arc(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+def parse_segment_arc(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
     """Parse arc segment section from lines [liStart : liLast + 1] in lineLists.
 
     Same interface as parse_segment_spline(), but with arc parameters.
@@ -510,13 +513,15 @@ def parse_segment_arc(ui, title, filename, planeNormal, scale, liStart, liLast, 
     for li in range(liStart + 1, liLast + 1):
         dataArr = lineLists[li]
         if len(dataArr) != 6:
+            ui.messageBox('No valid arc data in %s at %d' % (filename, lineNr), title)
             return resultFalse
         dataPoints = (dataArr[0:2], dataArr[2:4], dataArr[4:6])
         arcPoints = adsk.core.ObjectCollection.create()
         for dataPoint in dataPoints:
             result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
-                                                                        planeNormal, scale, dataPoint)
+                                                                        planeNormal, unitScale, dataPoint)
             if not result:
+                ui.messageBox('No valid arc point3D in %s at %d' % (filename, lineNr), title)
                 return resultFalse
             arcPoints.add(point3D)
         segmentArcs.append(arcPoints)
@@ -524,7 +529,7 @@ def parse_segment_arc(ui, title, filename, planeNormal, scale, liStart, liLast, 
     return (True, segmentTuple)
 
 
-def parse_segment_offset_curve(ui, title, filename, planeNormal, scale, liStart, lineLists):
+def parse_segment_offset_curve(ui, title, filename, planeNormal, unitScale, liStart, lineLists):
     """Parse offset_curve segment section from lines [liStart : liStart + 1] in
        lineLists.
 
@@ -548,7 +553,7 @@ def parse_segment_offset_curve(ui, title, filename, planeNormal, scale, liStart,
         return resultFalse
     # Read 2D offset direction point and offset distance, in offset plane, from file line
     dataArr = lineLists[liStart + 1]
-    result, offsetTuple = get_segment_offset(ui, title, filename, planeNormal, scale, dataArr)
+    result, offsetTuple = get_segment_offset(ui, title, filename, planeNormal, unitScale, dataArr)
     if not result:
         return resultFalse
     directionPoint3D, offsetDistance = offsetTuple
@@ -556,7 +561,7 @@ def parse_segment_offset_curve(ui, title, filename, planeNormal, scale, liStart,
     return (True, segmentTuple)
 
 
-def parse_segment_circle(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+def parse_segment_circle(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
     """Parse circle segment section from lines [liStart : liLast + 1] in
        lineLists.
 
@@ -581,7 +586,7 @@ def parse_segment_circle(ui, title, filename, planeNormal, scale, liStart, liLas
     # Read 2D center point and radius, in offset plane, one circle per file line
     for li in range(liStart + 1, liLast + 1):
         dataArr = lineLists[li]
-        result, circleTuple = get_segment_circle(ui, title, filename, planeNormal, scale, dataArr)
+        result, circleTuple = get_segment_circle(ui, title, filename, planeNormal, unitScale, dataArr)
         if not result:
             return resultFalse
         segmentCircles.append(circleTuple)
@@ -589,7 +594,7 @@ def parse_segment_circle(ui, title, filename, planeNormal, scale, liStart, liLas
     return (True, segmentTuple)
 
 
-def parse_segment_point(ui, title, filename, planeNormal, scale, liStart, liLast, lineLists):
+def parse_segment_point(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
     """Parse point segment section from lines [liStart : liLast + 1] in
        lineLists.
 
@@ -612,7 +617,8 @@ def parse_segment_point(ui, title, filename, planeNormal, scale, liStart, liLast
     # Read 2D point, in offset plane, one point per file line
     for li in range(liStart + 1, liLast + 1):
         dataArr = lineLists[li]
-        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename, planeNormal, scale, dataArr)
+        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                    planeNormal, unitScale, dataArr)
         if not result:
             return resultFalse
         segmentPoints.add(point3D)

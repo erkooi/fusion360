@@ -27,8 +27,8 @@ if there is only one profile:
 
 Loft CSV file format:
 . comment lines or comment in line will be removed
+. use stripped filename as loft name
 . first line: 'loft' as filetype
-. second line: loft name
 . profiles
   - sketch name, optional item index  # one per line
 . rails
@@ -74,19 +74,15 @@ def parse_csv_loft_file(ui, title, filename):
     resultFalse = (False, None)
     for li, lineArr in enumerate(lineLists):
         lineWord = lineArr[0]
-        itemIndex = 0
-        if len(lineArr) > 1:
-            itemIndex = int(lineArr[1])
         if li == 0:
             if lineWord != 'loft':
                 return resultFalse
-        elif li == 1:
             profileTuples = []
             railTuples = []
             addProfiles = False
             addRails = False
-            # Read loft name
-            loftName = lineWord
+            # Extract loft name from filename
+            loftName = interfacefiles.extract_object_name(filename)
         else:
             # Read sketch names for profiles and rails
             if lineWord == 'profiles':
@@ -96,6 +92,9 @@ def parse_csv_loft_file(ui, title, filename):
                 addProfiles = False
                 addRails = True
             else:
+                itemIndex = 0
+                if len(lineArr) > 1:
+                    itemIndex = int(lineArr[1])
                 if addProfiles:
                     profileTuples.append((lineWord, itemIndex))
                 if addRails:

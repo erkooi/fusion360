@@ -20,9 +20,10 @@
 
 Combine bodies CSV file format:
 . comment lines or comment in line will be removed
+. use stripped filename as combineResultName for combine result of target body,
+  and of new component if result is a new component.
 . first line: 'combine' as filetype
-. second line: combine name of combined bodies
-. third line: operation 'join', 'cut', 'intersect'
+. second line: operation 'join', 'cut', 'intersect'
 . combine_bodies
   - target body name, one first line
   - one or more tool body names, one per line
@@ -53,7 +54,7 @@ def parse_csv_combine_bodies_file(ui, title, filename):
     Return:
     . result: True when valid combineBodiesTuple, else False with none
     . combineBodiesTuple:
-      - combineName: object name of combined bodies
+      - combineResultName: object name of combined bodies
       - operation: 'join', 'cut', or 'intersect'
       - targetBodyName: target body name
       - toolBodyNames: list of tool body names
@@ -78,10 +79,9 @@ def parse_csv_combine_bodies_file(ui, title, filename):
         if li == 0:
             if lineWord0 != 'combine':
                 return resultFalse
+            # Extract combineResultName from filename
+            combineResultName = interfacefiles.extract_object_name(filename)
         elif li == 1:
-            # Read combineName
-            combineName = lineWord0
-        elif li == 2:
             # Read combine operation
             operation = lineWord0
             if operation not in interfacefiles.validCombineOperations:
@@ -114,11 +114,11 @@ def parse_csv_combine_bodies_file(ui, title, filename):
         return resultFalse
 
     # Successfully reached end of file
-    combineBodiesTuple = (combineName, operation, targetBodyName, toolBodyNames, removeBodiesNames)
+    combineBodiesTuple = (combineResultName, operation, targetBodyName, toolBodyNames, removeBodiesNames)
     return (True, combineBodiesTuple)
 
 
-def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineName):
+def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineResultName):
     """Combine bodies in hostComponent into new component or new body in hostComponent.
 
     Input:
@@ -127,7 +127,7 @@ def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, ope
       * combineBody = result of targetBody operation toolBodies
       * Keep targetBody and keep toolBodies.
     . operation: combine operation from validCombineOperations
-    . combineName : name for combineComponent and for combineBody in combineComponent
+    . combineResultName : name for combineComponent and for combineBody in combineComponent
     Return: None
     """
     # Prepare combineFeatureInput for result in new component.
@@ -141,13 +141,13 @@ def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, ope
     combineFeatureInput.isNewComponent = True
     combineFeature = combineFeatures.add(combineFeatureInput)
 
-    # Rename new component to combineName
+    # Rename new component to combineResultName
     combineComponent = combineFeature.parentComponent
-    combineComponent.name = combineName
+    combineComponent.name = combineResultName
 
-    # Rename body in new component to combineName
+    # Rename body in new component to combineResultName
     combineBody = combineComponent.bRepBodies.item(0)
-    combineBody.name = combineName
+    combineBody.name = combineResultName
 
     # Default new combineComponent occurrence is last in rootComponent.
     rootComponent = utilities360.get_root_component(hostComponent)
@@ -159,7 +159,7 @@ def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, ope
     utilities360.move_occurrence_to_occurrence(combineOccurrence, hostOccurrence)
 
 
-def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineName):
+def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineResultName):
     """Combine bodies in hostComponent into new body in hostComponent.
 
     Input:
@@ -169,7 +169,7 @@ def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operatio
       * combineBody = targetBody operation toolBodies
       * Keep targetBody and keep toolBodies.
     . operation: combine operation from validCombineOperations
-    . combineName: name for combineBody
+    . combineResultName: name for combineBody
     Return: None
     """
     # Copy target body in hostOccurrence, because it is used as result for combine body
@@ -187,7 +187,7 @@ def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operatio
     combineFeatures.add(combineFeatureInput)
 
     # Rename new body
-    combineBody.name = combineName
+    combineBody.name = combineResultName
 
 
 def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewComponent=False):
@@ -209,10 +209,10 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     result, combineBodiesTuple = parse_csv_combine_bodies_file(ui, title, filename)
     if not result:
         return False
-    combineName, operation, targetBodyName, toolBodyNames, removeBodiesNames = combineBodiesTuple
+    combineResultName, operation, targetBodyName, toolBodyNames, removeBodiesNames = combineBodiesTuple
 
     # Find body objects in hostComponent
-    targetBody = utilities360.find_body(hostComponent, targetBodyName)
+    targetBody = utilities360.find_body_anywhere(hostComponent, targetBodyName)
     if not targetBody:
         interface360.error_text(ui, 'Target body %s not found' % targetBodyName)
         return False
@@ -223,9 +223,9 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
 
     # Create combine object
     if combineNewComponent:
-        combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineName)
+        combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineResultName)
     else:
-        combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineName)
+        combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operation, combineResultName)
 
     # Remove bodies
     utilities360.remove_bodies_anywhere(ui, hostComponent, removeBodiesNames)

@@ -37,6 +37,8 @@ import createplane
 import createloft
 import combinebodies
 import splitbody
+import extrude
+import movecopy
 import constructassembly
 importlib.reload(interfacefiles)
 importlib.reload(interface360)
@@ -47,6 +49,8 @@ importlib.reload(createplane)
 importlib.reload(createloft)
 importlib.reload(combinebodies)
 importlib.reload(splitbody)
+importlib.reload(extrude)
+importlib.reload(movecopy)
 importlib.reload(constructassembly)
 
 

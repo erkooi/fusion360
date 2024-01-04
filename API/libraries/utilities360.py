@@ -434,10 +434,12 @@ def remove_bodies_anywhere(ui, component, bodyNames):
     Uses ui to report faults via Fusion360 GUI.
     """
     if len(bodyNames) > 0:
-        removeFeatures = component.features.removeFeatures
         for bodyName in bodyNames:
             body = find_body_anywhere(component, bodyName)
             if body:
+                # Must use removeFeatures from parentComponent of body, this
+                # can be component, but may also be a sub component
+                removeFeatures = body.parentComponent.features.removeFeatures
                 removeFeatures.add(body)
             else:
                 interface360.error_text(ui, 'Remove body %s not found in %s' % (bodyName, component.name))
