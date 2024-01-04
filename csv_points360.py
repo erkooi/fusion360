@@ -37,9 +37,9 @@ Schema sections in point txt file:
   interfacefiles.get_cross_rail_points() to include that segment point in a rail
   sketch. The rails are made between points with equal coordinate in different
   profile sketches.
-  - interfacefiles.write_profile_sketch_files()
+  - interfacefiles.write_sketch_files()
   - interfacefikles.write_co_rail_sketch_files()
-  - interfacefiles.write_cross_rail_points_sketch_files()
+  - interfacefiles.write_cross_rail_sketch_files()
 
 . Object keyword: loft
   Create loft CSV files to use with loft.
@@ -87,6 +87,7 @@ if __name__ == '__main__':
     _parser.add_argument('-f', default='f35b_points.txt', type=str, help='Points file name')
     args = _parser.parse_args()
     pointsFilename = args.f
+    units = 'mm'
 
     # Read points file for the planes, sketches, lofts, combine, etc
     fileLines = interfacefiles.read_data_lines_from_file(pointsFilename)
@@ -95,34 +96,34 @@ if __name__ == '__main__':
     nofFiles = 0
 
     # Write plane csv files into folder(s)
-    nofFiles += interfacefiles.write_plane_files(fileLines)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'plane', units)
 
-    # Write profile sketch csv files into folder(s)
-    nofFiles += interfacefiles.write_profile_sketch_files(fileLines)
+    # Write sketch csv files into folder(s)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'sketch', units)
 
     # Write co rail sketches for sketch segments with a co_rail name
-    nofFiles += interfacefiles.write_co_rail_sketch_files(fileLines)
+    nofFiles += interfacefiles.write_co_rail_sketch_csv_files(fileLines, units)
 
     # Write cross rail sketches for points between profile sketches
-    nofFiles += interfacefiles.write_cross_rail_points_sketch_files(fileLines)
+    nofFiles += interfacefiles.write_cross_rail_sketch_csv_files(fileLines, units)
 
     # Write loft csv files into folder(s)
-    nofFiles += interfacefiles.write_loft_files(fileLines)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'loft')
 
     # Write extrude csv files into folder(s)
-    nofFiles += interfacefiles.write_extrude_files(fileLines)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'extrude', units)
 
-    # Write combine bodies csv files into folder(s)
-    nofFiles += interfacefiles.write_combine_bodies_files(fileLines)
+    # Write combine csv files into folder(s)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'combine')
 
-    # Write split body csv files into folder(s)
-    nofFiles += interfacefiles.write_split_body_files(fileLines)
+    # Write split csv files into folder(s)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'split')
 
     # Write movecopy csv files into folder(s)
-    nofFiles += interfacefiles.write_movecopy_files(fileLines)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'movecopy', units)
 
     # Write assembly csv files into folder(s)
-    nofFiles += interfacefiles.write_assembly_files(fileLines)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'assembly')
 
     # Report
     print('Wrote total %d csv files for %s' % (nofFiles, pointsFilename))
