@@ -87,10 +87,13 @@ if __name__ == '__main__':
     _parser.add_argument('-f', default='f35b_points.txt', type=str, help='Points file name')
     args = _parser.parse_args()
     pointsFilename = args.f
-    units = 'mm'
 
-    # Read points file for the planes, sketches, lofts, combine, etc
+    # Read points file
     fileLines = interfacefiles.read_data_lines_from_file(pointsFilename)
+    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
+
+    # Read units
+    units = interfacefiles.read_units_from_file(lineLists)
 
     # Write csv files
     nofFiles = 0

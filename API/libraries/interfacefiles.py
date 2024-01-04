@@ -246,6 +246,29 @@ def read_data_lines_from_file(filename):
     return dataLines
 
 
+def read_units_from_file(lineLists):
+    """Read units from lineLists of file.
+
+    Input:
+    . lineLists: list of lists of data values per read line from file
+    Return:
+    . units: read units, when supported in validUnits, else default to 'mm'
+    """
+    units = 'mm'  # default
+    for li, lineArr in enumerate(lineLists):
+        lineWord = lineArr[0]
+        if lineWord == 'units':
+            units = lineArr[1]
+            if units in validUnits:
+                print('read_units_from_file: %s' % units)
+                return units
+            else:
+                print('ERROR line %d: invalid units' % li)
+                return units
+    print('read_units_from_file: %s (default)' % units)
+    return units
+
+
 def get_file_line_entries(fLine):
     """Strip comma separated values from file line.
 
