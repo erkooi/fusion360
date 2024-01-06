@@ -17,9 +17,9 @@
 # Date: 25 Mar 2023
 """Create separate CSV files from design coordinates defined in a txt file.
 
-The csv_points360.py script uses a points txt file, that defines a design in
-Fusion 360. The points txt file contains schema sections that define CSV files
-for generating objects in Fusion360:
+The csv_timeline360.py script uses a timeline txt file, that defines a design
+in Fusion 360. The timeline txt file contains schema sections that define CSV
+files for generating objects in Fusion360:
 
 - Comment lines or comment in lines will be removed (comment = #)
 - Schema sections start with an object keyword and end with an empty line.
@@ -34,9 +34,9 @@ Schema sections in point txt file:
   Create sketch CSV files. The sketch files can be used for profiles and rails
   to use with loft. For the sketch sections the segmentType can have optional
   railName(s), that will not appear in the CSV file, but are used by
-  interfacefiles.get_cross_rail_points() to include that segment point in a rail
-  sketch. The rails are made between points with equal coordinate in different
-  profile sketches.
+  interfacefiles.get_cross_rail_points() to include that segment point in a
+  rail sketch. The rails are made between points with equal coordinate in
+  different profile sketches.
   - interfacefiles.write_sketch_files()
   - interfacefikles.write_co_rail_sketch_files()
   - interfacefiles.write_cross_rail_sketch_files()
@@ -74,26 +74,30 @@ Usage of CSV files in Fusion360:
    correct order.
 
 Usage on command line:
-> python csv_points360.py -f f35b_points.txt
+> python csv_timeline360.py -f f35b_points.txt
 """
 
 import argparse
 import interfacefiles
+import userparameters
 
 
 if __name__ == '__main__':
     # Parse arguments
-    _parser = argparse.ArgumentParser('csv_points360')
-    _parser.add_argument('-f', default='f35b_points.txt', type=str, help='Points file name')
+    _parser = argparse.ArgumentParser('csv_timeline360')
+    _parser.add_argument('-f', default='f35b_points.txt', type=str, help='Timeline file name')
     args = _parser.parse_args()
-    pointsFilename = args.f
+    timelineFilename = args.f
 
-    # Read points file
-    fileLines = interfacefiles.read_data_lines_from_file(pointsFilename)
-    lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
+    # Read timeline file
+    fileLines = interfacefiles.read_data_lines_from_file(timelineFilename)
 
     # Read units
-    units = interfacefiles.read_units_from_file(lineLists)
+    units = interfacefiles.read_units_from_file(fileLines)
+
+    # Process parameters
+    parametersDict = userparameters.read_parameters_from_file(fileLines)
+    fileLines = userparameters.replace_parameters_in_file(fileLines, parametersDict)
 
     # Write csv files
     nofFiles = 0
@@ -129,4 +133,6 @@ if __name__ == '__main__':
     nofFiles += interfacefiles.write_csv_files(fileLines, 'assembly')
 
     # Report
-    print('Wrote total %d csv files for %s' % (nofFiles, pointsFilename))
+    print('Wrote total %d csv files for %s' % (nofFiles, timelineFilename))
+
+    userparameters.print_parameters_dict(parametersDict)
