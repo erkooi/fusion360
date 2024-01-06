@@ -19,6 +19,7 @@
 """
 
 import os.path
+import math
 
 # Lists of valid key words in CSV files for generating objects in Fusion360
 validCsvFileTypes = ['sketch', 'plane', 'loft', 'extrude', 'combine', 'split', 'movecopy', 'assembly']
@@ -49,17 +50,48 @@ validAssemblyActions = ['echo',
                         'multiple_run_movecopy']
 
 
-def value_to_str(value, toAbs=True):
+def value_to_str(value, toAbs=False, pointChar='.'):
     """Convert scalar value into string.
 
-    . Make value positive if toAbs = true, else keep '-' in string
-    . Replace '.' by '_' in case of float value.
-    . If float value is an integer, then convert to integer string
+    If 1x, 10x, 100x, 1000x, ... float value is close to integer, then convert
+    to integer string (0 decimals) or to float string with 1, 2, 3, ...
+    decimals.
+
+    Choose maxNofDecimals = 12, to have rel_tol=1e-12, abs_tol=1e-12, to
+    be more accurate than Fusion360:
+    . application.pointTolerance = 1.000000e-08 m = 10.000000 nm
+    . application.vectorAngleTolerance = 1.000000e-10 rad = 5.729578e-09 degrees
+
+    math.isclose:
+    . rel_tol: relative tolerance for math.isclose(), to compare values that
+      are != 0
+    . abs_tol: absolute tolerance for math.isclose(), to compare value to 0
+
+    Input:
+    . value: integer or float value
+    . toAbs: make value positive if toAbs = true, else keep sign '-' in string
+    . pointChar: replace '.' by pointChar in case of float value.
+
+    Return:
+    . value string with appropriate number of decimals
     """
+    maxNofDecimals = 15
+    tolerance = 1.0 / 10**maxNofDecimals
+    # optional toAbs
     val = abs(value) if toAbs else value
-    valStr = str(val).replace('.', '_')
-    if valStr[-2:] == '_0':
-        valStr = valStr[0:-2]
+    # determine number of decimals
+    for nofDecimals in range(maxNofDecimals + 1):
+        floatVal = 10**nofDecimals * val
+        integerVal = int(round(floatVal))
+        if math.isclose(floatVal, integerVal, rel_tol=tolerance, abs_tol=tolerance):
+            break
+    # convert to string
+    valStr = '%.*f' % (nofDecimals, val)
+    # convert -0 to 0
+    if valStr == '-0':
+        valStr = '0'
+    # optional pointChar
+    valStr = valStr.replace('.', pointChar)
     return valStr
 
 
@@ -246,19 +278,20 @@ def read_data_lines_from_file(filename):
     return dataLines
 
 
-def read_units_from_file(lineLists):
-    """Read units from lineLists of file.
+def read_units_from_file(fileLines):
+    """Read units from fileLines of file.
 
     Input:
-    . lineLists: list of lists of data values per read line from file
+    . fileLines: read lines from comma separate values file
     Return:
     . units: read units, when supported in validUnits, else default to 'mm'
     """
     units = 'mm'  # default
-    for li, lineArr in enumerate(lineLists):
-        lineWord = lineArr[0]
+    for li, fLine in enumerate(fileLines):
+        entries = get_file_line_entries(fLine)
+        lineWord = entries[0]
         if lineWord == 'units':
-            units = lineArr[1]
+            units = entries[1]
             if units in validUnits:
                 print('read_units_from_file: %s' % units)
                 return units
@@ -272,8 +305,10 @@ def read_units_from_file(lineLists):
 def get_file_line_entries(fLine):
     """Strip comma separated values from file line.
 
-    Split lines at comma to get the values,
-    Remove leading and trailing whitespace characters from the values.
+    . Split lines at comma to get the values,
+    . Remove leading and trailing whitespace characters from the values.
+    . Empty line results in entries = [''], so enties[0] exists and is empty
+      string
 
     Input:
     . fLine: one line from file
@@ -283,6 +318,29 @@ def get_file_line_entries(fLine):
     entries = fLine.split(',')
     entries = [e.strip() for e in entries]
     return entries
+
+
+def put_file_line_entries(entries):
+    """Put entries string values in comma separated order in file line.
+
+    . Put commas between entry values
+    . Put one trailing space after comma
+    . Empty line when entries = ['']
+
+    Input:
+    . entries: list of string values to put in comma separated fLine
+    Return:
+    . fLine: one line from file
+    """
+    fLine = ''
+    nofEntries = len(entries)
+    for ei, entry in enumerate(entries):
+        fLine += entry
+        # comma between entries, not after last entry
+        if ei < nofEntries - 1:
+            fLine += ', '
+    fLine += '\n'
+    return fLine
 
 
 def get_rail_names(entries, railType):
@@ -308,17 +366,17 @@ def get_rail_names(entries, railType):
 
 
 def convert_data_lines_to_lists(fileLines):
-    """Convert fileLines into dataLists using comma as separator.
+    """Convert fileLines into lineLists using comma as separator.
 
     Input:
     . fileLines: read lines from comma separate values file
     Return:
-    . dataLists: list of lists of data values per read line
+    . lineLists: list of lists of data values per read line
     """
-    dataLists = []
+    lineLists = []
     for fLine in fileLines:
-        dataLists.append(get_file_line_entries(fLine))
-    return dataLists
+        lineLists.append(get_file_line_entries(fLine))
+    return lineLists
 
 
 def write_co_rail_sketch_csv_files(fileLines, units):
@@ -326,8 +384,8 @@ def write_co_rail_sketch_csv_files(fileLines, units):
     in fileLines.
 
     Inputs:
-    . fileLines: lines from a points file with sketches, that contain segments
-        with optional co_rail name.
+    . fileLines: lines from a timeline file with sketches, that contain
+      segments with optional co_rail name.
     . units: units from validUnits
     Input:
     . fileLines: lines from file that define one or more profile sketches
@@ -518,7 +576,7 @@ def read_cross_rails_definitions(fileLines):
     . rail_segment_type, <spline>
 
     Inputs:
-    . fileLines: lines from a points file with cross rails definitions, that
+    . fileLines: lines from a timeline file with cross rails definitions, that
       define profile sketches and cross rails between them.
     Return: List of crossRailsTuples():
       . railsFolder
@@ -587,8 +645,8 @@ def get_cross_rail_points(fileLines, profilePlaneNormal, railName, railPlaneNorm
     rails between profiles.
 
     Inputs:
-    . fileLines: lines from a points file with multiple profile sketches, that
-        contain rail points for railName
+    . fileLines: lines from a timeline file with multiple profile sketches,
+        that contain rail points for railName
     . profilePlaneNormal: 'x', 'y', or 'z'; selects sketches with
         sketchPlaneNormal == profilePlaneNormal
     . railName: selects segments with railNames from fileLines
@@ -740,7 +798,7 @@ def write_csv_files(fileLines, csvFileType, units=''):
     """Write csvFileType sections in fileLines into seperate CSV files.
 
     Input:
-    . fileLines: lines from points file that define CSV file sections
+    . fileLines: lines from timeline file that define CSV file sections
     . csvFileType: specific CSV file type section to find and write
     . units: units from validUnits, or empty string when not applicable.
     Return: number of CSV files written
