@@ -1,0 +1,85 @@
+################################################################################
+# Copyright 2023 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 23 Dec 2023
+#
+# Create F35B-pin-holes.csv assembly file that defines pin holes to connect
+# F35B wing and fuselage in F35B-CSV component. The F35B-CSV component was
+# created with f35b_points.txt.
+
+################################################################################
+# Sketches to position the pin holes
+
+sketch, csv/F35B-CSV/pin_holes, y_0_wing_pin_holes
+y, 0
+circle
+ 850, 19, 3
+1001, 19, 4
+1095, 23, 3
+
+echo, --------------------------------------------------------------------------
+echo, Extrudes to make pin bodies
+echo, --------------------------------------------------------------------------
+
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_front_pin
+profile, y_0_wing_pin_holes, 0
+offset, -220
+extent_type, distance, -80
+operation, new_body
+result_names, extrude_wing_front_pin
+
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_center_pin
+profile, y_0_wing_pin_holes, 1
+offset, -100
+extent_type, distance, -400
+operation, new_body
+result_names, extrude_wing_center_pin
+
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_rear_pin
+profile, y_0_wing_pin_holes, 2
+offset, -220
+extent_type, distance, -155
+operation, new_body
+result_names, extrude_wing_rear_pin
+
+
+echo, --------------------------------------------------------------------------
+echo, Combines to cut pin holes
+echo, --------------------------------------------------------------------------
+
+combine, csv/F35B-CSV/pin_holes, wing_with_pin_holes, F35B-CSV
+cut
+combine_bodies
+  loft_solid_wing
+  extrude_wing_front_pin
+  extrude_wing_center_pin
+  extrude_wing_rear_pin
+
+combine, csv/F35B-CSV/pin_holes, fuselage_with_pin_holes, F35B-CSV
+cut
+combine_bodies
+  shell_plane_0_1403
+  extrude_wing_front_pin
+  extrude_wing_center_pin
+  extrude_wing_rear_pin
+
+################################################################################
+# Assembly
+
+assembly, csv/F35B-CSV, F35B-pin-holes
+echo, --------------------------------------------------------------------------
+echo, Extruded pin holes for fuselage and wing !
+echo, --------------------------------------------------------------------------
