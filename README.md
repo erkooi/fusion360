@@ -40,8 +40,14 @@ The Example script demonstrates some script development basics in Fusion360 by p
 
 #### 3.3.2 ImportSketchCSV and ImportSketchesCSV scripts with test/snail/snail_points.py
 Demonstrate creating three sketch CSV files of a snail, in three different offset planes of the XY, YZ and ZX origin planes. First in test/snail run 'python ../../csv_timeline360.py -f snail_points.txt' on the command line in a terminal, to create separate CSV files in a csv/sketches folder from snail_points.txt. One CSV file can be read into Fusion360 using the ImportSketchCSV script, or all three CSV files can be read at once into Fusion360 using the ImportSketchesCSV script.
+
 ![Read sketches into Fusion360 from CSV files](doc/snail_3d_v2.jpg)
 
 #### 3.3.3 AssemblyCSV script with csv_timeline360.py
-The csv_timeline360.py creates CSV files from F35B/f35b_points.txt for a F35B plane fuselage and wing. First in F35B/ run 'python ../csv_timeline360.py -f f35b_points.txt' on the command line in a terminal, to create separate CSV files in a csv/ folder. The F35B design shown below, can then be generated in Fusion360 from these CSV files, by running the AssemblyCSV Script with the csv/F35B-CSV.csv file in the Fusion360 GUI (takes about 2 minutes).
+The csv_timeline360.py creates CSV files from F35B/f35b_points.txt for a F35B plane fuselage and wing. First in F35B/ run 'python ../csv_timeline360.py -f f35b_points.txt' on the command line in a terminal, to create separate CSV files in a csv/ folder. The F35B design in the F35B-CSV assembly component shown below, can then be generated in Fusion360 from these CSV files, by running the AssemblyCSV Script with the csv/F35B-CSV/F35B-points.csv file in the Fusion360 GUI (takes about 2 minutes).
+
 ![F35B created from CSV files](doc/f35b_csv.jpg)
+
+Additional timeline actions for the F35B-CSV assembly component are defined in f35b-pin-holes.txt and f35b-aileron.txt. First create F35B-pin-holes.csv and F35B-aileron.csv using csv_timeline360.py on the command line in a terminal. After that the AssemblyCSV Script in Fusion360 can be used to perform the additional timeline actions defined in F35B-pin-holes.csv and in F35B-aileron.csv.
+
+
