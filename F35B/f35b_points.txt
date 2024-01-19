@@ -46,46 +46,48 @@
 
 units, mm
 
+
 ################################################################################
 # Planes
 
 # Angled split planes for inlet
-plane, csv/planes, plane_split_inlet_side
+plane, csv/F35B-CSV/planes, plane_split_inlet_side
 418, -145, 19
 465, -120,-40
 499,  -63,-49.2
 
-plane, csv/planes, plane_split_inlet_top
+plane, csv/F35B-CSV/planes, plane_split_inlet_top
 418, -145, 19
 465,  -98, 43.7
 499,  -63,-49.2
 
 # Angled split planes for tail
-plane, csv/planes, plane_tail_angle
+plane, csv/F35B-CSV/planes, plane_tail_angle
 1381, -166.6,  0
 1381, -166.6, 26.5
 1403,  -80.2, 23.7
 
 # YZ split planes for 3D-printing parts
-plane, csv/printing_parts, plane_x_140
+plane, csv/F35B-CSV/printing_parts, plane_x_140
 140,   0,    0
 140, 100,    0
 140,   0,  100
 
-plane, csv/printing_parts, plane_x_430
+plane, csv/F35B-CSV/printing_parts, plane_x_430
 430,   0,    0
 430, 100,    0
 430,   0,  100
 
-plane, csv/printing_parts, plane_x_875
+plane, csv/F35B-CSV/printing_parts, plane_x_875
 875,   0,    0
 875, 100,    0
 875,   0,  100
 
-plane, csv/printing_parts, plane_x_1230
+plane, csv/F35B-CSV/printing_parts, plane_x_1230
 1230,   0,    0
 1230, 100,    0
 1230,   0,  100
+
 
 ################################################################################
 # Cross rails between profiles
@@ -98,7 +100,7 @@ plane, csv/printing_parts, plane_x_1230
 
 #   joined to create a body of the whole plane.
 # Cross rails at different y offsets between profiles of fuselage outside
-cross_rails, csv/sketches_rails_y
+cross_rails, csv/F35B-CSV/sketches_cross_rails_y
 rail_names, top, bottom
 profile_plane_normal, x
 rail_plane_normal, y
@@ -106,7 +108,7 @@ rail_plane_offsets, 0, -63, -75, -90, -98, -112, -123, -138, -154, -175, -200, -
 rail_segment_type, spline
 
 # Cross rails at different z offsets between profiles of fuselage outside
-cross_rails, csv/sketches_rails_z
+cross_rails, csv/F35B-CSV/sketches_cross_rails_z
 rail_names, edge_point, edge_inlet, edge_xbin, edge_ybin, edge_wing_front, edge_wing_xrear, edge_wing_yrear
 profile_plane_normal, x
 rail_plane_normal, z
@@ -114,7 +116,7 @@ rail_plane_offsets, 18.2, 19, 19.8
 rail_segment_type, spline
 
 # Cross rails at different y offsets between profiles of fuselage inside
-cross_rails, csv/sketches_cut_rails_y, cut
+cross_rails, csv/F35B-CSV/sketches_cut_cross_rails_y, cut
 rail_names, cut_top, cut_bottom
 profile_plane_normal, x
 rail_plane_normal, y
@@ -122,7 +124,7 @@ rail_plane_offsets, 0, -63, -75, -90, -98, -112, -123, -138, -154, -175, -213, -
 rail_segment_type, spline
 
 # Cross rails at different z offsets between profiles of fuselage inside
-cross_rails, csv/sketches_cut_rails_z, cut
+cross_rails, csv/F35B-CSV/sketches_cut_cross_rails_z, cut
 rail_names, cut_edge_nose, cut_edge_inlet, cut_edge_bin, cut_edge_wing_front, cut_edge_chord, cut_edge_bin_end
 profile_plane_normal, x
 rail_plane_normal, z
@@ -134,7 +136,7 @@ rail_segment_type, spline
 # Fuselage
 
 # Define x_0_nose_point for the rails
-sketch, csv/sketches_fuselage_x, x_0_nose_point
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_0_nose_point
 x, 0
 spline, cross_rails, top
  0.0, 0.1, 180
@@ -146,7 +148,7 @@ line
  0.0, 0.1
  0.0,-0.1
 
-sketch, csv/sketches_fuselage_x, x_5_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_5_nose
 x, 5
 spline, cross_rails, top
  0.0, 2.7, 180
@@ -162,12 +164,12 @@ line
   0.0, 2.7
   0.0,-2.7
 
-sketch, csv/sketches_cut_fuselage_x, x_15_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_15_cut_nose
 x, 15
 point, cross_rails, cut_top, cut_bottom, cut_edge_nose
   0.0, 0.0
 
-sketch, csv/sketches_fuselage_x, x_30_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_30_nose
 x, 30
 spline, cross_rails, top
   0.0, 14.8, 180
@@ -183,7 +185,7 @@ line
   0.0, 14.8
   0.0,-14.8
 
-sketch, csv/sketches_cut_fuselage_x, x_30_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_30_cut_nose
 x, 30
 spline, cross_rails, cut_top
   0.0,10.8, 180
@@ -200,7 +202,7 @@ line
   0.0, 10.8
   0.0,-10.8
 
-sketch, csv/sketches_fuselage_x, x_110_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_110_nose
 x, 110
 spline, cross_rails, top
   0.0, 42.3, 180
@@ -216,7 +218,7 @@ line
   0.0, 42.3
   0.0,-41.0
 
-sketch, csv/sketches_cut_fuselage_x, x_110_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_110_cut_nose
 x, 110
 spline, cross_rails, cut_top
   0.0, 38.3, 180
@@ -233,7 +235,7 @@ line
   0.0, 38.3
   0.0,-37.0
 
-# sketch, csv/sketches_fuselage_x, x_149_nose
+# sketch, csv/F35B-CSV/sketches_fuselage_x, x_149_nose
 # x, 149
 # spline, cross_rails, top
 #   0.0, 50.1, 180
@@ -249,7 +251,7 @@ line
 #   0.0, 50.1
 #   0.0,-47.0
 #
-# sketch, csv/sketches_cut_fuselage_x, x_149_cut_nose
+# sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_149_cut_nose
 # x, 149
 # spline, cross_rails, cut_top
 #   0.0, 46.1, 180
@@ -266,7 +268,7 @@ line
 #   0.0, 46.1
 #   0.0,-43.0
 
-sketch, csv/sketches_fuselage_x, x_199_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_199_nose
 x, 199
 spline, cross_rails, top
   0.0, 73.6, 180
@@ -282,7 +284,7 @@ line
   0.0, 73.6
   0.0,-53.0
 
-sketch, csv/sketches_cut_fuselage_x, x_199_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_199_cut_nose
 x, 199
 spline, cross_rails, cut_top
   0.0, 69.6, 180
@@ -299,7 +301,7 @@ line
   0.0, 69.6
   0.0,-49.0
 
-sketch, csv/sketches_cut_fuselage_x, x_235_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_235_cut_nose
 x, 235
 spline, cross_rails, cut_top
   0.0,  94.0, 180
@@ -316,7 +318,7 @@ line
   0.0,  94.0
   0.0, -51.2
 
-sketch, csv/sketches_fuselage_x, x_269_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_269_nose
 x, 269
 spline, cross_rails, top
   0.0, 116.3, 180
@@ -332,7 +334,7 @@ line
   0.0, 116.3
   0.0, -56.5
 
-sketch, csv/sketches_cut_fuselage_x, x_269_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_269_cut_nose
 x, 269
 spline, cross_rails, cut_top
   0.0, 112.3, 180
@@ -349,7 +351,7 @@ line
   0.0, 112.3
   0.0, -52.5
 
-sketch, csv/sketches_cut_fuselage_x, x_343_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_343_cut_nose
 x, 343
 spline, cross_rails, cut_top
   0.0, 126.5, 180
@@ -366,7 +368,7 @@ line
   0.0, 126.9
   0.0, -55.8
 
-sketch, csv/sketches_fuselage_x, x_418_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_418_nose
 x, 418
 spline, cross_rails, top
   0.0, 130.9, 180
@@ -382,7 +384,7 @@ line
   0.0, 130.9
   0.0, -63.8
 
-sketch, csv/sketches_cut_fuselage_x, x_418_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_418_cut_nose
 x, 418
 spline, cross_rails, cut_top
   0.0, 126.9, 180
@@ -399,7 +401,7 @@ line
   0.0, 126.9
   0.0, -59.8
 
-sketch, csv/sketches_fuselage_x, x_418_inlet_point
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_418_inlet_point
 x, 418
 spline, cross_rails, top
  -98.0, 19.0, 180
@@ -420,7 +422,7 @@ line
  -98.0, 19.0
  -69.3,-17.8
 
-sketch, csv/sketches_cut_fuselage_x, x_418_cut_inlet_point
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_418_cut_inlet_point
 x, 418
 spline, cross_rails, cut_top
  -94.0, 16.0, 180
@@ -443,7 +445,7 @@ line
  -94.0, 16.0
  -69.3,-14.7
 
-sketch, csv/sketches_fuselage_x, x_455_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_455_nose
 x, 455
 spline
    0.0, 127.7, 180
@@ -461,7 +463,7 @@ line
   0.0, 127.7
   0.0, -65.5
 
-sketch, csv/sketches_fuselage_x, x_455_inlet
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_455_inlet
 x, 455
 spline
  -98.0,  40.0
@@ -486,7 +488,7 @@ line
  -98.0,  40.0
  -66.2, -32.0
 
-sketch, csv/sketches_cut_fuselage_x, x_455_cut_inlet
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_455_cut_inlet
 x, 455
 spline, cross_rails, cut_top
  -95.5,  37.4
@@ -512,7 +514,7 @@ line
  -66.2, -28.9
 
 # Define x_455_total for the rails
-sketch, csv/sketches_fuselage_x, x_455_total
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_455_total
 x, 455
 spline, cross_rails, top, edge_point, edge_inlet
    0.0, 127.7, 180
@@ -546,7 +548,7 @@ line
   0.0, 127.7
   0.0, -65.5
 
-sketch, csv/sketches_fuselage_x, x_465_nose
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_465_nose
 x, 465
 spline
   0.0, 126.9, 180, 38
@@ -566,7 +568,7 @@ line
   0.0, 126.9
   0.0, -66.0
 
-sketch, csv/sketches_cut_fuselage_x, x_465_cut_nose
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_465_cut_nose
 x, 465
 spline
   0.0, 122.9, 180, 38
@@ -584,17 +586,17 @@ line
   0.0, 122.9
   0.0, -62.0
 
-sketch, csv/sketches_cut_fuselage_x, x_465_cut_nose_point_top
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_465_cut_nose_point_top
 x, 465
 point, cross_rails, cut_top
   0.0, 122.9
 
-sketch, csv/sketches_cut_fuselage_x, x_465_cut_nose_point_bottom
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_465_cut_nose_point_bottom
 x, 465
 point, cross_rails, cut_bottom
   0.0, -62.0
 
-sketch, csv/sketches_fuselage_x, x_465_inlet
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_465_inlet
 x, 465
 spline
  -98.0,  44.2,-118, 6
@@ -617,7 +619,7 @@ line
  -98.0,  44.2
  -65.3, -36.2
 
-sketch, csv/sketches_cut_fuselage_x, x_465_cut_inlet
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_465_cut_inlet
 x, 465
 spline, cross_rails, cut_top
  -95.8,  41.0,-157, 8
@@ -642,7 +644,7 @@ line
  -95.8,  41.0
  -65.3, -33.1
 
-sketch, csv/sketches_fuselage_x, x_465_total
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_465_total
 x, 465
 # . nose part
 spline, cross_rails, top
@@ -682,7 +684,7 @@ line
   0.0, 126.9
   0.0, -66.0
 
-sketch, csv/sketches_fuselage_x, x_499_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_499_fuselage
 x, 499
 spline
    0.0, 124.5, 180
@@ -700,7 +702,7 @@ line
    0.0, 124.5
    0.0, -67.2
 
-sketch, csv/sketches_cut_fuselage_x, x_499_cut_fuselage
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_499_cut_fuselage
 x, 499
 spline
    0.0, 120.5, 180
@@ -718,7 +720,7 @@ line
    0.0, 120.5
    0.0, -63.2
 
-sketch, csv/sketches_fuselage_x, x_499_inlet
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_499_inlet
 x, 499
 spline
  -98.0,  55.1,-163
@@ -741,7 +743,7 @@ line
  -98.0,  55.1
  -63.0, -49.2
 
-sketch, csv/sketches_cut_fuselage_x, x_499_cut_inlet
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_499_cut_inlet
 x, 499
 spline, cross_rails, cut_top
  -96.0,  51.8,-158
@@ -766,7 +768,7 @@ line
  -96.0,  51.8
  -63.0, -43.0
 
-sketch, csv/sketches_fuselage_x, x_499_total
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_499_total
 x, 499
 # . fuselage part
 spline, cross_rails, top
@@ -803,7 +805,7 @@ line
    0.0, 124.5
    0.0, -67.2
 
-sketch, csv/sketches_cut_fuselage_x, x_499_cut_total
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_499_cut_total
 x, 499
 spline, cross_rails, cut_top
    0.0, 120.5, 180
@@ -836,7 +838,7 @@ line
    0.0, 120.5
    0.0, -63.2
 
-sketch, csv/sketches_fuselage_x, x_561_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_561_fuselage
 x, 561  # not used in y-rails, to close to 583
 spline, cross_rails, edge_inlet  #, top
    0.0, 120.9, 180
@@ -866,7 +868,7 @@ line
    0.0, 120.9
    0.0, -68.3
 
-sketch, csv/sketches_fuselage_x, x_583_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_583_fuselage
 x, 583
 spline, cross_rails, top, edge_inlet
    0.0, 119.7, 180, 64
@@ -894,7 +896,7 @@ line
    0.0, 119.7
    0.0, -68.1
 
-sketch, csv/sketches_cut_fuselage_x, x_583_cut_fuselage
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_583_cut_fuselage
 x, 583
 spline, cross_rails, cut_top
    0.0, 115.7, 180, 64
@@ -922,7 +924,7 @@ line
    0.0, 115.7
    0.0, -64.1
 
-sketch, csv/sketches_fuselage_x, x_697_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_697_fuselage
 x, 697
 spline, cross_rails, top, edge_inlet, edge_xbin, edge_ybin
    0.0, 113.6, 180
@@ -953,12 +955,12 @@ line
    0.0, -68.8
 
 # Define point x_697_bin_point for the loft_solid_xbin_front_edge
-sketch, csv/sketches_fuselage_x, x_697_bin_point
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_697_bin_point
 x, 697
 point
 -175.0, 19
 
-sketch, csv/sketches_cut_fuselage_x, x_697_cut_fuselage
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_697_cut_fuselage
 x, 697
 spline, cross_rails, cut_top
    0.0, 109.6, 180
@@ -988,7 +990,7 @@ line
    0.0, 109.6
    0.0, -64.8
 
-sketch, csv/sketches_fuselage_x, x_746_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_746_fuselage_bin
 x, 746
 spline, co_rail, top, cross_rails, edge_ybin
    0.0, 111.2, 180, 62
@@ -1022,7 +1024,7 @@ line
    0.0, 111.2
    0.0, -70.15
 
-sketch, csv/sketches_cut_fuselage_x, x_746_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_746_cut_fuselage_bin
 x, 746
 spline, cross_rails, cut_top
    0.0, 107.2, 180, 62
@@ -1052,7 +1054,7 @@ line
    0.0, 107.2
    0.0, -66.15
 
-sketch, csv/sketches_fuselage_x, x_772_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_772_fuselage_bin
 x, 772
 spline, co_rail, top, cross_rails, top, edge_xbin, edge_ybin, edge_wing_front
    0.0, 110.1, 180, 70
@@ -1095,7 +1097,7 @@ line
 #-175.0,  32.3
 #-175.0,  -5.85
 
-sketch, csv/sketches_cut_fuselage_x, x_772_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_772_cut_fuselage_bin
 x, 772
 spline, cross_rails, cut_top
    0.0, 106.1, 180, 70
@@ -1125,7 +1127,7 @@ line
    0.0, 106.1
    0.0, -67.1
 
-sketch, csv/sketches_fuselage_x, x_772_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_772_fuselage
 x, 772
 spline
    0.0, 110.1, 180, 70
@@ -1160,7 +1162,7 @@ line
    0.0, 110.1
    0.0, -71.1
 
-sketch, csv/sketches_fuselage_x, x_772_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_772_bin
 x, 772
 spline
 -175.0, 32.3, -164, 10  # wing
@@ -1175,7 +1177,7 @@ line
 -175.0,  32.3
 -175.0,  -5.85
 
-sketch, csv/sketches_fuselage_x, x_783_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_783_fuselage_bin
 x, 783
 spline, co_rail, top
    0.0, 109.67, 180, 80
@@ -1214,7 +1216,7 @@ line
    0.0, 109.67
    0.0, -70.15
 
-sketch, csv/sketches_fuselage_x, x_797_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_797_fuselage_bin
 x, 797
 spline, co_rail, top, cross_rails, top, edge_wing_front
    0.0, 109.1, 180, 80
@@ -1259,7 +1261,7 @@ line
 #-175.0,  36.53
 #-175.0,  -5.6
 
-sketch, csv/sketches_cut_fuselage_x, x_797_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_797_cut_fuselage_bin
 x, 797
 spline, cross_rails, cut_top
    0.0, 105.1, 180, 68
@@ -1295,7 +1297,7 @@ line
    0.0, 105.1
    0.0, -68.2
 
-sketch, csv/sketches_fuselage_x, x_797_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_797_fuselage
 x, 797
 spline
    0.0, 109.1, 180, 80
@@ -1329,7 +1331,7 @@ line
    0.0, 109.1
    0.0, -72.2
 
-sketch, csv/sketches_fuselage_x, x_797_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_797_bin
 x, 797
 spline
 -175.0,  36.53, -172, 16  # wing
@@ -1348,7 +1350,7 @@ line
 -175.0,  36.53
 -175.0, -11.13
 
-sketch, csv/sketches_fuselage_x, x_820_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_820_fuselage_bin
 x, 820
 spline, co_rail, top, cross_rails, top
    0.0, 108.3, 180
@@ -1389,7 +1391,7 @@ line
    0.0, 108.3
    0.0, -73.3
 
-sketch, csv/sketches_cut_fuselage_x, x_820_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_820_cut_fuselage_bin
 x, 820
 spline, cross_rails, cut_top
    0.0, 104.3, 180
@@ -1426,7 +1428,7 @@ line
    0.0, 104.3
    0.0, -69.3
 
-sketch, csv/sketches_fuselage_x, x_895_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_895_fuselage_bin
 x, 895
 spline, co_rail, top, cross_rails, top
    0.0, 105.9, 180, 58
@@ -1470,7 +1472,7 @@ line
 -250.0,  38.49
 -250.0,   6.38
 
-sketch, csv/sketches_cut_fuselage_x, x_895_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_895_cut_fuselage_bin
 x, 895
 spline, cross_rails, cut_top
    0.0, 101.9, 180, 58
@@ -1510,7 +1512,7 @@ line
    0.0, 101.9
    0.0, -74.2
 
-sketch, csv/sketches_fuselage_x, x_895_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_895_fuselage
 x, 895
 spline
    0.0, 105.9, 180, 58
@@ -1543,7 +1545,7 @@ line
    0.0, 105.9
    0.0, -78.2
 
-sketch, csv/sketches_fuselage_x, x_895_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_895_bin
 x, 895
 spline
 -175.0,  42.62, -175, 14  # wing
@@ -1564,7 +1566,7 @@ line
 -250.0,  38.49
 -250.0,   6.38
 
-sketch, csv/sketches_fuselage_x, x_983_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_983_fuselage_bin
 x, 983
 spline, co_rail, top, cross_rails, top
    0.0, 103.9, 180
@@ -1609,7 +1611,7 @@ line
 -250.0,  38.10
 -250.0,   7.97
 
-sketch, csv/sketches_cut_fuselage_x, x_983_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_983_cut_fuselage_bin
 x, 983
 spline, cross_rails, cut_top
    0.0,  99.9, 180
@@ -1651,7 +1653,7 @@ line
    0.0,  99.9
    0.0, -80.3
 
-sketch, csv/sketches_fuselage_x, x_983_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_983_fuselage
 x, 983
 spline
    0.0, 103.9, 180
@@ -1686,7 +1688,7 @@ line
    0.0, 103.9
    0.0, -84.3
 
-sketch, csv/sketches_fuselage_x, x_983_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_983_bin
 x, 983
 spline
 -175.0,  40.57,-172.5  # wing
@@ -1707,7 +1709,7 @@ line
 -250.0,  38.10
 -250.0,   7.97
 
-sketch, csv/sketches_fuselage_x, x_1100_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1100_fuselage_bin
 x, 1100
 spline, co_rail, top, cross_rails, top
    0.0, 101.0, 180
@@ -1755,7 +1757,7 @@ line
 -250.0,  30.61
 -250.0,  12.87
 
-sketch, csv/sketches_cut_fuselage_x, x_1100_cut_fuselage_bin
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1100_cut_fuselage_bin
 x, 1100
 spline, cross_rails, cut_top
    0.0,  97.0, 180
@@ -1797,7 +1799,7 @@ line
    0.0,  97.0
    0.0, -78.6
 
-sketch, csv/sketches_fuselage_x, x_1135_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1135_fuselage_bin
 x, 1135  # not used in rails, too close to 1142
 spline #, cross_rails, top
    0.0, 99.9, 180
@@ -1839,7 +1841,7 @@ line
 -250.0, 32.3
 -250.0, 19.1
 
-sketch, csv/sketches_fuselage_x, x_1142_fuselage_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1142_fuselage_bin
 x, 1142
 spline, co_rail, top, cross_rails, top
    0.0, 99.6, 180
@@ -1891,7 +1893,7 @@ line
 -250.0, 26.70
 -250.0, 14.93
 
-sketch, csv/sketches_fuselage_x, x_1142_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1142_fuselage
 x, 1142
 spline
    0.0, 99.6, 180
@@ -1930,7 +1932,7 @@ line
    0.0, 99.6
    0.0,-80.7
 
-sketch, csv/sketches_cut_fuselage_x, x_1142_cut_fuselage
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1142_cut_fuselage
 x, 1142
 spline, cross_rails, cut_top
    0.0, 95.6, 180
@@ -1964,7 +1966,7 @@ line
    0.0, 95.6
    0.0,-76.7
 
-sketch, csv/sketches_fuselage_x, x_1142_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1142_bin
 x, 1142
 spline
 -175.0, 28.78, -174  # wing
@@ -1985,7 +1987,7 @@ line
 -250.0, 26.70
 -250.0, 14.93
 
-sketch, csv/sketches_fuselage_x, x_1204_fuselage
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1204_fuselage
 x, 1204  # not used in rails, not needed between 1142 and 1230
 spline, cross_rails, top
    0.0, 97.4, 180
@@ -2020,7 +2022,7 @@ line
    0.0, 97.4
    0.0,-74.5
 
-sketch, csv/sketches_cut_fuselage_x, x_1204_cut_fuselage
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1204_cut_fuselage
 x, 1204
 spline, cross_rails, cut_top
    0.0, 93.4, 180
@@ -2054,7 +2056,7 @@ line
    0.0,-70.5
 
 # wing twist angle = atan(4 / 526 - 250) = 0.83 ==> - 180 = 179.17
-sketch, csv/sketches_fuselage_x, x_1204_bin
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1204_bin
 x, 1204
 spline, co_rail, top, cross_rails, top
 #-175.0, 27.3, 180  # f35b
@@ -2079,21 +2081,21 @@ line, cross_rails, edge_wing_xrear, edge_wing_yrear
 -250.0, 19.8  # wing
 -250.0, 18.2  # wing
 
-sketch, csv/sketches_fuselage_x, x_1213_bin_rear_edge
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1213_bin_rear_edge
 x, 1213
 # use line for bin_rear_edge rail at z = 18.2, 19.8
 line, cross_rails, edge_wing_yrear
 -213.0, 19.8
 -213.0, 18.2
 
-# sketch, csv/sketches_fuselage_x, x_1216_bin_rear_edge
+# sketch, csv/F35B-CSV/sketches_fuselage_x, x_1216_bin_rear_edge
 # x, 1216
 # # use line for bin_rear_edge rail at z = 18.2, 19.8
 # line, cross_rails, edge_wing_yrear
 # -200.0, 19.8  # 1216.40
 # -200.0, 18.2  # 1216.40
 
-sketch, csv/sketches_fuselage_x, x_1223_bin_rear_edge
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1223_bin_rear_edge
 x, 1223
 # use rectangle for point on wing rear edge top and bottom
 # use separate line for bin_rear_edge rail at z = 18.2, 19.8
@@ -2110,7 +2112,7 @@ line, cross_rails, edge_wing_xrear
 -175.1, 19.8
 -175.1, 18.2
 
-sketch, csv/sketches_fuselage_x, x_1230_fuselage_exhaust
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1230_fuselage_exhaust
 x, 1230
 spline, cross_rails, top
    0.0, 95.8, 180
@@ -2142,7 +2144,7 @@ line
    0.0, 95.8
    0.0,-70.6
 
-sketch, csv/sketches_cut_fuselage_x, x_1230_cut_fuselage_exhaust
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1230_cut_fuselage_exhaust
 x, 1230
 spline, cross_rails, cut_top
    0.0, 91.8, 180
@@ -2172,7 +2174,7 @@ line
    0.0, 91.8
    0.0,-66.6
 
-sketch, csv/sketches_fuselage_x, x_1306_fuselage_exhaust
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1306_fuselage_exhaust
 x, 1306
 spline, cross_rails, top
    0.0, 87.4, 180
@@ -2204,7 +2206,7 @@ line
    0.0, 87.4
    0.0,-55.2
 
-sketch, csv/sketches_cut_fuselage_x, x_1306_cut_fuselage_exhaust
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1306_cut_fuselage_exhaust
 x, 1306
 spline, cross_rails, cut_top
    0.0, 83.4, 180
@@ -2236,7 +2238,7 @@ line
    0.0, 83.4
    0.0,-51.2
 
-sketch, csv/sketches_fuselage_x, x_1306_tail
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1306_tail
 x, 1306
 spline, cross_rails, top
  -68.0, 39.0,-119
@@ -2260,7 +2262,7 @@ spline, cross_rails, bottom
 -154.0, -4.0, 123
 -168.61,20.8, 119
 
-sketch, csv/sketches_cut_fuselage_x, x_1306_cut_tail
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1306_cut_tail
 x, 1306
 spline, cross_rails, cut_top
  -75.1, 28.0
@@ -2281,7 +2283,7 @@ spline, cross_rails, cut_bottom
 -154.0,  4.5, 123
 -161.0, 17.1, 116
 
-sketch, csv/sketches_fuselage_x, x_1323_tail
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1323_tail
 x, 1323
 spline, cross_rails, top
  -65.5, 34.9
@@ -2305,7 +2307,7 @@ spline, cross_rails, bottom
 -154.0, -1.7,  122
 -168.15,21.5,  120, 22
 
-sketch, csv/sketches_cut_fuselage_x, x_1323_cut_tail
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1323_cut_tail
 x, 1323
 spline, cross_rails, cut_top
  -74.5, 26.0
@@ -2327,7 +2329,7 @@ spline, cross_rails, cut_bottom
 -154.0,  6.9,  121
 -160.0, 18.0,  119
 
-sketch, csv/sketches_fuselage_x, x_1347_tail
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1347_tail
 x, 1347
 spline, cross_rails, top
  -69.0, 28.3
@@ -2351,7 +2353,7 @@ spline, cross_rails, bottom
 -154.0,  1.8, 122
 -167.51,23.3, 122
 
-sketch, csv/sketches_cut_fuselage_x, x_1347_cut_tail
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1347_cut_tail
 x, 1347
 spline, cross_rails, cut_top
  -75.1, 24.2
@@ -2373,7 +2375,7 @@ spline, cross_rails, cut_bottom
 -159.2, 19.5, 122
 
 # Use x_1376_cut_tail as cut_tail end to have closed tail_all
-sketch, csv/sketches_cut_fuselage_x, x_1376_cut_tail
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1376_cut_tail
 x, 1376
 spline, cross_rails, cut_top
  -80.3, 21.2
@@ -2394,7 +2396,7 @@ spline, cross_rails, cut_bottom
 -154.0, 15.0, 121
 -158.5, 22.1, 121
 
-sketch, csv/sketches_fuselage_x, x_1381_tail
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1381_tail
 x, 1381
 spline, cross_rails, top
  -76.4, 25.0
@@ -2415,7 +2417,7 @@ spline, cross_rails, bottom
 -154.0,  6.3, 121
 -166.6, 26.5, 121
 
-sketch, csv/sketches_cut_fuselage_x, x_1381_cut_tail
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1381_cut_tail
 x, 1381
 spline, cross_rails, cut_top
  -81.4, 21.0
@@ -2436,7 +2438,7 @@ spline, cross_rails, cut_bottom
 -154.0, 15.0, 121
 -158.2, 22.1, 121
 
-sketch, csv/sketches_fuselage_x, x_1403_tail_end
+sketch, csv/F35B-CSV/sketches_fuselage_x, x_1403_tail_end
 x, 1403
 spline, cross_rails, top
  -80.2, 23.7, 177
@@ -2457,7 +2459,7 @@ spline, cross_rails, bottom
 -154.0,  8.6, 122
 -166.6, 28.5, 122
 
-sketch, csv/sketches_cut_fuselage_x, x_1403_cut_tail_end
+sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1403_cut_tail_end
 x, 1403
 spline, cross_rails, cut_top
  -85.9, 20.0, 177
@@ -2490,6 +2492,7 @@ spline, cross_rails, cut_bottom
 #        f = f0 * d / d0
 #        print(str(zl[i] + f))
 
+
 ################################################################################
 # wing:
 # . generate with airfoil.py --> csv\NACA-1408_zx_y*
@@ -2503,7 +2506,7 @@ spline, cross_rails, cut_bottom
 #                   y_*_wing_rail_bottom = wing at fuselage bottom rail
 # . It appears that using loft of sketches_fuselage_x profiles and wing_rail
 #   rails is (nearly) equivalent to using loft in perpendicular direction with
-#   wing_bin profiles and sketches_fuselage_x_rails as rails. However, using
+#   wing_bin profiles and sketches_fuselage_x_co_rails as rails. However, using
 #   the wing_bin profiles does yield smoother front edge results if the x_772
 #   and x_797 top and bottom co rails are not used and the y_200 rail are not
 #   used, because then the loft has more freedom. Therefore e.g. the frond egde
@@ -2528,7 +2531,7 @@ spline, cross_rails, cut_bottom
 # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # --xa             : 772,783,797,820,895,983,1100,1142,1204
 # --xfit           : True
-sketch, csv/sketches_wing, y_175_wing
+sketch, csv/F35B-CSV/sketches_wing, y_175_wing
 y, -175
 spline
 1223.00, 19.80
@@ -2575,7 +2578,7 @@ line
 1223.00, 19.80
 
 # y_175_wing_rail_top = y_175_top.csv (= y_175_wing.csv + F35B bin)
-sketch, csv/sketches_wing, y_175_wing_rail_top
+sketch, csv/F35B-CSV/sketches_wing, y_175_wing_rail_top
 y, -175
 spline
 1223.00, 19.80
@@ -2597,7 +2600,7 @@ spline
 697.0, 19.0
 
 # y_175_bin_rail_bottom = y_175_bottom.csv (= y_175_wing.csv + F35B bin)
-sketch, csv/sketches_wing, y_175_wing_rail_bottom
+sketch, csv/F35B-CSV/sketches_wing, y_175_wing_rail_bottom
 y, -175
 spline
 697.0, 19.0
@@ -2631,7 +2634,7 @@ spline
 # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # --xa             : 772,783,797,820,895,983,1100,1142,1204
 # --xfit           : True
-sketch, csv/sketches_wing, y_175_bin_rail_bottom
+sketch, csv/F35B-CSV/sketches_wing, y_175_bin_rail_bottom
 y, -175
 spline
 697.0, 19.0, -21
@@ -2653,7 +2656,7 @@ spline
 1223.00, 18.2  # wing rear bottom edge
 
 # y_175_wing_bin = y_175_wing_rail_top + y_175_bin_rail_bottom + line
-sketch, csv/sketches_wing, y_175_wing_bin
+sketch, csv/F35B-CSV/sketches_wing, y_175_wing_bin
 y, -175
 spline
 1223.00, 19.80
@@ -2713,7 +2716,7 @@ line
 # # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # # --xa             : 772,783,797,820,895,983,1100,1142,1204
 # # --xfit           : True
-# sketch, csv/sketches_wing, y_200_wing
+# sketch, csv/F35B-CSV/sketches_wing, y_200_wing
 # y, -200
 # spline
 # 1216.40, 19.80
@@ -2760,7 +2763,7 @@ line
 # 1216.0, 19.80  # 1216.40
 #
 # # y_200_wing_rail_top = y_200_top.csv (= y_200_wing.csv)
-# sketch, csv/sketches_wing, y_200_wing_rail_top
+# sketch, csv/F35B-CSV/sketches_wing, y_200_wing_rail_top
 # y, -200
 # spline
 # 1216.0, 19.80  # 1216.40
@@ -2782,7 +2785,7 @@ line
 # 746.00, 19.00
 #
 # # y_200_wing_rail_bottom = y_200_bottom.csv (= y_200_wing.csv + F35B bin)
-# sketch, csv/sketches_wing, y_200_wing_rail_bottom
+# sketch, csv/F35B-CSV/sketches_wing, y_200_wing_rail_bottom
 # y, -200
 # spline
 # 746.00, 19.00
@@ -2798,7 +2801,7 @@ line
 # 1216.0, 18.20  # 1216.40
 #
 # # y_200_wing_bin = y_200_wing_rail_top + y_200_wing_rail_bottom + line
-# sketch, csv/sketches_wing, y_200_wing_bin
+# sketch, csv/F35B-CSV/sketches_wing, y_200_wing_bin
 # y, -200
 # spline
 # 1216.0, 19.80  # 1216.40
@@ -2852,7 +2855,7 @@ line
 # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # --xa             : 797,820,895,983,1100,1142,1204
 # --xfit           : True
-sketch, csv/sketches_wing, y_213_wing
+sketch, csv/F35B-CSV/sketches_wing, y_213_wing
 y, -213
 spline
 1213.00, 19.80
@@ -2901,7 +2904,7 @@ line
 1213.00, 19.80
 
 # y_213_wing_rail_top = y_213_top.csv (= y_213_wing.csv)
-sketch, csv/sketches_wing, y_213_wing_rail_top
+sketch, csv/F35B-CSV/sketches_wing, y_213_wing_rail_top
 y, -213
 spline
 1213.00, 19.80
@@ -2925,7 +2928,7 @@ spline
 772.00, 19.00, -90.00, 73.50
 
 # y_213_bin_rail_bottom = y_213_bottom.csv (= y_213_wing.csv + F35B bin)
-sketch, csv/sketches_wing, y_213_wing_rail_bottom
+sketch, csv/F35B-CSV/sketches_wing, y_213_wing_rail_bottom
 y, -213
 spline
 772.00, 19.00, -90.00, 73.50
@@ -2958,7 +2961,7 @@ spline
 # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # --xa             : 797,820,895,983,1100,1142,1204
 # --xfit           : True
-sketch, csv/sketches_wing, y_213_bin_rail_bottom
+sketch, csv/F35B-CSV/sketches_wing, y_213_bin_rail_bottom
 y, -213
 spline
 772.00, 19.00, -90, 35
@@ -2979,7 +2982,7 @@ spline
 1213.00, 18.2
 
 # y_213_wing_bin = y_213_wing_rail_top + y_213_bin_rail_bottom + line
-sketch, csv/sketches_wing, y_213_wing_bin
+sketch, csv/F35B-CSV/sketches_wing, y_213_wing_bin
 y, -213
 spline
 1213.00, 19.80
@@ -3038,7 +3041,7 @@ line
 # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # --xa             : 820,895,983,1100,1142
 # --xfit           : True
-sketch, csv/sketches_wing, y_250_wing
+sketch, csv/F35B-CSV/sketches_wing, y_250_wing
 y, -250
 spline
 1204.00, 19.80
@@ -3085,7 +3088,7 @@ line
 1204.00, 19.80
 
 # y_250_wing_rail_top = y_250_top.csv (= y_250_wing.csv)
-sketch, csv/sketches_wing, y_250_wing_rail_top
+sketch, csv/F35B-CSV/sketches_wing, y_250_wing_rail_top
 y, -250
 spline
 1204.00, 19.80
@@ -3108,7 +3111,7 @@ spline
 797.00, 19.00, -90.00, 67.83
 
 # y_250_wing_rail_bottom = y_250_bottom.csv (= y_250_wing.csv)
-sketch, csv/sketches_wing, y_250_wing_rail_bottom
+sketch, csv/F35B-CSV/sketches_wing, y_250_wing_rail_bottom
 y, -250
 spline
 797.00, 19.00, -90.00, 67.83
@@ -3148,7 +3151,7 @@ spline
 # --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125
 # --xa             : 1100
 # --xfit           : True
-sketch, csv/sketches_wing, y_526_wing
+sketch, csv/F35B-CSV/sketches_wing, y_526_wing
 y, -526
 spline
 1135.00, 23.80
@@ -3194,10 +3197,11 @@ line
 1135.00, 22.20
 1135.00, 23.80
 
+
 ################################################################################
 # Lofts cuts
 
-loft, csv/loft_cuts, loft_cut_nose
+loft, csv/F35B-CSV/loft_cuts, loft_cut_nose, F35B-CSV
 profiles
   x_15_cut_nose
   x_30_cut_nose
@@ -3217,7 +3221,7 @@ rails
 # --> combine: loft_solid_nose - loft_cut_nose
 # --> combine: loft_solid_nose_collar - loft_cut_nose
 
-loft, csv/loft_cuts, loft_cut_inlet
+loft, csv/F35B-CSV/loft_cuts, loft_cut_inlet, F35B-CSV
 profiles
   x_418_cut_inlet_point
   x_455_cut_inlet
@@ -3235,7 +3239,7 @@ rails
 # --> combine: loft_solid_inlet_point - loft_cut_inlet
 # --> combine: loft_solid_inlet - loft_cut_inlet
 
-loft, csv/loft_cuts, loft_cut_fuselage_inlet
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_inlet, F35B-CSV
 profiles
   x_499_cut_total
   x_583_cut_fuselage
@@ -3262,7 +3266,7 @@ rails
   cut_z_19_cut_edge_inlet
 # --> combine: loft_solid_fuselage_inlet - loft_cut_fuselage_inlet
 
-loft, csv/loft_cuts, loft_cut_fuselage_bin
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_bin, F35B-CSV
 profiles
   x_697_cut_fuselage
   x_746_cut_fuselage_bin
@@ -3289,7 +3293,7 @@ rails
   cut_z_19_cut_edge_bin
 # --> combine: loft_solid_xbin_front_edge - loft_cut_fuselage_bin
 
-loft, csv/loft_cuts, loft_cut_fuselage_wing
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_wing, F35B-CSV
 profiles
   x_772_cut_fuselage_bin
   x_797_cut_fuselage_bin
@@ -3317,7 +3321,7 @@ rails
   cut_z_19_cut_edge_wing_front
 # --> combine: loft_solid_xbin_front_wing - loft_cut_fuselage_wing
 
-loft, csv/loft_cuts, loft_cut_fuselage_chord_bin
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_chord_bin, F35B-CSV
 profiles
   x_797_cut_fuselage_bin
   x_820_cut_fuselage_bin
@@ -3348,7 +3352,7 @@ rails
   cut_y_225_cut_bottom
   cut_z_19_cut_edge_chord
 
-loft, csv/loft_cuts, loft_cut_fuselage_chord
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_chord, F35B-CSV
 profiles
   x_820_cut_fuselage_bin
   x_895_cut_fuselage_bin
@@ -3385,7 +3389,7 @@ rails
 #              - loft_cut_fuselage_wing
 #              - loft_cut_fuselage_chord
 
-loft, csv/loft_cuts, loft_cut_fuselage_bin_end
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_bin_end, F35B-CSV
 profiles
   x_1100_cut_fuselage_bin
   x_1142_cut_fuselage
@@ -3413,7 +3417,7 @@ rails
 #              - loft_cut_fuselage_chord
 #              - loft_cut_fuselage_bin_end
 
-loft, csv/loft_cuts, loft_cut_fuselage_outlet
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_outlet, F35B-CSV
 profiles
   x_1142_cut_fuselage
   x_1204_cut_fuselage
@@ -3439,7 +3443,7 @@ rails
   cut_y_154_cut_bottom
 # --> combine: loft_solid_fuselage_outlet - loft_cut_fuselage_outlet
 
-loft, csv/loft_cuts, loft_cut_fuselage_exhaust
+loft, csv/F35B-CSV/loft_cuts, loft_cut_fuselage_exhaust, F35B-CSV
 profiles
   #x_1142_cut_fuselage
   #x_1204_cut_fuselage
@@ -3466,7 +3470,7 @@ rails
   cut_y_154_cut_bottom
 # --> combine: loft_solid_fuselage_exhaust - loft_cut_fuselage_exhaust
 
-loft, csv/loft_cuts, loft_cut_tail_all
+loft, csv/F35B-CSV/loft_cuts, loft_cut_tail_all, F35B-CSV
 profiles
   x_1306_cut_tail
   x_1323_cut_tail
@@ -3488,7 +3492,7 @@ rails
   cut_y_154_cut_bottom
 # --> combine: loft_solid_tail_all - loft_cut_tail_all
 
-loft, csv/loft_cuts, loft_cut_tail_closed
+loft, csv/F35B-CSV/loft_cuts, loft_cut_tail_closed, F35B-CSV
 profiles
   x_1306_cut_tail
   x_1323_cut_tail
@@ -3509,10 +3513,11 @@ rails
   cut_y_154_cut_bottom
 # --> combine: loft_solid_tail_all - loft_cut_tail_closed
 
+
 ################################################################################
 # Loft solids
 
-loft, csv/loft_solids, loft_solid_nose
+loft, csv/F35B-CSV/loft_solids, loft_solid_nose, F35B-CSV
 profiles
   x_0_nose_point
   x_5_nose
@@ -3527,7 +3532,7 @@ rails
   y_0_top
   y_0_bottom
 
-loft, csv/loft_solids, loft_solid_nose_collar
+loft, csv/F35B-CSV/loft_solids, loft_solid_nose_collar, F35B-CSV
 profiles
   # x = 465 - 499
   x_465_nose
@@ -3541,7 +3546,7 @@ rails
   y_90_top
   y_98_top
 
-loft, csv/loft_solids, loft_solid_fuselage_inlet
+loft, csv/F35B-CSV/loft_solids, loft_solid_fuselage_inlet, F35B-CSV
 profiles
   # x = 465 - 697, skip 561
   #x_465_total
@@ -3570,7 +3575,7 @@ rails
   y_154_bottom
   z_19_edge_inlet
 
-loft, csv/loft_solids, loft_solid_fuselage
+loft, csv/F35B-CSV/loft_solids, loft_solid_fuselage, F35B-CSV
 profiles
   # x = 697 - 1142, skip 1135, to y = -175
   x_697_fuselage
@@ -3602,7 +3607,7 @@ rails
   y_175_wing_rail_top
   y_175_bin_rail_bottom
 
-loft, csv/loft_solids, loft_solid_fuselage_outlet  # manually adjust loft circle via edit feature
+loft, csv/F35B-CSV/loft_solids, loft_solid_fuselage_outlet, F35B-CSV  # manually adjust loft circle via edit feature
 profiles
   # x = 1142 - 1230
   x_1142_fuselage
@@ -3628,7 +3633,7 @@ rails
   y_154_top
   y_154_bottom
 
-loft, csv/loft_solids, loft_solid_fuselage_exhaust
+loft, csv/F35B-CSV/loft_solids, loft_solid_fuselage_exhaust, F35B-CSV
 profiles
   # x = 1230 - 1306
   x_1230_fuselage_exhaust
@@ -3653,7 +3658,7 @@ rails
   y_154_top
   y_154_bottom
 
-loft, csv/loft_solids, loft_solid_tail_cone
+loft, csv/F35B-CSV/loft_solids, loft_solid_tail_cone, F35B-CSV
 profiles
   # x = 1306 - 1323
   x_1306_tail
@@ -3674,7 +3679,7 @@ rails
   y_154_top
   y_154_bottom
 
-loft, csv/loft_solids, loft_solid_tail
+loft, csv/F35B-CSV/loft_solids, loft_solid_tail, F35B-CSV
 profiles
   # x = 1323 - 1381
   x_1323_tail
@@ -3694,7 +3699,7 @@ rails
   y_154_top
   y_154_bottom
 
-loft, csv/loft_solids, loft_solid_tail_point
+loft, csv/F35B-CSV/loft_solids, loft_solid_tail_point, F35B-CSV
 profiles
   # x = 1381 - 1403 point
   x_1381_tail
@@ -3713,7 +3718,7 @@ rails
   y_154_top
   y_154_bottom
 
-loft, csv/loft_solids, loft_solid_tail_all
+loft, csv/F35B-CSV/loft_solids, loft_solid_tail_all, F35B-CSV
 profiles
   # x = 1306 - 1403
   x_1306_tail
@@ -3735,7 +3740,7 @@ rails
   y_154_top
   y_154_bottom
 
-loft, csv/loft_solids, loft_solid_inlet_point
+loft, csv/F35B-CSV/loft_solids, loft_solid_inlet_point, F35B-CSV
 profiles
   # x = 418 - 455
   x_418_inlet_point
@@ -3753,7 +3758,7 @@ rails
   y_138_bottom
   z_19_edge_point
 
-loft, csv/loft_solids, loft_solid_inlet
+loft, csv/F35B-CSV/loft_solids, loft_solid_inlet, F35B-CSV
 profiles
   # x = 455 - 465
   x_455_inlet
@@ -3774,10 +3779,11 @@ rails
   y_154_bottom
   z_19_edge_inlet
 
+
 ################################################################################
 # Loft xbin using x profiles and y rails
 
-loft, csv/loft_solids, loft_solid_xbin_front_edge
+loft, csv/F35B-CSV/loft_solids, loft_solid_xbin_front_edge, F35B-CSV
 profiles
   # x = 697 - 772, from y = -175 to -213
   x_697_bin_point, 1  # origin point has index 0
@@ -3787,7 +3793,7 @@ rails
   y_175_bin_rail_bottom
   z_19_edge_xbin
 
-loft, csv/loft_solids, loft_solid_xbin_front_wing
+loft, csv/F35B-CSV/loft_solids, loft_solid_xbin_front_wing, F35B-CSV
 profiles
   # x = 772 - 797, from y = -175 to -250
   x_772_bin
@@ -3799,7 +3805,7 @@ rails
   y_213_bin_rail_bottom
   z_19_edge_wing_front
 
-loft, csv/loft_solids, loft_solid_xbin_mid
+loft, csv/F35B-CSV/loft_solids, loft_solid_xbin_mid, F35B-CSV
 profiles
   # x = 797 - 1204, from y = -175 to -250
   x_797_bin
@@ -3815,7 +3821,7 @@ rails
   y_250_wing_rail_top
   y_250_wing_rail_bottom
 
-loft, csv/loft_solids, loft_solid_xbin_rear_edge
+loft, csv/F35B-CSV/loft_solids, loft_solid_xbin_rear_edge, F35B-CSV
 profiles
   x_1204_bin
   x_1223_bin_rear_edge
@@ -3825,10 +3831,11 @@ rails
   z_19_8_edge_wing_xrear
   z_18_2_edge_wing_xrear
 
+
 ################################################################################
 # Loft ybin using y wing profiles and x rails
 
-loft, csv/loft_solids, loft_solid_ybin_fuselage
+loft, csv/F35B-CSV/loft_solids, loft_solid_ybin_fuselage, F35B-CSV
 profiles
   y_175_wing_bin
   #y_200_wing_bin  # skip for smoother shape at front edge
@@ -3859,7 +3866,7 @@ rails
   z_19_8_edge_wing_yrear
   z_18_2_edge_wing_yrear
 
-loft, csv/loft_solids, loft_solid_ybin_wing
+loft, csv/F35B-CSV/loft_solids, loft_solid_ybin_wing, F35B-CSV
 profiles
   y_213_wing_bin
   y_250_wing
@@ -3889,27 +3896,29 @@ rails
 ################################################################################
 # Loft wing
 
-loft, csv/loft_solids, loft_solid_wing
+loft, csv/F35B-CSV/loft_solids, loft_solid_wing, F35B-CSV
 profiles
   y_250_wing
   y_526_wing
 
 
-################################################################################
-# Combine-join solids before split
+echo, --------------------------------------------------------------------------
+echo, Combine-join solids before split
+echo, --------------------------------------------------------------------------
 
-combine, csv/combine_join_solids_for_split, join_solid_inlet
+combine, csv/F35B-CSV/combine_join_solids_for_split, join_solid_inlet, F35B-CSV
 join
 combine_bodies
   loft_solid_inlet_point
   loft_solid_inlet
 
 
-################################################################################
-# Split solids
+echo, --------------------------------------------------------------------------
+echo, Split solids
+echo, --------------------------------------------------------------------------
 
 # inlet, split order may matter regarding order of splitted_bodies
-split, csv/split_solids, split_join_solid_inlet
+split, csv/F35B-CSV/split_solids, split_join_solid_inlet, F35B-CSV
 split_body, join_solid_inlet
 split_tool, plane, plane_split_inlet_side
 splitted_bodies
@@ -3918,7 +3927,7 @@ splitted_bodies
 remove_bodies
   remove_solid_inlet
 
-split, csv/split_solids, split_solid_inlet_side
+split, csv/F35B-CSV/split_solids, split_solid_inlet_side, F35B-CSV
 split_body, split_solid_inlet_side
 split_tool, plane, plane_split_inlet_top
 splitted_bodies
@@ -3929,7 +3938,7 @@ remove_bodies
   remove_solid_inlet_top
 
 # tail
-split, csv/split_solids, split_loft_solid_tail_all
+split, csv/F35B-CSV/split_solids, split_loft_solid_tail_all, F35B-CSV
 split_body, loft_solid_tail_all
 split_tool, plane, plane_tail_angle
 splitted_bodies
@@ -3938,10 +3947,12 @@ splitted_bodies
 remove_bodies
   remove_solid_tail_all
 
-################################################################################
-# Combine join bodies
 
-combine, csv/combine_join_bodies, join_cut_plane
+echo, --------------------------------------------------------------------------
+echo, Combine join bodies
+echo, --------------------------------------------------------------------------
+
+combine, csv/F35B-CSV/combine_join_bodies, join_cut_plane, F35B-CSV
 join
 combine_bodies
   loft_cut_nose
@@ -3955,11 +3966,13 @@ combine_bodies
   loft_cut_fuselage_exhaust
   loft_cut_tail_all
 
-################################################################################
-# Combine bodies for shell bins
+
+echo, --------------------------------------------------------------------------
+echo, Combine bodies for shell bins
+echo, --------------------------------------------------------------------------
 
 # shell_xbin
-combine, csv/combine_shell_bins, join_solid_xbin
+combine, csv/F35B-CSV/combine_shell_bins, join_solid_xbin, F35B-CSV
 join
 combine_bodies
   loft_solid_xbin_front_edge
@@ -3967,59 +3980,60 @@ combine_bodies
   loft_solid_xbin_mid
   loft_solid_xbin_rear_edge
 
-combine, csv/combine_shell_bins, shell_xbin
+combine, csv/F35B-CSV/combine_shell_bins, shell_xbin, F35B-CSV
 cut
 combine_bodies
   join_solid_xbin
   join_cut_plane
 
 # shell_ybin
-combine, csv/combine_shell_bins, join_solid_ybin
+combine, csv/F35B-CSV/combine_shell_bins, join_solid_ybin, F35B-CSV
 join
 combine_bodies
   loft_solid_ybin_fuselage
   loft_solid_ybin_wing
 
-combine, csv/combine_shell_bins, shell_ybin
+combine, csv/F35B-CSV/combine_shell_bins, shell_ybin, F35B-CSV
 cut
 combine_bodies
   join_solid_ybin
   join_cut_plane
 
 
-################################################################################
-# Combine and split parts for 3D-printing
+echo, --------------------------------------------------------------------------
+echo, Combine and split parts for 3D-printing
+echo, --------------------------------------------------------------------------
 
 # shell_nose_0_140
-split, csv/printing_parts, split_loft_solid_nose
+split, csv/F35B-CSV/printing_parts, split_loft_solid_nose, F35B-CSV
 split_body, loft_solid_nose
 split_tool, plane, plane_x_140
 splitted_bodies
   solid_nose_0_140
   solid_nose_140_465
 
-combine, csv/printing_parts, shell_nose_0_140
+combine, csv/F35B-CSV/printing_parts, shell_nose_0_140, F35B-CSV
 cut
 combine_bodies
   solid_nose_0_140
   loft_cut_nose
 
 # shell_nose_140_430
-split, csv/printing_parts, split_solid_nose_140_465
+split, csv/F35B-CSV/printing_parts, split_solid_nose_140_465, F35B-CSV
 split_body, solid_nose_140_465
 split_tool, plane, plane_x_430
 splitted_bodies
   solid_nose_140_430
   solid_nose_430_465
 
-combine, csv/printing_parts, shell_nose_140_430
+combine, csv/F35B-CSV/printing_parts, shell_nose_140_430, F35B-CSV
 cut
 combine_bodies
   solid_nose_140_430
   loft_cut_nose
 
 # shell_fuselage_inlet_430_875
-combine, csv/printing_parts, solid_fuselage_430_1230
+combine, csv/F35B-CSV/printing_parts, solid_fuselage_430_1230, F35B-CSV
 join
 combine_bodies
   solid_nose_430_465
@@ -4030,14 +4044,14 @@ combine_bodies
   loft_solid_ybin_fuselage  # 697 - 1123
   loft_solid_ybin_wing  # 772 - 1213
 
-split, csv/printing_parts, split_solid_fuselage_430_1230
+split, csv/F35B-CSV/printing_parts, split_solid_fuselage_430_1230, F35B-CSV
 split_body, solid_fuselage_430_1230
 split_tool, plane, plane_x_875
 splitted_bodies
   solid_fuselage_430_875
   solid_fuselage_875_1230
 
-combine, csv/printing_parts, shell_fuselage_430_875
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_430_875, F35B-CSV
 cut
 combine_bodies
   solid_fuselage_430_875
@@ -4048,20 +4062,20 @@ combine_bodies
   loft_cut_fuselage_chord_bin  # 797 - 820
   loft_cut_fuselage_chord  # 820 - 1100
 
-combine, csv/printing_parts, shell_inlet
+combine, csv/F35B-CSV/printing_parts, shell_inlet, F35B-CSV
 cut
 combine_bodies
   split_solid_inlet
   loft_cut_inlet
 
-combine, csv/printing_parts, shell_fuselage_inlet_430_875
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_430_875, F35B-CSV
 join
 combine_bodies
   shell_inlet
   shell_fuselage_430_875
 
 # shell_fuselage_outlet_875_1230
-combine, csv/printing_parts, shell_fuselage_outlet_875_1230
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_outlet_875_1230, F35B-CSV
 cut
 combine_bodies
   solid_fuselage_875_1230
@@ -4070,24 +4084,26 @@ combine_bodies
   loft_cut_fuselage_outlet  # 1142 - 1230
 
 # shell_fuselage_tail_1230_1403
-combine, csv/printing_parts, solid_fuselage_tail_1230_1403
+combine, csv/F35B-CSV/printing_parts, solid_fuselage_tail_1230_1403, F35B-CSV
 join
 combine_bodies
   loft_solid_fuselage_exhaust  # 1230 - 1306
   split_solid_tail_all  # 1306 - 1403
 
-combine, csv/printing_parts, shell_fuselage_tail_1230_1403
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_tail_1230_1403, F35B-CSV
 cut
 combine_bodies
   solid_fuselage_tail_1230_1403
   loft_cut_fuselage_exhaust  # 1230 - 1306
   loft_cut_tail_all  # 1306 - 1403
 
-################################################################################
-# Join whole plane
+
+echo, --------------------------------------------------------------------------
+echo, Join whole plane
+echo, --------------------------------------------------------------------------
 
 # shell_plane_0_1403
-combine, csv/whole_plane, shell_plane_0_1403
+combine, csv/F35B-CSV/whole_plane, shell_plane_0_1403, F35B-CSV
 join
 combine_bodies
   shell_nose_0_140
@@ -4096,36 +4112,11 @@ combine_bodies
   shell_fuselage_outlet_875_1230
   shell_fuselage_tail_1230_1403
 
-################################################################################
-# Move, copy, translate objects
-
-movecopy, csv/movecopy, movecopy_voorwielkast
-body, voorwielkast
-copy, voorwielkast_COPY
-translate, 0, 0, 100
-
 
 ################################################################################
 # Assembly
 
-assembly, csv, F35B-CSV # csv directory and csv filename
-F35B-CSV  # assembly name = host component name
-  ##############################################################################
-  # Use separate group components for sketches and Construction planes
-  multiple_create_sketch, sketches_fuselage_x
-  multiple_create_sketch, sketches_fuselage_x_rails
-  multiple_create_sketch, sketches_rails_y
-  multiple_create_sketch, sketches_rails_z
-  multiple_create_sketch, sketches_wing
-  multiple_create_sketch, sketches_cut_fuselage_x
-  multiple_create_sketch, sketches_cut_rails_y
-  multiple_create_sketch, sketches_cut_rails_z
-  multiple_create_plane, planes
-  multiple_create_plane, printing_parts
-  ##############################################################################
-  # Use shared F35B-CSV host component for Bodies
-  multiple_create_loft, loft_solids, F35B-CSV
-  multiple_create_loft, loft_cuts, F35B-CSV
+assembly, csv/F35B-CSV, F35B-points
   multiple_run_combine, combine_join_solids_for_split, F35B-CSV
   multiple_run_split, split_solids, F35B-CSV
   multiple_run_combine, combine_join_bodies, F35B-CSV
@@ -4152,4 +4143,7 @@ F35B-CSV  # assembly name = host component name
   ##############################################################################
   # Join whole plane
   run_combine, whole_plane/shell_plane_0_1403.csv, F35B-CSV
-  echo, Do not forget to correct loft handle for loft_solid_fuselage_outlet !!!
+echo, --------------------------------------------------------------------------
+echo, Created F35B-CSV fuselage and wing !
+echo, Do not forget to correct loft handle for loft_solid_fuselage_outlet !!!
+echo, --------------------------------------------------------------------------

@@ -44,7 +44,7 @@ import interfacefiles
 _mathDict = {k: v for k, v in math.__dict__.items() if not k.startswith('__')}
 
 
-def read_parameters_from_file(fileLines):
+def read_parameters_from_file_lines(fileLines):
     """Read parameters sections from fileLines of file.
 
     parameters
@@ -91,11 +91,11 @@ def read_parameters_from_file(fileLines):
             # Add parameter
             parametersDict[name] = value
             nofParameters += 1
-    print('read_parameters_from_file: Read %d parameters' % nofParameters)
+    print('read_parameters_from_file_lines: Read %d parameters' % nofParameters)
     return parametersDict
 
 
-def replace_parameters_in_file(fileLines, parametersDict):
+def replace_parameters_in_file_lines(fileLines, parametersDict):
     """Evaluate parameters in readLines of file.
 
     The parameter name instances in the file are identified by a preceding $.
@@ -140,9 +140,12 @@ def print_parameters_dict(parametersDict):
     Input:
     . parametersDict: dictionary of parameter and expression pairs
     """
-    print('Parameters:')
-    for name, value in parametersDict.items():
-        print('. %-20s = %s' % (name, interfacefiles.value_to_str(value)))
+    if parametersDict:
+        print('Parameters:')
+        for name, value in parametersDict.items():
+            print('. %-20s = %s' % (name, interfacefiles.value_to_str(value)))
+    else:
+        print('No parameters.')
 
 
 def _validate_parameter_name_in_dict(name, parametersDict):

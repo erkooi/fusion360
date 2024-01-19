@@ -138,8 +138,8 @@ def extract_object_name(filename):
         return ''
 
 
-def extract_component_name(filepathname):
-    """Extract component name from sub directory in filepathname.
+def extract_component_name(filename):
+    """Extract component name from last sub directory in filename.
 
     For example:
     . /a/b/c.csv -> componentName = 'b'
@@ -148,15 +148,15 @@ def extract_component_name(filepathname):
     . c.txt -> componentName = ''
 
     Input:
-    . filepathname: filename or directory name
+    . filename: filename or directory name
     Return:
-    . componentName: extracted name or empty string when filepathname contains
+    . componentName: extracted name or empty string when filename contains
       no directory
     """
-    # Directory name is last last part in filepathname, without the filename
-    basename = os.path.basename(filepathname)
+    # Directory name is last last part in filename, without the file name
+    basename = os.path.basename(filename)
     if '.' in basename:
-        dirname = os.path.dirname(filepathname)
+        dirname = os.path.dirname(filename)
         basename = os.path.basename(dirname)
     return basename
 
@@ -192,6 +192,7 @@ def get_list_of_files_in_folder(folderName, extension='.csv'):
     result = []
     for name in os.listdir(folderName):
         fullname = os.path.join(folderName, name)
+        fullname = os.path.normpath(fullname)
         if os.path.isfile(fullname):
             _, ext = os.path.splitext(fullname)
             if ext == extension:
@@ -278,7 +279,7 @@ def read_data_lines_from_file(filename):
     return dataLines
 
 
-def read_units_from_file(fileLines):
+def read_units_from_file_lines(fileLines):
     """Read units from fileLines of file.
 
     Input:
@@ -293,12 +294,12 @@ def read_units_from_file(fileLines):
         if lineWord == 'units':
             units = entries[1]
             if units in validUnits:
-                print('read_units_from_file: %s' % units)
+                print('read_units_from_file_lines: %s' % units)
                 return units
             else:
                 print('ERROR line %d: invalid units' % li)
                 return units
-    print('read_units_from_file: %s (default)' % units)
+    print('read_units_from_file_lines: %s (default)' % units)
     return units
 
 
@@ -380,20 +381,34 @@ def convert_data_lines_to_lists(fileLines):
 
 
 def write_co_rail_sketch_csv_files(fileLines, units):
-    """Write co rail sketches for segments with a co_rail name from sketches
+    """Write co_rail CSV sketch files."""
+    return determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True)
+
+
+def list_co_rail_sketch_csv_files(fileLines):
+    """Make timeline list of co_rail CSV sketch files."""
+    return determine_co_rail_sketch_csv_files(fileLines, units='', writeFile=False)
+
+
+def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
+    """Determine co rail sketches for segments with a co_rail name from sketches
     in fileLines.
 
     Inputs:
     . fileLines: lines from a timeline file with sketches, that contain
       segments with optional co_rail name.
     . units: units from validUnits
+    . writeFile: when True write the co_rail CSV files, else create a list of
+      the co_rail file headers for timeline purposes.
     Input:
     . fileLines: lines from file that define one or more profile sketches
-    Return: number of files written
+    Return:
+    . nofFiles if writeFile, else timelineList
     """
     li = 0
     sketchLines = []
     nofFiles = 0
+    timelineList = []
 
     # Find sketches in fileLines, seperated by one empty line
     for fLine in fileLines:
@@ -406,7 +421,7 @@ def write_co_rail_sketch_csv_files(fileLines, units):
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'sketch':
-                coRailFolderStr = entries[1] + '_rails'
+                coRailFolderStr = entries[1] + '_co_rails'
                 sketchName = entries[2]
                 li += 1
         elif li == 1:
@@ -430,12 +445,17 @@ def write_co_rail_sketch_csv_files(fileLines, units):
             segmentType = entries[0]
             if segmentType in validSegmentTypes:
                 if coRailName:
-                    # Write co rail sketch file for previous segment
-                    print('write_co_rail_sketch_csv_files: %s' % coRailFilename)
-                    with open(coRailFilename, 'w') as fp:
-                        fp.writelines(sketchLines)
-                        fp.writelines(coRailLines)
-                        nofFiles += 1
+                    if writeFile:
+                        # Write co rail sketch file for previous segment
+                        print('write_co_rail_sketch_csv_files: %s' % coRailFilename)
+                        with open(coRailFilename, 'w') as fp:
+                            fp.writelines(sketchLines)
+                            fp.writelines(coRailLines)
+                            nofFiles += 1
+                    else:
+                        # Make timeline list of co rail sketch files
+                        timelineTuple = ('co_rails', coRailFilename)
+                        timelineList.append(timelineTuple)
                 # Get optional co_rail name
                 coRailName = get_rail_names(entries[1:], 'co_rail')
                 coRailFilename = ''
@@ -445,6 +465,7 @@ def write_co_rail_sketch_csv_files(fileLines, units):
                     coRailFolder = create_folder(coRailFolderStr)
                     coRailFilename = sketchName + '_' + coRailName[0] + '.csv'
                     coRailFilename = os.path.join(coRailFolder, coRailFilename)
+                    coRailFilename = os.path.normpath(coRailFilename)
                     coRailLines.append(segmentType + '\n')
             else:
                 if coRailName:
@@ -455,8 +476,11 @@ def write_co_rail_sketch_csv_files(fileLines, units):
             # sketch section in fileLines
             li = 0
             sketchLines = []
-    print('write_co_rail_sketch_csv_files: Wrote %d CSV files' % nofFiles)
-    return nofFiles
+    if writeFile:
+        print('write_co_rail_sketch_csv_files: Wrote %d CSV files' % nofFiles)
+        return nofFiles
+    else:
+        return timelineList
 
 
 def determine_rail_point_xyz(profilePlaneNormal, profilePlaneOffset, railPlaneNormal, railPlaneOffset, a, b):
@@ -741,7 +765,7 @@ def write_cross_rail_sketch_csv_file(filename, units, railPlaneNormal, railPlane
                     a = p[0]
                     b = p[1]
                 fp.write('%.2f, %.2f\n' % (a, b))  # use 0.01 mm resolution
-            nofFiles += 1
+            nofFiles = 1
     else:
         print('write_cross_rail_sketch_csv_file: no points for %s' % filename)
     return nofFiles
@@ -784,8 +808,10 @@ def write_cross_rail_sketch_csv_files(fileLines, units):
                 filename = ''
                 if railFilenamePrefix:
                     filename = railFilenamePrefix + '_'
-                filename += railPlaneNormal + '_' + value_to_str(railPlaneOffset) + '_' + railName + '.csv'
+                railPlaneOffsetStr = value_to_str(railPlaneOffset, toAbs=True, pointChar='_')
+                filename += railPlaneNormal + '_' + railPlaneOffsetStr + '_' + railName + '.csv'
                 filename = os.path.join(railsFolder, filename)
+                filename = os.path.normpath(filename)
                 # Write sketch file
                 nofFiles += write_cross_rail_sketch_csv_file(filename, units,
                                                              railPlaneNormal, railPlaneOffset,
@@ -820,6 +846,7 @@ def write_csv_files(fileLines, csvFileType, units=''):
                 csvFolder = create_folder(entries[1])
                 csvFilename = entries[2] + '.csv'
                 csvFilename = os.path.join(csvFolder, csvFilename)
+                csvFilename = os.path.normpath(csvFilename)
                 csvLines = []
                 csvLines.append(csvFileType + '\n')  # write CSV file type
                 if units:
@@ -839,3 +866,193 @@ def write_csv_files(fileLines, csvFileType, units=''):
             li = 0
     print('write_csv_files %s: Wrote %d CSV files' % (csvFileType, nofFiles))
     return nofFiles
+
+
+def write_assembly_csv_file(fileLines):
+    """Write assembly section in fileLines into a CSV file.
+
+    There can be maximum one assembly per filelines.
+
+    Write assembly CSV file with:
+    - First line: assembly, componentName
+    - Next lines: timeline actions from fileLines, one line per folder or per
+      file
+
+    Input:
+    . fileLines: lines from timeline file that define CSV file sections
+    Return: number of CSV files written
+    """
+    li = 0
+    nofFiles = 0
+
+    # Find CSV file sections in fileLines, seperated by one empty line
+    for fLine in fileLines:
+        if li == 0:
+            # First line of a CSV file section in fileLines contains:
+            # . CSV file type,
+            # . folder name for CSV file,
+            # . filename for CSV file.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'assembly':
+                csvFolder = create_folder(entries[1])
+                csvFilename = entries[2] + '.csv'
+                csvFilename = os.path.join(csvFolder, csvFilename)
+                csvFilename = os.path.normpath(csvFilename)
+                componentName = extract_component_name(csvFolder)
+                assemblyLine = 'assembly' + ', ' + componentName + '\n'
+                csvLines = []
+                csvLines.append(assemblyLine)  # write assembly line
+                li += 1
+        elif fLine.strip():
+            # Skip on next fileLines until empty line in fileLines
+            pass
+        else:
+            # Empty line marks end of section in fileLines
+            # . Add timeline actions for the assembly
+            csvLines += read_timeline_from_file_lines(fileLines)
+            # . Write CSV file
+            with open(csvFilename, 'w') as fp:
+                fp.writelines(csvLines)
+                nofFiles += 1
+            print('write_assembly_csv_file: %s' % csvFilename)
+            # . Only support one assembly section per timeline fileLines
+            break
+    print('write_assembly_csv_file: Wrote %d CSV files' % nofFiles)
+    return nofFiles
+
+
+# Process planes and sketches per CSV folder, because planes and sketches do
+# not depend on other objects.
+# - get plane folders
+# - get sketch folders
+# - get sketch folders with co_rails is sketch folder name + '_co_rail'
+# - get cross_rails sketches
+# Process lofts per CSV folder, because lofts only depend on sketches:
+# - get loft folders
+# Process other objects in order per CSV file, because for actions on objects
+# can depend on other object.
+# - get extrude, combine, split, movecopy, assembly CSV files
+#
+# For folders use:
+# . multiple_create_plane, folderName, groupName
+# . multiple_create_sketch, folderName, groupName
+# . multiple_create_loft, folderName, groupName
+# For files use:
+# . run_extrude, filename, groupName
+# . run_combine, filename, groupName
+# . run_split, filename, groupName
+# . run_movecopy, filename, groupName
+# . run_assembly, filename, groupName
+def read_timeline_from_file_lines(fileLines):
+    """Read timeline from fileLines of file.
+
+    Input:
+    . fileLines: read lines from comma separate values file
+    Return:
+    . timelineList: timeline list with assembly lines to create objects from:
+      - CSV folders for which order in fileLines is don't care, or from
+      - single CSV files in order of appearance in fileLines, with actions for
+        which the order in fileLines does matter.
+    """
+    timelineList = []
+    # Process per CSV folder
+    timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'sketch')
+    timelineList += _read_timeline_multi_co_rails_sketches_from_file_lines(fileLines)
+    timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'cross_rails')
+    timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'loft')
+    timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'plane')
+    # Process per single CSV file
+    timelineList += _read_timeline_single_objects_from_file_lines(fileLines)
+    return timelineList
+
+
+def _read_timeline_multi_co_rails_sketches_from_file_lines(fileLines):
+    """Read timeline for sketches co_rails components from fileLines of file.
+
+    Input:
+    . fileLines: read lines from comma separate values file
+    Return:
+    . timelineList: timeline list with assembly lines to create co_rails
+      sketches from CSV sketch folders for which order is don't care.
+    """
+    timelineList = []
+    # Find sketches co_rails components from fileLines
+    coRailsList = list_co_rail_sketch_csv_files(fileLines)
+    for coRailTuple in coRailsList:
+        folderName = coRailTuple[1]
+        componentName = extract_component_name(folderName)
+        assemblyLine = 'multiple_create_sketch, ' + componentName
+        assemblyLine += '\n'
+        if assemblyLine not in timelineList:
+            timelineList.append(assemblyLine)
+    return timelineList
+
+
+def _read_timeline_multi_objects_from_file_lines(fileLines, sectionType):
+    """Read timeline for components with sectionType from fileLines of file.
+
+    Use for sectionType = 'plane', 'sketch', 'cross_rails', 'loft', from
+    validCsvFileTypes or validRailTypes. For cross_rails use sketch.
+
+    Input:
+    . fileLines: read lines from comma separate values file
+    Return:
+    . timelineList: timeline list with assembly lines to create objects from
+      CSV folders for which order in fileLines is don't care.
+    """
+    # Find components with sectionType
+    timelineList = []
+    for li, fLine in enumerate(fileLines):
+        entries = get_file_line_entries(fLine)
+        lineWord = entries[0]
+        if lineWord == sectionType:
+            folderName = entries[1]
+            componentName = extract_component_name(folderName)
+            if sectionType in validCsvFileTypes:
+                assemblyLine = 'multiple_create_%s, ' % sectionType + componentName
+            else:
+                assemblyLine = 'multiple_create_sketch, ' + componentName
+            if len(entries) > 3:
+                groupComponentName = entries[3]
+                assemblyLine += ', ' + groupComponentName
+            assemblyLine += '\n'
+            if assemblyLine not in timelineList:
+                timelineList.append(assemblyLine)
+    return timelineList
+
+
+def _read_timeline_single_objects_from_file_lines(fileLines):
+    """Read timeline for single objects from fileLines of file.
+
+    Use for action = 'extrude', 'combine', 'split', 'movecopy', 'echo'
+
+    Input:
+    . fileLines: read lines from comma separate values file
+    Return:
+    . timelineList: timeline list with assembly lines to create objects from
+      single CSV file in order of appearance in fileLines
+    """
+    # Find components with sectionType
+    timelineList = []
+    for li, fLine in enumerate(fileLines):
+        entries = get_file_line_entries(fLine)
+        lineWord = entries[0]
+        if lineWord == 'echo':
+            assemblyLine = 'echo, ' + convert_entries_to_single_string(entries[1:]) + '\n'
+            timelineList.append(assemblyLine)
+        elif lineWord in ['extrude', 'combine', 'split', 'movecopy', 'echo']:
+            folderName = entries[1]
+            componentName = extract_component_name(folderName)
+            filename = entries[2] + '.csv'
+            filename = os.path.join(componentName, filename)
+            filename = os.path.normpath(filename)
+            assemblyLine = 'run_%s, ' % lineWord + filename
+            if len(entries) > 3:
+                groupComponentName = entries[3]
+                assemblyLine += ', ' + groupComponentName
+            assemblyLine += '\n'
+            if assemblyLine not in timelineList:
+                timelineList.append(assemblyLine)
+    return timelineList

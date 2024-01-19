@@ -93,46 +93,46 @@ if __name__ == '__main__':
     fileLines = interfacefiles.read_data_lines_from_file(timelineFilename)
 
     # Read units
-    units = interfacefiles.read_units_from_file(fileLines)
+    units = interfacefiles.read_units_from_file_lines(fileLines)
 
     # Process parameters
-    parametersDict = userparameters.read_parameters_from_file(fileLines)
-    fileLines = userparameters.replace_parameters_in_file(fileLines, parametersDict)
+    parametersDict = userparameters.read_parameters_from_file_lines(fileLines)
+    fileLines = userparameters.replace_parameters_in_file_lines(fileLines, parametersDict)
 
-    # Write csv files
+    # Write CSV files
     nofFiles = 0
 
-    # Write plane csv files into folder(s)
+    # Write plane CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'plane', units)
 
-    # Write sketch csv files into folder(s)
+    # Write sketch CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'sketch', units)
 
-    # Write co rail sketches for sketch segments with a co_rail name
+    # Write co rail sketches CSV files for sketch segments with a co_rail name
     nofFiles += interfacefiles.write_co_rail_sketch_csv_files(fileLines, units)
 
-    # Write cross rail sketches for points between profile sketches
+    # Write cross rail sketches CSV files for points between profile sketches
     nofFiles += interfacefiles.write_cross_rail_sketch_csv_files(fileLines, units)
 
-    # Write loft csv files into folder(s)
+    # Write loft CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'loft')
 
-    # Write extrude csv files into folder(s)
+    # Write extrude CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'extrude', units)
 
-    # Write combine csv files into folder(s)
+    # Write combine CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'combine')
 
-    # Write split csv files into folder(s)
+    # Write split CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'split')
 
-    # Write movecopy csv files into folder(s)
+    # Write movecopy CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'movecopy', units)
 
-    # Write assembly csv files into folder(s)
-    nofFiles += interfacefiles.write_csv_files(fileLines, 'assembly')
+    # Write assembly CSV file
+    nofFiles += interfacefiles.write_assembly_csv_file(fileLines)
 
     # Report
-    print('Wrote total %d csv files for %s' % (nofFiles, timelineFilename))
+    print('Wrote total %d CSV files for %s' % (nofFiles, timelineFilename))
 
     userparameters.print_parameters_dict(parametersDict)
