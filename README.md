@@ -1,5 +1,7 @@
 # Scripts to create objects in Fusion360 from CSV files using the API
 
+For more information please also check my channel "Eric Kooistra - Hobby" on YouTube: https://www.youtube.com/channel/UCnQhySYKmPyZsY2G8S3CUbA
+
 ## 1. Overview
 * API/libraries contains library files that are used in the other scripts for handling CSV files and Fusion360 objects.
 * API/Scripts contains scripts that can run in Fusion360 to create objects like sketches, planes, lofts, bodies from CSV files.
