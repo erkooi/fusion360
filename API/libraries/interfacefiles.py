@@ -57,10 +57,13 @@ def value_to_str(value, toAbs=False, pointChar='.'):
     to integer string (0 decimals) or to float string with 1, 2, 3, ...
     decimals.
 
-    Choose maxNofDecimals = 12, to have rel_tol=1e-12, abs_tol=1e-12, to
-    be more accurate than Fusion360:
-    . application.pointTolerance = 1.000000e-08 m = 10.000000 nm
-    . application.vectorAngleTolerance = 1.000000e-10 rad = 5.729578e-09 degrees
+    maxNofDecimals:
+    . Choose maxNofDecimals = 15, because 64 bit double can fit 15 decimals
+    . Choose maxNofDecimals = 12, to have rel_tol=1e-12, abs_tol=1e-12, to
+      be more accurate than Fusion360:
+      - application.pointTolerance = 1.000000e-08 m = 10.000000 nm
+      - application.vectorAngleTolerance = 1.000000e-10 rad = 5.729578e-09
+        degrees
 
     math.isclose:
     . rel_tol: relative tolerance for math.isclose(), to compare values that
