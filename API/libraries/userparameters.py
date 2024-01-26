@@ -30,6 +30,9 @@ Outside the parameters sections parameter names can be used with a preceding $.
 The $parameter names will be replaced by their value and if they are part of
 an expression, then the expression is evaluated to set the value.
 
+The start of one parameter name must not be identical to another parameter
+name, to avoid partial parameter name substitution.
+
 Based on safe eval() code from:
 . https://realpython.com/python-eval-function/#restricting-the-use-of-built-in-names
 . https://lybniz2.sourceforge.net/safeeval.html
