@@ -15,6 +15,10 @@
 ################################################################################
 # Author: Eric Kooistra.
 # Date: 31 may 2023
+#
+# References:
+# [1] https://forums.autodesk.com/t5/fusion-360-api-and-scripts/sketchpoint-coordinate-with-too-many-decimals-for-plane/m-p/12521506#M20779  # noqa: E501
+
 """Module to create a plane in Fusion360 from three points defined in a csv
    file.
 
@@ -30,6 +34,7 @@ Plane CSV file format:
 . next line: third point coordinates x, y, z
 """
 
+import adsk.core
 import interfacefiles
 import interface360
 import utilities360
@@ -82,7 +87,95 @@ def parse_csv_plane_file(ui, title, filename):
     return (True, threePoint3Ds)
 
 
-def create_three_point_plane(hostComponent, planeName, threePoint3Ds):
+# The _create_three_points_in_separate_sketches() fails if the three points
+# happen to project on a line in the z = 0 plane. This is a bug in Fusion360,
+# as reported in [1]. The work around solution is to instead use
+# _create_three_points_in_one_sketch(), that defines all three points in one
+# sketch. This is possible, because it is allowed to use z != 0 in a sketch,
+# even though the sketch is like 2D. Explanation by Brian Ekins in [1]:
+# . Sketches are 3D, but in the GUI, they mostly behave like 2D, where the
+#   geometry you sketch lies on the X-Y plane. When a sketch is active, there
+#   is an option in the SKETCH PALETTE dialog for "3D Sketch". When it is
+#   checked, you have some additional capabilities to sketch in 3 dimensions.
+#   This doesn't change the sketch itself, but just the GUI to make it easier
+#   to draw in 3D. Another way to see this is to draw geometry on the X-Y plane
+#   and then use the Move command to move sketch geometry out of the X-Y plane.
+def _create_three_points_in_separate_sketches(ui, hostComponent, planeName, threePoint3Ds):
+    """Create three points in separate sketches.
+
+    Input:
+    . hostComponent: place the plane in hostComponent Construction folder.
+    . planeName: name prefix for the offset planes and sketches
+    . threePoint3Ds: list of three point3D objects that define a plane
+    Return:
+    . threeSketchPoints: list with three sketch points that can define a plane
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    threeSketchPoints = []
+    for pIndex, p3D in enumerate(threePoint3Ds):
+        # Create a separate offset normal plane for each point:
+        # . choose 'x' as planeNormal,
+        # . use x coordinate as plane offset,
+        # . x, y, z coordinates become -z, y, 0 in offset normal plane, as
+        #   explained for get_3d_point_in_offset_plane() in schemacsv360.py
+        name = planeName + '_point_' + str(pIndex)
+        offsetPlane = schemacsv360.create_offset_normal_plane(hostComponent, name, 'x', p3D.x)
+        offsetPlane.isLightBulbOn = False
+        # Create a separate auxiliary sketch for each point
+        sketch = utilities360.create_sketch_in_plane(hostComponent, name, offsetPlane)
+        sketch.isLightBulbOn = False
+        # Create auxiliary sketch point
+        point = adsk.core.Point3D.create(-p3D.z, p3D.y, 0)
+        sketchPoints = sketch.sketchPoints
+        sketchPoint = sketchPoints.add(point)
+        # interface360.print_text(ui, 'sketchPoint (x, y, z) = ' +
+        #                         interfacefiles.value_to_str(sketchPoint.worldGeometry.x) + ', ' +
+        #                         interfacefiles.value_to_str(sketchPoint.worldGeometry.y) + ', ' +
+        #                         interfacefiles.value_to_str(sketchPoint.worldGeometry.z))
+        threeSketchPoints.append(sketchPoint)
+    return threeSketchPoints
+
+
+def _create_three_points_in_one_sketch(ui, hostComponent, sketchName, threePoint3Ds):
+    """Create three points in one 3D sketch in the yZ origin plane.
+
+    Input:
+    . hostComponent: place the plane in hostComponent Construction folder.
+    . sketchName: name prefix for the sketch in the origin plane
+    . threePoint3Ds: list of three point3D objects that define a plane
+    Return:
+    . threeSketchPoints: list with three sketch points that can define a plane
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    # Use one sketch:
+    # . choose yZ as origin plane, so 'x' as plane normal,
+    # . use x coordinate as z coordinate plane offset,
+    # . x, y, z coordinates become -z, y, x in the yZ origin plane, as
+    #   explained for get_3d_point_in_offset_plane() in schemacsv360.py
+    originPlane = hostComponent.yZConstructionPlane
+
+    # Create the one auxiliary sketch in the originPlane
+    name = sketchName + '_three_points'
+    sketch = utilities360.create_sketch_in_plane(hostComponent, name, originPlane)
+    sketch.isLightBulbOn = False
+
+    threeSketchPoints = []
+    for pIndex, p3D in enumerate(threePoint3Ds):
+        # Create auxiliary sketch point
+        point = adsk.core.Point3D.create(-p3D.z, p3D.y, p3D.x)
+        sketchPoints = sketch.sketchPoints
+        sketchPoint = sketchPoints.add(point)
+        # interface360.print_text(ui, 'sketchPoint (x, y, z) = ' +
+        #                         interfacefiles.value_to_str(sketchPoint.worldGeometry.x) + ', ' +
+        #                         interfacefiles.value_to_str(sketchPoint.worldGeometry.y) + ', ' +
+        #                         interfacefiles.value_to_str(sketchPoint.worldGeometry.z))
+        threeSketchPoints.append(sketchPoint)
+    return threeSketchPoints
+
+
+def create_three_point_plane(ui, hostComponent, planeName, threePoint3Ds):
     """Create plane through three points in threePoint3Ds.
 
     The three points have to be real objects in the hostComponent like a
@@ -96,29 +189,12 @@ def create_three_point_plane(hostComponent, planeName, threePoint3Ds):
     . threePoint3Ds: list of three point3D objects that define a plane
     Return:
     . plane: plane object
+
+    Uses ui to report faults via Fusion360 GUI.
     """
-    # Create sketch points for the threePoint3Ds
-    threeSketchPoints = []
-    for pIndex, p3D in enumerate(threePoint3Ds):
-        # Create offset normal plane for each point:
-        # . choose 'x' as planeNormal,
-        # . use x coordinate as plane offset,
-        # . x, y, z coordinates become -z, y, 0 in offset normal plane, as
-        #   explained for get_3d_point_in_offset_plane() in schemacsv360.py
-        name = planeName + '_point_' + str(pIndex)
-        offsetPlane = schemacsv360.create_offset_normal_plane(hostComponent, name, 'x', p3D.x)
-        offsetPlane.isLightBulbOn = False
-        # Create auxiliary sketch for each point
-        sketch = utilities360.create_sketch_in_plane(hostComponent, name, offsetPlane)
-        sketch.isLightBulbOn = False
-        # Create auxiliary sketch point
-        point = p3D
-        point.x = -p3D.z
-        point.y = p3D.y
-        point.z = 0
-        sketchPoints = sketch.sketchPoints
-        sketchPoint = sketchPoints.add(point)
-        threeSketchPoints.append(sketchPoint)
+    # Create list of three sketch points for the threePoint3Ds
+    # threeSketchPoints = _create_three_points_in_separate_sketches(ui, hostComponent, planeName, threePoint3Ds)
+    threeSketchPoints = _create_three_points_in_one_sketch(ui, hostComponent, planeName, threePoint3Ds)
 
     # Get construction planes
     planes = hostComponent.constructionPlanes
@@ -159,7 +235,7 @@ def create_plane_from_csv_file(ui, title, filename, hostComponent):
     # Create plane if there are valid points
     if len(threePoint3Ds) == 3:
         # Create plane in hostComponent
-        plane = create_three_point_plane(hostComponent, objectName, threePoint3Ds)
+        plane = create_three_point_plane(ui, hostComponent, objectName, threePoint3Ds)
     else:
         ui.messageBox('No valid points in %s' % filename, title)
         return (False, None)
