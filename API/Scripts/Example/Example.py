@@ -29,7 +29,9 @@ import importlib
 # Import local from API\\libraries
 from . import append_sys_path_libraries  # noqa: F401
 import interface360
+import utilities360
 importlib.reload(interface360)
+importlib.reload(utilities360)
 
 
 def run(context):
@@ -58,12 +60,25 @@ def run(context):
         document = design.parentDocument
         application = document.parent  # = app
 
+        # Create example component in rootComponent with example objects
+        exampleComponent = utilities360.create_component(rootComponent, 'Example_component', isLightBulbOn=False)
+        objectsTuple = utilities360.create_example_objects(exampleComponent)
+        sketchTuple, extrudeTuple, planeTuple, mirrorTuple = objectsTuple
+        sketch, profile = sketchTuple
+        extrudeFeaturesInput, extrudeResult, extrudeBody, extrudeFace = extrudeTuple
+        planeInput, planeResult = planeTuple
+        mirrorInput, mirrorResult = mirrorTuple
+        mirrorStitchToleranceModelParameter = mirrorResult.stitchTolerance
+
         # Print some design and component info
         interface360.print_text(ui, 'application.version %s' % application.version)
         interface360.print_text(ui, '. application.pointTolerance = %e m = %f nm' %
                                 (application.pointTolerance / 100, application.pointTolerance * 10000000))
         interface360.print_text(ui, '. application.vectorAngleTolerance = %e rad = %e degrees' %
                                 (application.vectorAngleTolerance, math.degrees(application.vectorAngleTolerance)))
+        interface360.print_text(ui, '. mirrorStitchToleranceModelParameter.value = %e m = %f nm' %
+                                (mirrorStitchToleranceModelParameter.value / 100,
+                                 mirrorStitchToleranceModelParameter.value * 10000000))
 
         interface360.print_text(ui, 'document.name %s' % document.name)
         interface360.print_text(ui, '. document.version %s' % document.version)
