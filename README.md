@@ -40,7 +40,7 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 The Example script demonstrates some script development basics in Fusion360 by printing component names in the TEXT COMMANDS window of Fusion360, as shown below.
 ![Print text in TEXT COMMANDS window in Fusion360](doc/print_text_v2.jpg)
 
-#### 3.3.2 ImportSketchCSV and ImportSketchesCSV scripts with test/snail/snail_points.py
+#### 3.3.2 ImportSketchCSV and ImportSketchesCSV scripts with csv_timeline360.py
 Demonstrate creating three sketch CSV files of a snail, in three different offset planes of the XY, YZ and ZX origin planes. First in test/snail run 'python ../../csv_timeline360.py -f snail_points.txt' on the command line in a terminal, to create separate CSV files in a csv/sketches folder from snail_points.txt. One CSV file can be read into Fusion360 using the ImportSketchCSV script, or all three CSV files can be read at once into Fusion360 using the ImportSketchesCSV script.
 
 ![Read sketches into Fusion360 from CSV files](doc/snail_3d_v2.jpg)
