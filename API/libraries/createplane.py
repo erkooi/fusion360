@@ -29,9 +29,9 @@ Plane CSV file format:
 . use stripped filename as plane name
 . first line: 'plane' as filetype
 . second line: resolution 'mm' or 'cm'
-. next line: first point coordinates x, y, z
-. next line: second point coordinates x, y, z
-. next line: third point coordinates x, y, z
+. next line: 'point', first point coordinates x, y, z
+. next line: 'point', second point coordinates x, y, z
+. next line: 'point', third point coordinates x, y, z
 """
 
 import adsk.core
@@ -74,8 +74,10 @@ def parse_csv_plane_file(ui, title, filename):
             if not result:
                 return resultFalse
         elif li <= 4:
+            if lineWord != 'point':
+                return resultFalse
             # Read the three points
-            result, point3d = schemacsv360.get_3d_point(ui, title, filename, scale, lineArr)
+            result, point3d = schemacsv360.get_3d_point(ui, title, filename, scale, lineArr[1:])
             if not result:
                 return resultFalse
             threePoint3Ds.append(point3d)

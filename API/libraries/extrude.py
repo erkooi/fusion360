@@ -15,40 +15,45 @@
 ################################################################################
 # Author: Eric Kooistra.
 # Date: 27 dec 2023
-"""Module to extrude a sketch profile defined in a csv file in Fusion360.
+"""Module to extrude a planar defined in a csv file in Fusion360.
 
-The profile is a sketch profile. One or more profiles can be extruded from the
-same sketch. The profile index is 0 if there is only one profile. If there are
-multiple sketch profiles, then manually find the index using the Fusion360 GUI.
+The planar is a sketch profile or a body face. One or more planars can be
+extruded from the same sketch or body. The planar index is 0 if there is only
+one profile or face. If there are multiple planars, then manually find the
+index using the Fusion360 GUI.
 The extrude result bodies keep the name of the participant bodies or get a
-default name. With result_names the result bodies can be renamed.
+default name. With extrude_results the result bodies can be renamed.
 
 Extrude CSV file format:
 . comment lines or comment in line will be removed
 . first line: 'extrude' as filetype
 . second line: resolution 'mm' or 'cm'
-. 3-th line: 'profile', sketch name, profile indices (default index 0, when
-    no index is given)
+. 3-th line:
+  - 'profile', sketch name, profile indices, or
+  - 'face', body name, face indices, default index 0, when no index is given.
+    The profiles or faces must be coplanar.
 . 4-th line: 'offset', offset value
-. 5-th line: extent_type:
-  - 'distance', distanceValues
+. 5-th line: 'taper_angle', taper angle value in degrees for one side or two
+    sided extent
+. 6-th line: extent_type:
+  - 'distance', distanceValues for one side or two sides extent
   - 'to_object', toBodyName
-. 6-th line: operation:
+. 7-th line: operation:
   - 'join', participantBodyNames
   - 'cut', participantBodyNames
   - 'intersect', participantBodyNames
   - 'new_body'
-. 7-th line: 'result_names', resultBodyNames
+. 7-th line: 'extrude_results', resultBodyNames
 
   distanceValues:
   . one distance value for single side extent, or two distance values for both
     sides extent
   . the two distance values have same sign
   . first value is for positive direction
-  . the distance values are relative to the profile offset
+  . the distance values are relative to the planer (profile or face) offset
 
   participantBodyNames:
-  . A participant body is ignored if it is missed by the extrusion
+  . A participant body is ignored if it is missed by the extrude
   . The original participant bodies are lost if they get modified
   . join:
     - extrude result gets name of first participantBodyNames
@@ -61,14 +66,15 @@ Extrude CSV file format:
   . intersect: similar as for cut
 
   resultBodyNames:
-  . rename the extrude result bodies, the number of resultBodyNames must be
+  . If resultBodyNames is not specified, then keep the default names, else
+    rename the extrude result bodies, the number of resultBodyNames must be
     equal to the number of extrude result bodies
 
 Remark:
-. No need to support: multiple profiles, extent from face, operation
-  newcomponent.
+. No need to support: operation newcomponent.
 """
 
+import math
 import adsk.fusion
 
 import interfacefiles
@@ -80,25 +86,26 @@ validExtrudeExtentType = ['distance', 'to_object']
 validExtrudeOperations = ['join', 'cut', 'intersect', 'new_body']
 
 
-def parse_csv_extrude_file(ui, title, filename):
+def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function is too complex)
     """Parse extrude CSV file.
-
-    Reads extrude name and sketch name for profile from csv file.
 
     Input:
     . filename: full path and name of CSV file
     Return:
     . result: True when valid ExtrudeTuple, else False with None
     . extrudeTuple:
-      - profileTuple: sketch name, profile indices
-      - offset: start extrude at offset distance from sketch plane
+      - planarTuple: sketch name, from body name, planar (profile or face)
+        indices
+      - offset: start extrude at offset distance from sketch plane or body face
+      - taperAngles:  taper angle in degrees for the extrude, one or two values
+        for one side or two sided extent extrude
       - extentType: 'distance' or 'to_object'
       - toBodyName: body name for extent 'to_object'
-      - distanceValues: extent extrude over distanceValues[0] from sketch plane
+      - distanceValues: extent extrude over distanceValues[0] from planar
         offset, extent two sided if distanceValues[1] is given
       - operation: 'join', 'cut', 'intersect', 'new_body'
       - participantBodyNames: body name(s) for join, cut or intersect operation
-      - resultBodyNames: rename result body or bodies
+      - resultBodyNames: optional rename result body or bodies
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
@@ -109,8 +116,11 @@ def parse_csv_extrude_file(ui, title, filename):
 
     # Parse file lines for extrude
     resultFalse = (False, None)
-    profileIndices = [0]  # default use profile 0
+    sketchName = ''
+    fromBodyName = ''
+    planarIndices = [0]  # default use index 0 for sketch profile or body face
     offset = 0
+    taperAngles = []
     distanceValues = []
     toBodyName = ''
     participantBodyNames = []
@@ -121,15 +131,17 @@ def parse_csv_extrude_file(ui, title, filename):
             if lineWord != 'extrude':
                 return resultFalse
         elif li == 1:
-            # Read units
             result, scale = schemacsv360.read_units(ui, title, filename, lineWord)
             if not result:
                 return resultFalse
         elif li == 2:
-            if lineWord == 'profile':
-                sketchName = lineArr[1]
+            if lineWord in ['profile', 'face']:
+                if lineWord == 'profile':
+                    sketchName = lineArr[1]
+                elif lineWord == 'face':
+                    fromBodyName = lineArr[1]
                 if len(lineArr) > 2:
-                    profileIndices = interfacefiles.convert_entries_to_integers(lineArr[2:])
+                    planarIndices = interfacefiles.convert_entries_to_integers(lineArr[2:])
             else:
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
@@ -140,19 +152,29 @@ def parse_csv_extrude_file(ui, title, filename):
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
         elif li == 4:
-            result, extentTuple = _parse_extentType(ui, li, lineArr, scale)
-            if result:
-                extentType, distanceValues, toBodyName = extentTuple
+            if lineWord == 'taper_angle':
+                taperAngles.append(math.radians(float(lineArr[1])))  # one side
+                if len(lineArr) > 2:
+                    taperAngles[1] = math.radians(float(lineArr[2]))  # two sided
             else:
+                interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
         elif li == 5:
+            result, extentTuple = _parse_extent_type(ui, li, lineArr, scale)
+            if result:
+                extentType, distanceValues, toBodyName = extentTuple
+                if len(distanceValues) == 2 and len(taperAngles) == 1:
+                    taperAngles.append(0)  # default use no taper on second side
+            else:
+                return resultFalse
+        elif li == 6:
             result, operationTuple = _parse_operation(ui, li, lineArr)
             if result:
                 operation, participantBodyNames = operationTuple
             else:
                 return resultFalse
-        elif li == 6:
-            if lineWord == 'result_names':
+        elif li == 7:
+            if lineWord == 'extrude_results':
                 if len(lineArr) > 1:
                     resultBodyNames = lineArr[1:]
             else:
@@ -162,10 +184,10 @@ def parse_csv_extrude_file(ui, title, filename):
             return resultFalse
 
     # Successfully reached end of file
-    profileTuple = (sketchName, profileIndices)
-    extentTuple = (offset, extentType, distanceValues, toBodyName)
+    planarTuple = (sketchName, fromBodyName, planarIndices)
+    extentTuple = (offset, taperAngles, extentType, distanceValues, toBodyName)
     operationTuple = (operation, participantBodyNames, resultBodyNames)
-    extrudeTuple = (profileTuple, extentTuple, operationTuple)
+    extrudeTuple = (planarTuple, extentTuple, operationTuple)
     return (True, extrudeTuple)
 
 
@@ -183,7 +205,7 @@ def _parse_operation(ui, lineIndex, lineArr):
         return resultFalse
 
 
-def _parse_extentType(ui, lineIndex, lineArr, scale):
+def _parse_extent_type(ui, lineIndex, lineArr, scale):
     """Parse lineArr for extentType with distance or toBodyName."""
     resultFalse = (False, None)
     if lineArr[0] == 'extent_type':
@@ -205,30 +227,34 @@ def _parse_extentType(ui, lineIndex, lineArr, scale):
     return (True, (extentType, distanceValues, toBodyName))
 
 
-def extrude_profiles(profileTuple, operationTuple, extentTuple):
-    """Extrude the profile(s).
+def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
+    """Extrude the planar(s) from objectTuple.
 
     Input:
-    . profileTuple: sketch with list of profiles to extrude
+    . objectTuple: sketch object with profiles or body object with faces to
+      extrude
     . operationTuple: extrude operation parameters
     . extentTuple: extrude extent parameters
     Return:
     . extrudeResult : extrudeFeature object with result of the extrude
+
+    Uses ui to report faults via Fusion360 GUI.
     """
     # Extract tuples
-    sketch, profiles = profileTuple
+    object, planars = objectTuple
     operation, participantBodies, resultBodyNames = operationTuple
-    offset, extentType, distanceValues, toBody = extentTuple
+    offset, taperAngles, extentType, distanceValues, toBody = extentTuple
 
     # Create extrude feature input
     # . The extrudeFeatures has to be obtained from the same component that
-    #   contains the sketches, therefore use sketch.parentComponent instead of
+    #   contains the object, therefore use object.parentComponent instead of
     #   hostComponent.
     operationEnum = utilities360.get_feature_operation_enum(operation)
-    extrudeFeatures = sketch.parentComponent.features.extrudeFeatures
-    extrudeFeatureInput = extrudeFeatures.createInput(profiles, operationEnum)
+    extrudeFeatures = object.parentComponent.features.extrudeFeatures
+    extrudeFeatureInput = extrudeFeatures.createInput(planars, operationEnum)
 
     # Select extent type
+    taperAngleInputOne = adsk.core.ValueInput.createByReal(taperAngles[0])
     if extentType == 'distance':
         # Create a distance extent definition
         distanceValueInputOne = adsk.core.ValueInput.createByReal(distanceValues[0])
@@ -236,19 +262,24 @@ def extrude_profiles(profileTuple, operationTuple, extentTuple):
         if len(distanceValues) == 1:
             # One side extent distance
             extrudeFeatureInput.setOneSideExtent(distanceExtentOne,
-                                                 adsk.fusion.ExtentDirections.PositiveExtentDirection)
+                                                 adsk.fusion.ExtentDirections.PositiveExtentDirection,
+                                                 taperAngleInputOne)
         else:
             # Two sides extent distance, positive direction is second argument
             # in setTwoSidesExtent()
             distanceValueInputTwo = adsk.core.ValueInput.createByReal(distanceValues[1])
             distanceExtentTwo = adsk.fusion.DistanceExtentDefinition.create(distanceValueInputTwo)
-            extrudeFeatureInput.setTwoSidesExtent(distanceExtentTwo, distanceExtentOne)
+            taperAngleInputTwo = adsk.core.ValueInput.createByReal(taperAngles[1])
+            extrudeFeatureInput.setTwoSidesExtent(distanceExtentTwo, distanceExtentOne,
+                                                  taperAngleInputTwo, taperAngleInputOne)
     else:  # 'to_object'
         # Create a to-entity extent definition
         isChained = True
         toEntityExtent = adsk.fusion.ToEntityExtentDefinition.create(toBody, isChained)
-        # Set the one side extent with the to-entity-extent-definition, and with a taper angle of 0 degree
-        extrudeFeatureInput.setOneSideExtent(toEntityExtent, adsk.fusion.ExtentDirections.PositiveExtentDirection)
+        # Set the one side extent with the to-entity-extent-definition, and with a taper angle
+        extrudeFeatureInput.setOneSideExtent(toEntityExtent,
+                                             adsk.fusion.ExtentDirections.PositiveExtentDirection,
+                                             taperAngleInputOne)
 
     # Include any participantBodies in extrude
     if participantBodies:
@@ -259,11 +290,14 @@ def extrude_profiles(profileTuple, operationTuple, extentTuple):
         # Create an offset type start definition
         offsetValueInput = adsk.core.ValueInput.createByReal(offset)
         offsetStart = adsk.fusion.OffsetStartDefinition.create(offsetValueInput)
-        # Set the start extent of the extrusion
+        # Set the start extent of the extrude
         extrudeFeatureInput.startExtent = offsetStart
 
-    # Create the extrusion
+    # Perform the extrude
     extrudeResult = extrudeFeatures.add(extrudeFeatureInput)
+    # TODO: Find out why join = 0 yields same as new_body = 3, while intersect
+    #       = 2 and cut = 1 yield expected result
+    # interface360.error_text(ui, 'operation = ' + str(extrudeFeatureInput.operation))
     return extrudeResult
 
 
@@ -272,7 +306,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
 
     Input:
     . filename: full path and name of CSV file
-    . hostComponent: look for sketch profile anywhere in hostComponent folder.
+    . hostComponent: look for planar anywhere in hostComponent folder.
     Return:
     . True when extrude was done, else False
 
@@ -283,20 +317,33 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     if not result:
         return False
     # Extract tuples
-    profileTuple, extentTuple, operationTuple = extrudeTuple
-    sketchName, profileIndices = profileTuple
-    offset, extentType, distanceVales, toBodyName = extentTuple
+    planarTuple, extentTuple, operationTuple = extrudeTuple
+    sketchName, fromBodyName, planarIndices = planarTuple
+    offset, taperAngles, extentType, distanceVales, toBodyName = extentTuple
     operation, participantBodyNames, resultBodyNames = operationTuple
 
-    # Find profile(s) in sketch and update profileTuple
-    sketch = utilities360.find_sketch_anywhere(hostComponent, sketchName)
-    if not sketch:
-        interface360.error_text(ui, 'Sketch %s not found' % sketchName)
-        return False
-    profiles = utilities360.find_profiles_collection(ui, sketch, profileIndices)
-    if not profiles:
-        return False
-    profileTuple = (sketch, profiles)
+    # Find object planar to extrude
+    objectTuple = None
+    if sketchName:
+        # Find profiles in sketch to determine profileTuple
+        sketch = utilities360.find_sketch_anywhere(hostComponent, sketchName)
+        if not sketch:
+            interface360.error_text(ui, 'Sketch %s not found' % sketchName)
+            return False
+        profiles = utilities360.find_profiles_collection(ui, sketch, planarIndices)
+        if not profiles:
+            return False
+        objectTuple = (sketch, profiles)
+    elif fromBodyName:
+        # Find faces in body to determine faceTuple
+        fromBody = utilities360.find_body_anywhere(hostComponent, fromBodyName)
+        if not fromBody:
+            interface360.error_text(ui, 'From body %s not found' % fromBodyName)
+            return False
+        faces = utilities360.find_faces_collection(ui, fromBody, planarIndices)
+        if not faces:
+            return False
+        objectTuple = (fromBody, faces)
 
     # Find participant bodies in hostComponent and update operationTuple
     participantBodies = []
@@ -313,31 +360,55 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     toBody = None
     if toBodyName:
         toBody = utilities360.find_body_anywhere(hostComponent, toBodyName)
-        if not body:
+        if not toBody:
             interface360.error_text(ui, 'To object body %s not found' % toBodyName)
             return False
-    extentTuple = (offset, extentType, distanceVales, toBody)
+    extentTuple = (offset, taperAngles, extentType, distanceVales, toBody)
 
-    # Perform the extrusion
-    extrudeResult = extrude_profiles(profileTuple, operationTuple, extentTuple)
+    # Perform the extrude feature
+    extrudeResult = extrude_planars(ui, objectTuple, operationTuple, extentTuple)
 
-    # Rename the body or bodies of the extrusion
-    if operation == 'new_body':
-        newBody = extrudeResult.bodies.item(0)
-        newBody.name = resultBodyNames[0]
-    elif operation in ['join', 'cut', 'intersect']:
-        nofResultBodyNames = len(resultBodyNames)
-        if nofResultBodyNames > 0:
-            if len(resultBodyNames) == extrudeResult.bodies.count:
-                for bi in range(extrudeResult.bodies.count):
-                    body = extrudeResult.bodies.item(bi)
-                    body.name = resultBodyNames[bi]
-            else:
-                interface360.print_text(ui, 'Number of result_names %d != %d result bodies.count' %
-                                        (nofResultBodyNames, extrudeResult.bodies.count))
-                return False
-    interface360.print_text(ui, 'Extruded for ' + filename)
-    return True
+    # Rename the body or bodies of the extrude
+    result = _rename_result_bodies(ui, resultBodyNames, extrudeResult)
+    if result:
+        interface360.print_text(ui, 'Extruded for ' + filename)
+    return result
+
+
+def _rename_result_bodies(ui, resultBodyNames, extrudeResult):
+    """Rename bodies in extrudeResult with names from resultBodyNames
+
+    Input:
+    . resultBodyNames: if list is empty, then keep default names, else use
+      names from list to rename the bodies in extrudeResult. If resultBodyNames
+      contains not the same amount of names as the number of bodies in
+      extrudeResult, then report error via ui.
+    . extrudeResult: result object of extrude
+
+    Return: True when rename went OK, else False
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    nofResultBodyNames = len(resultBodyNames)
+    if nofResultBodyNames > 0:
+        if len(resultBodyNames) == extrudeResult.bodies.count:
+            # Rename the body or bodies of the extrude
+            for bi in range(extrudeResult.bodies.count):
+                body = extrudeResult.bodies.item(bi)
+                body.name = resultBodyNames[bi]
+            return True
+        else:
+            # Report actual extrude body names
+            interface360.error_text(ui, 'resultBodyNames = ' + str(resultBodyNames))
+            interface360.error_text(ui, 'nofResultBodyNames %d != %d extrudeResult.bodies.count' %
+                                    (nofResultBodyNames, extrudeResult.bodies.count))
+            for bi in range(extrudeResult.bodies.count):
+                body = extrudeResult.bodies.item(bi)
+                interface360.error_text(ui, 'body.name = ' + str(body.name))
+            return False
+    else:
+        # Keep default body names
+        return True
 
 
 def extrudes_from_csv_files(ui, title, folderName, hostComponent):
@@ -345,7 +416,7 @@ def extrudes_from_csv_files(ui, title, folderName, hostComponent):
 
     Input:
     . folderName: full path and folder name
-    . hostComponent: look for sketch profile anywhere in hostComponent folder.
+    . hostComponent: look for planar anywhere in hostComponent folder.
     Return: None
 
     Uses ui, title, filename to report faults via Fusion360 GUI.

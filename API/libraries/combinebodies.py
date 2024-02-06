@@ -23,7 +23,7 @@ Combine bodies CSV file format:
 . use stripped filename as combineResultName for combine result of target body,
   and of new component if result is a new component.
 . first line: 'combine' as filetype
-. second line: operation 'join', 'cut', 'intersect'
+. second line: 'operation', 'join', 'cut', 'intersect'
 . combine_bodies
   - target body name, one first line
   - one or more tool body names, one per line
@@ -83,7 +83,10 @@ def parse_csv_combine_bodies_file(ui, title, filename):
             combineResultName = interfacefiles.extract_object_name(filename)
         elif li == 1:
             # Read combine operation
-            operation = lineWord0
+            if lineWord0 != 'operation':
+                ui.messageBox('Expected combine operation instead of %s in %s' % (lineWord0, filename), title)
+                return resultFalse
+            operation = lineArr[1]
             if operation not in interfacefiles.validCombineOperations:
                 ui.messageBox('No valid combine operation %s in %s' % (operation, filename), title)
                 return resultFalse
@@ -154,8 +157,9 @@ def combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, ope
     rootOccurrenceList = rootComponent.allOccurrences
     combineOccurrence = rootOccurrenceList.item(rootOccurrenceList.count - 1)
 
-    # Move new occurrence to hostOccurrence
-    hostOccurrence = utilities360.get_last_occurrence(hostComponent)
+    # Move new occurrence to hostOccurrence. The hostComponent is anywhere in
+    # rootComponent.
+    hostOccurrence = utilities360.get_last_occurrence_anywhere(hostComponent)
     utilities360.move_occurrence_to_occurrence(combineOccurrence, hostOccurrence)
 
 
@@ -172,8 +176,9 @@ def combine_bodies_into_new_body(hostComponent, targetBody, toolBodies, operatio
     . combineResultName: name for combineBody
     Return: None
     """
-    # Copy target body in hostOccurrence, because it is used as result for combine body
-    hostOccurrence = utilities360.get_last_occurrence(hostComponent)
+    # Copy target body in hostOccurrence, because it is used as result for
+    # combine body. The hostComponent is anywhere in rootComponent.
+    hostOccurrence = utilities360.get_last_occurrence_anywhere(hostComponent)
     combineBody = utilities360.copy_body_to_occurrence(targetBody, hostOccurrence)
 
     # Prepare combineFeatureInput for result in new body.
@@ -221,7 +226,7 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     if not result:
         return False
 
-    # Create combine object
+    # Create combined object
     if combineNewComponent:
         combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineResultName)
     else:

@@ -39,6 +39,7 @@ import combinebodies
 import splitbody
 import extrude
 import movecopy
+import mirror
 import constructassembly
 importlib.reload(interfacefiles)
 importlib.reload(interface360)
@@ -51,6 +52,7 @@ importlib.reload(combinebodies)
 importlib.reload(splitbody)
 importlib.reload(extrude)
 importlib.reload(movecopy)
+importlib.reload(mirror)
 importlib.reload(constructassembly)
 
 

@@ -131,8 +131,9 @@ def split_body(ui, hostComponent, splitBody, splitTool, splittedBodiesNames):
     """
     result = True
 
-    # Copy splitBody, because it is used for one of the splitted bodies
-    hostOccurrence = utilities360.get_last_occurrence(hostComponent)
+    # Copy splitBody, because it is used for one of the splitted bodies.
+    # The hostComponent is anywhere in the rootComponent.
+    hostOccurrence = utilities360.get_last_occurrence_anywhere(hostComponent)
     bodyToSplit = utilities360.copy_body_to_occurrence(splitBody, hostOccurrence)
 
     # Prepare splitBodyFeatureInput.
@@ -181,7 +182,7 @@ def split_body_from_csv_file(ui, title, filename, hostComponent):
     # Find split tool in hostComponent Construction folder or in any sub
     # component
     if splitToolType == 'plane':
-        splitTool = utilities360.find_plane_anywhere(hostComponent, splitToolName)
+        splitTool = utilities360.find_plane_anywhere(ui, hostComponent, splitToolName)
         if not splitTool:
             interface360.error_text(ui, 'Split tool plane %s not found in %s' % (splitToolName, hostComponent.name))
             return False

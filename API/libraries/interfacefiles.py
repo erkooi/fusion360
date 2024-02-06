@@ -22,7 +22,7 @@ import os.path
 import math
 
 # Lists of valid key words in CSV files for generating objects in Fusion360
-validCsvFileTypes = ['sketch', 'plane', 'loft', 'extrude', 'combine', 'split', 'movecopy', 'assembly']
+validCsvFileTypes = ['sketch', 'plane', 'loft', 'extrude', 'combine', 'split', 'movecopy', 'mirror', 'assembly']
 validUnits = ['mm', 'cm', 'm']
 validPlaneNormals = ['x', 'y', 'z']
 validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
@@ -31,6 +31,7 @@ validCombineOperations = ['join', 'cut', 'intersect']
 validSplitToolTypes = ['plane', 'body']
 validMoveObjects = ['component', 'body']
 validMoveOperations = ['move', 'copy', 'remove', 'translate', 'rotate']
+validMirrorOperations = ['new_component', 'new_body', 'join']
 # For assembly create actions the order is dont care, for assembly run actions
 # the order can matter.
 validAssemblyActions = ['echo',
@@ -47,7 +48,9 @@ validAssemblyActions = ['echo',
                         'run_split',
                         'multiple_run_split',
                         'run_movecopy',
-                        'multiple_run_movecopy']
+                        'multiple_run_movecopy',
+                        'run_mirror',
+                        'multiple_run_mirror']
 
 
 def value_to_str(value, toAbs=False, pointChar='.'):
@@ -106,6 +109,12 @@ def convert_entries_to_integers(entries):
 def convert_entries_to_floats(entries):
     """Convert list of strings into list of floats."""
     return [float(s) for s in entries]
+
+
+def convert_csv_string_to_strings(csvString):
+    """Convert comma separated string into list of stripped strings."""
+    entries = csvString.split(',')
+    return [s.strip() for s in entries]
 
 
 def convert_entries_to_single_string(entries):
@@ -431,13 +440,14 @@ def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
             li += 1
             # Second line of a sketch in fileLines contains info for sketch filename
             entries = get_file_line_entries(fLine)
-            planeNormal = entries[0]
-            planeOffset = entries[1]
+            # Ignore entries[0] = 'offset_plane'
+            planeNormal = entries[1]
+            planeOffset = entries[2]
             sketchLines = []
             sketchLines.append('sketch\n')  # write file type
             if units in validUnits:
                 sketchLines.append(units + '\n')  # write units
-            sketchLines.append(planeNormal + ', ' + planeOffset + '\n')
+            sketchLines.append('offset_plane, ' + planeNormal + ', ' + planeOffset + '\n')
             coRailName = []
             coRailFilename = ''
             coRailLines = []
@@ -480,7 +490,8 @@ def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
             li = 0
             sketchLines = []
     if writeFile:
-        print('write_co_rail_sketch_csv_files: Wrote %d CSV files' % nofFiles)
+        if nofFiles > 0:
+            print('write_co_rail_sketch_csv_files: Wrote %d CSV files' % nofFiles)
         return nofFiles
     else:
         return timelineList
@@ -660,7 +671,8 @@ def read_cross_rails_definitions(fileLines):
             # Empty line marks end of section in fileLines, prepare for next
             # cross_rails section in fileLines
             li = 0
-    print('read_cross_rails_definitions: Found %d cross_rails sections' % len(crossRailsTuples))
+    if len(crossRailsTuples) > 0:
+        print('read_cross_rails_definitions: Found %d cross_rails sections' % len(crossRailsTuples))
     return crossRailsTuples
 
 
@@ -701,8 +713,9 @@ def get_cross_rail_points(fileLines, profilePlaneNormal, railName, railPlaneNorm
             # Second line of a sketch in fileLines contains plane info for sketch,
             # the sketch name info is not used to get_cross_rail_points().
             entries = get_file_line_entries(fLine)
-            sketchPlaneNormal = entries[0]
-            sketchPlaneOffset = float(entries[1])
+            # Ignore entries[0] = 'offset_plane'
+            sketchPlaneNormal = entries[1]
+            sketchPlaneOffset = float(entries[2])
         elif fLine.strip():
             li += 1
             if sketchPlaneNormal == profilePlaneNormal:
@@ -754,7 +767,7 @@ def write_cross_rail_sketch_csv_file(filename, units, railPlaneNormal, railPlane
             if units in validUnits:
                 fp.write(units + '\n')
             # Write plane normal and offset
-            fp.write(railPlaneNormal + ', ' + str(railPlaneOffset) + '\n')
+            fp.write('offset_plane, ' + railPlaneNormal + ', ' + str(railPlaneOffset) + '\n')
             # Write points with segmentType
             fp.write(segmentType + '\n')
             for p in railPoints:
@@ -770,7 +783,8 @@ def write_cross_rail_sketch_csv_file(filename, units, railPlaneNormal, railPlane
                 fp.write('%.2f, %.2f\n' % (a, b))  # use 0.01 mm resolution
             nofFiles = 1
     else:
-        print('write_cross_rail_sketch_csv_file: no points for %s' % filename)
+        if nofFiles > 0:
+            print('write_cross_rail_sketch_csv_file: no points for %s' % filename)
     return nofFiles
 
 
@@ -819,7 +833,8 @@ def write_cross_rail_sketch_csv_files(fileLines, units):
                 nofFiles += write_cross_rail_sketch_csv_file(filename, units,
                                                              railPlaneNormal, railPlaneOffset,
                                                              railSegmentType, railPoints)
-        print('write_cross_rail_sketch_csv_files: Wrote %d CSV files in %s' % (nofFiles, railsFolder))
+        if nofFiles > 0:
+            print('write_cross_rail_sketch_csv_files: Wrote %d CSV files in %s' % (nofFiles, railsFolder))
     return nofFiles
 
 
@@ -867,7 +882,8 @@ def write_csv_files(fileLines, csvFileType, units=''):
             print('write_csv_files %s: %s' % (csvFileType, csvFilename))
             # . Prepare for next CSV section in fileLines
             li = 0
-    print('write_csv_files %s: Wrote %d CSV files' % (csvFileType, nofFiles))
+    if nofFiles > 0:
+        print('write_csv_files %s: Wrote %d CSV files' % (csvFileType, nofFiles))
     return nofFiles
 
 
@@ -922,7 +938,8 @@ def write_assembly_csv_file(fileLines):
             print('write_assembly_csv_file: %s' % csvFilename)
             # . Only support one assembly section per timeline fileLines
             break
-    print('write_assembly_csv_file: Wrote %d CSV files' % nofFiles)
+    if nofFiles > 0:
+        print('write_assembly_csv_file: Wrote %d CSV files' % nofFiles)
     return nofFiles
 
 
@@ -947,6 +964,7 @@ def write_assembly_csv_file(fileLines):
 # . run_combine, filename, groupName
 # . run_split, filename, groupName
 # . run_movecopy, filename, groupName
+# . run_mirror, filename, groupName
 # . run_assembly, filename, groupName
 def read_timeline_from_file_lines(fileLines):
     """Read timeline from fileLines of file.
@@ -1029,7 +1047,7 @@ def _read_timeline_multi_objects_from_file_lines(fileLines, sectionType):
 def _read_timeline_single_objects_from_file_lines(fileLines):
     """Read timeline for single objects from fileLines of file.
 
-    Use for action = 'extrude', 'combine', 'split', 'movecopy', 'echo'
+    Use for action = 'extrude', 'combine', 'split', 'movecopy', 'mirror', 'echo'
 
     Input:
     . fileLines: read lines from comma separate values file
@@ -1045,7 +1063,7 @@ def _read_timeline_single_objects_from_file_lines(fileLines):
         if lineWord == 'echo':
             assemblyLine = 'echo, ' + convert_entries_to_single_string(entries[1:]) + '\n'
             timelineList.append(assemblyLine)
-        elif lineWord in ['extrude', 'combine', 'split', 'movecopy', 'echo']:
+        elif lineWord in ['extrude', 'combine', 'split', 'movecopy', 'mirror', 'echo']:
             folderName = entries[1]
             componentName = extract_component_name(folderName)
             filename = entries[2] + '.csv'

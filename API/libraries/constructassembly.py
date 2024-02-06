@@ -59,6 +59,7 @@ import extrude
 import combinebodies
 import splitbody
 import movecopy
+import mirror
 
 
 def parse_csv_assembly_file(ui, title, filename):
@@ -166,6 +167,10 @@ def perform_action(ui, title, locationName, groupComponent, action):
         movecopy.movecopy_from_csv_file(ui, title, locationName, groupComponent)
     elif action == 'multiple_run_movecopy':
         movecopy.movecopy_from_csv_files(ui, title, locationName, groupComponent)
+    elif action == 'run_mirror':
+        mirror.mirror_from_csv_file(ui, title, locationName, groupComponent)
+    elif action == 'multiple_run_mirror':
+        mirror.mirror_from_csv_files(ui, title, locationName, groupComponent)
     else:
         return False
     return True
@@ -194,8 +199,7 @@ def construct_assembly_from_csv_file(ui, title, filename, hostComponent):
 
     # Create assembly component in hostComponent, if it does not already exist,
     # and make it visible via isLightBulbOn
-    assemblyComponent = utilities360.find_or_create_component(hostComponent,
-                                                              assemblyComponentName, isLightBulbOn=True)
+    assemblyComponent = utilities360.find_or_create_component(hostComponent, assemblyComponentName)
     interface360.print_text(ui, '> Assembly component: ' + assemblyComponent.name)
 
     # Construct assembly by processing the actions
@@ -212,8 +216,7 @@ def construct_assembly_from_csv_file(ui, title, filename, hostComponent):
         locationName = os.path.normpath(locationName)
 
         # Create group component for action result, if it does not already exist
-        groupComponent = utilities360.find_or_create_component(assemblyComponent,
-                                                               groupComponentName, isLightBulbOn=False)
+        groupComponent = utilities360.find_or_create_component(assemblyComponent, groupComponentName)
         # Perform Fusion 360 command in groupComponent
         perform_action(ui, title, locationName, groupComponent, action)
     interface360.print_text(ui, 'Created assembly for ' + filename)

@@ -24,7 +24,8 @@ Sketch CSV file format:
 . no comment lines or comment in line
 . first line: 'sketch' as filetype
 . second line: resolution 'mm' or 'cm'
-. next line: plane normal axis 'x', 'y' or 'z', plane offset value
+. next line: 'offset_plane', plane normal axis 'x', 'y' or 'z', plane offset
+  value.
   - normal 'x': yz-plane
   - normal 'y': zx-plane
   - normal 'z': xy-plane
@@ -281,8 +282,10 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
             if not result:
                 return resultFalse
         elif li == 2:
+            if lineWord != 'offset_plane':
+                return resultFalse
             # Read plane normal axis and offset of the sketch plane from lineArr
-            result, planeTuple = schemacsv360.read_offset_plane(ui, title, filename, unitScale, lineArr)
+            result, planeTuple = schemacsv360.read_offset_plane(ui, title, filename, unitScale, lineArr[1:])
             if not result:
                 return resultFalse
             planeNormal, planeOffset = planeTuple
