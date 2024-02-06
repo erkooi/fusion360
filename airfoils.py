@@ -93,6 +93,8 @@ zx-plane.
     profile. To place the wing profile at build location relative to the
     fuselage.
 - decimals = 2, for 0.01 mm accuracy in rounded airfoil profile coordinates.
+- csv_normal = 'y', the airfoil profile is derived in the xZ plane with y as
+    normal, but can be saved in another plane via csv_normal = x or z.
 
 Usage:
 # on command line
@@ -148,6 +150,9 @@ python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 18 ^
 
 # GOE-444 ~= NACA-0006
 python airfoils.py --profile GOE-444 --chord_len 477 --rear_width 0.8 --exponent_width 0.5
+python airfoils.py --profile GOE-444 --chord_len 216 --rear_width 0.8 --exponent_width 0.5 --csv_normal z
+python airfoils.py -M 0 -P 0 -T 6
+                   --chord_len 216 --rear_width 0.8 --exponent_width 0.5 --tangent_length 16 --csv_normal z
 
 # in iPython:
 import os
@@ -484,7 +489,7 @@ def save_csv_wing_profile(args, filepathname, wingProfilesTuple, wingParametersT
         # Write units
         fp.write(unit + '\n')
         # Write plane normal (= y for XZ plane) and offset (= ty)
-        fp.write(profileNormal + ', ' + str(ty) + '\n')
+        fp.write(csvNormal + ', ' + str(ty) + '\n')
         # Write wing top points with spline
         fp.write('spline\n')
         for i in range(N_top):
@@ -575,6 +580,7 @@ if __name__ == '__main__':
     _parser.add_argument('--ty', default=0.0, type=float, help='Translate profile in y direction in mm.')
     _parser.add_argument('--tz', default=0.0, type=float, help='Translate profile in z direction in mm.')
     _parser.add_argument('--decimals', default=2, type=int, help='Round profile values to number of decimals in mm.')
+    _parser.add_argument('--csv_normal', default='y', type=str, help='Define plane normal for profile in CSV file.')
     _parser.add_argument('--plot', default=False, action='store_true', help='When True then plot profiles.')
     args = _parser.parse_args()
 
@@ -623,10 +629,17 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Prepare for sketch in XZ plane
+    # Prepare for sketch in XZ plane with profileNormal = y, but support saving
+    # profile in the CSV file in another plane with csvNormal is y, x or z.
     profileName = profileBaseName
+    csvNormal = args.csv_normal
+    csvPlane = 'zx'
+    if csvNormal == 'x':
+        csvPlane = 'yz'
+    elif csvNormal == 'z':
+        csvPlane = 'xy'
     # . add zx-plane at y offset in profile file name
-    profileName += '_zx_y%d' % np.abs(args.ty)
+    profileName += '_%s_%s%d' % (csvPlane, csvNormal, np.abs(args.ty))
     # . add profile chord_len in profile file name
     profileName += '_len%d' % args.chord_len
     # . y is normal of zx-plane
