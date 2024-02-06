@@ -1,0 +1,155 @@
+################################################################################
+# Copyright 2024 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 21 Jan 2024
+#
+# Create F35B-vertical-stabilizer.csv assembly file that creates the vertical
+# stabilizer for the F35B-CSV assembly component that was created with
+# f35b_points.txt.
+
+################################################################################
+# Create planes at base of left fin
+
+# right fin base and tip coordinates
+parameters
+  xBaseFront, 1134  # 1133.85
+  xTipFront, 1324  # 1323.83
+  xBaseRear, 1350  # 1350.49
+  xTipRear, 1463  # 1462.64
+  xBaseLength, xBaseRear - xBaseFront  # = 1350 - 1134 = 216
+  xTipLenght, xTipRear - xTipFront  # = 1463 - 1324 = 139
+  yBase, 143  # front 143.35, rear 143.13
+  zBase, 42   # front 41.53, rear 40.93
+  yTip, 223  # front 222.57, rear 222.57
+  zTip, 255   # front 255.76, rear 255.76
+  zFinHeight, zTip - zBase
+  # Determine tilt angle of fin
+  tiltAngle, degrees(atan(fabs(zFinHeight) / fabs(yTip - yBase)))
+  # Use tilt angle to create flat edge at rear of fin
+  rearEdgeWidth, 1.6
+  yOffset, cos(radians(90 - tiltAngle)) * rearEdgeWidth / 2
+  zOffset, sin(radians(90 - tiltAngle)) * rearEdgeWidth / 2
+  yPointBaseLeft, yBase - yOffset
+  yPointBaseRight, yBase + yOffset
+  zPointBaseLeft, zBase + zOffset
+  zPointBaseRight, zBase - zOffset
+  yPointTipLeft, yTip - yOffset
+  yPointTipRight, yTip + yOffset
+  zPointTipLeft, zTip + zOffset
+  zPointTipRight, zTip - zOffset
+
+plane, csv/F35B-CSV/vertical_stabilizer, plane_left_fin_base
+point, $xBaseFront, -$yBase, $zBase
+point, $xBaseRear, -$yPointBaseLeft, $zPointBaseLeft
+point, $xBaseRear, -$yPointBaseRight, $zPointBaseRight
+
+plane, csv/F35B-CSV/vertical_stabilizer, plane_left_fin_tip
+point, $xTipFront, -$yTip, $zTip
+point, $xTipRear, -$yPointTipLeft, $zPointTipLeft
+point, $xTipRear, -$yPointTipRight, $zPointTipRight
+
+################################################################################
+# Create a left fin
+# . Use base and tip profile derived in GUI from intersect of fin with
+#   plane_left_fin_base and plane_left_fin_tip to creat fin at origin
+
+parameters
+  finHeight, zFinHeight / cos(radians(90 - tiltAngle))
+  xTipOffset, xTipFront - xBaseFront
+  baseOffset, 2
+
+# Use rearEdgeWidth = 1.6 instead of 0 and skip point 190, 3.93 to have
+# smooth spline profile
+sketch, csv/F35B-CSV/vertical_stabilizer, fin_base_profile
+offset_plane, z, -$baseOffset
+spline
+   0,  0
+  15,  3.03
+  50,  8.03
+  90, 10.33
+ 140,  8.96
+ 216,  $rearEdgeWidth / 2
+spline
+   0,  0
+  15, -3.03
+  50, -8.03
+  90,-10.33
+ 140, -8.96
+ 216, -$rearEdgeWidth / 2
+line
+ 216, $rearEdgeWidth / 2
+ 216,-$rearEdgeWidth / 2
+
+# Use rearEdgeWidth = 1.6 instead of 0 and add 0.8 to all point except at front
+sketch, csv/F35B-CSV/vertical_stabilizer, fin_tip_profile
+offset_plane, z, $finHeight
+spline
+   0 + $xTipOffset,  0
+  25 + $xTipOffset,  0.78 + $rearEdgeWidth / 2
+  50 + $xTipOffset,  1.21 + $rearEdgeWidth / 2
+  75 + $xTipOffset,  1.3 + $rearEdgeWidth / 2
+ 100 + $xTipOffset,  1.05 + $rearEdgeWidth / 2
+ 139 + $xTipOffset,  0.0 + $rearEdgeWidth / 2
+spline
+   0 + $xTipOffset,  0
+  25 + $xTipOffset, -0.78 - $rearEdgeWidth / 2
+  50 + $xTipOffset, -1.21 - $rearEdgeWidth / 2
+  75 + $xTipOffset, -1.3 - $rearEdgeWidth / 2
+ 100 + $xTipOffset, -1.05 - $rearEdgeWidth / 2
+ 139 + $xTipOffset,  0.0 - $rearEdgeWidth / 2
+line
+ 139 + $xTipOffset, $rearEdgeWidth / 2
+ 139 + $xTipOffset,-$rearEdgeWidth / 2
+
+# Create fin at origin
+loft, csv/F35B-CSV/vertical_stabilizer, loft_fin
+profiles
+  fin_base_profile
+  fin_tip_profile
+
+# Move fin to position on F35B fuselage.
+# Align aileron_axle with aileron gap
+movecopy, csv/F35B-CSV/vertical_stabilizer, movecopy_fin_left
+body, loft_fin
+operation, rotate, 1, 0, 0, 90 - $tiltAngle
+operation, translate, $xBaseFront, -$yBase, $zBase
+
+# Extrude pedestal from fin to fuselage
+extrude, csv/F35B-CSV/vertical_stabilizer, extrude_fin_pedestal, F35B-CSV
+face, loft_fin, 1
+offset, 0
+taper_angle, 20
+#extent_type, distance, 22
+extent_type, to_object, shell_plane_0_1403
+operation, new_body
+#operation, join
+extrude_results, fin_pedestal, loft_fin
+
+# Join fin pedestal with fuselage
+combine, csv/F35B-CSV/vertical_stabilizer, shell_plane_with_pedestal, F35B-CSV
+operation, join
+combine_bodies
+  shell_plane_0_1403
+  fin_pedestal
+
+
+################################################################################
+# Assembly
+
+assembly, csv/F35B-CSV, F35B-vertical-stabilizer
+echo, --------------------------------------------------------------------------
+echo, Created vertical stabilizer !
+echo, --------------------------------------------------------------------------

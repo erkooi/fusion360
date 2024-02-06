@@ -1,0 +1,45 @@
+################################################################################
+# Copyright 2024 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 3 feb 2024
+#
+# Create F35B-airplane.csv assembly file that creates the entire F35B plane,
+# complete with wings and fins.
+
+# Join fin and pedestal with fuselage
+combine, csv/F35B-CSV/airplane, shell_plane_all, F35B-CSV
+operation, join
+combine_bodies
+  shell_plane_with_pedestal
+  loft_fin  
+  loft_solid_wing
+
+mirror, csv/F35B-CSV/airplane, mirror_plane_all, F35B-CSV
+operation, join
+mirror_plane, xZConstructionPlane
+mirror_objects
+  shell_plane_all
+mirror_results
+  airplane_all
+
+
+################################################################################
+# Assembly
+
+assembly, csv/F35B-CSV, F35B-airplane
+echo, --------------------------------------------------------------------------
+echo, Created F35B airplane, complete with all surfaces!
+echo, --------------------------------------------------------------------------

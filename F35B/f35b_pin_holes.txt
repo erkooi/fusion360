@@ -24,7 +24,7 @@
 # Sketches to position the pin holes
 
 sketch, csv/F35B-CSV/pin_holes, y_0_wing_pin_holes
-y, 0
+offset_plane, y, 0
 circle
  850, 19, 3
 1001, 19, 4
@@ -37,23 +37,26 @@ echo, --------------------------------------------------------------------------
 extrude, csv/F35B-CSV/pin_holes, extrude_wing_front_pin
 profile, y_0_wing_pin_holes, 0
 offset, -220
+taper_angle, 0
 extent_type, distance, -80
 operation, new_body
-result_names, extrude_wing_front_pin
+extrude_results, extrude_wing_front_pin
 
 extrude, csv/F35B-CSV/pin_holes, extrude_wing_center_pin
 profile, y_0_wing_pin_holes, 1
 offset, -100
+taper_angle, 0
 extent_type, distance, -400
 operation, new_body
-result_names, extrude_wing_center_pin
+extrude_results, extrude_wing_center_pin
 
 extrude, csv/F35B-CSV/pin_holes, extrude_wing_rear_pin
 profile, y_0_wing_pin_holes, 2
 offset, -220
+taper_angle, 0
 extent_type, distance, -155
 operation, new_body
-result_names, extrude_wing_rear_pin
+extrude_results, extrude_wing_rear_pin
 
 
 echo, --------------------------------------------------------------------------
@@ -61,7 +64,7 @@ echo, Combines to cut pin holes
 echo, --------------------------------------------------------------------------
 
 combine, csv/F35B-CSV/pin_holes, wing_with_pin_holes, F35B-CSV
-cut
+operation, cut
 combine_bodies
   loft_solid_wing
   extrude_wing_front_pin
@@ -69,7 +72,7 @@ combine_bodies
   extrude_wing_rear_pin
 
 combine, csv/F35B-CSV/pin_holes, fuselage_with_pin_holes, F35B-CSV
-cut
+operation, cut
 combine_bodies
   shell_plane_0_1403
   extrude_wing_front_pin
