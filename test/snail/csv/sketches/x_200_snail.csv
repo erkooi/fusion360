@@ -1,6 +1,6 @@
 sketch
 mm
-x, 200
+offset_plane, x, 200
 spline
  73, 10
  60,-40

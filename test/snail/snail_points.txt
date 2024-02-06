@@ -32,10 +32,25 @@
 # - Specifiy destination folder of the CSV file after the file type
 # - Derive CSV sketch file name from planeNormal + '_' + planeOffset + '_' +
 #   sketchName. Omit sketchName string in the CSV file.
+#
+# Usage:
+# . First create CSV files in csv/sketches using csv_timeline360.py:
+#
+#   > python <path to>\csv_timeline360.py -f snail_points.txt
+#
+#   yields:
+#
+#   > csv\sketches\x_200_snail.csv
+#   > csv\sketches\y_200_snail.csv
+#   > csv\sketches\z_200_snail.csv
+#
+# . Then in Fusion360 use menu UTILITIES/ADD-INS/Scripts and Add-Ins/
+#   ImportScketchesCSV script and select the sketches directory to import
+#   the sketches from the CSV files.
 
 # Snail in YZ-plane with small ball
-sketch, csv/sketches
-x, 200, snail
+sketch, csv/sketches, x_200_snail
+offset_plane, x, 200
 spline  # spiral
  73, 10
  60,-40
@@ -98,8 +113,8 @@ circle
 130,-60, 10  # small ball
 
 # Snail in ZX-plane with medium ball
-sketch, csv/sketches
-y, 200, snail
+sketch, csv/sketches, y_200_snail
+offset_plane, y, 200
 spline  # spiral
  73, 10
  60,-40
@@ -162,8 +177,8 @@ circle
 140,-50, 20  # medium ball
 
 # Snail in XY-plane with large ball
-sketch, csv/sketches
-z, 200, snail
+sketch, csv/sketches, z_200_snail
+offset_plane, z, 200
 spline  # spiral
  73, 10
  60,-40
