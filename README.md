@@ -19,6 +19,7 @@ For more information please also check my channel "Eric Kooistra - Hobby" on You
 * movecopy.py - move, copy, transfer operation defined in a CSV file.
 * splitbody.py - split body defined in a CSV file.
 * combinebodies.py - combine bodies defined in a CSV file
+* mirror.py - mirror body or component defined in a CSV file.
 * constructassembly.py - construct assembly defined in a CSV file, using sketches, planes, bodies
 
 ## 3. API/Scripts
