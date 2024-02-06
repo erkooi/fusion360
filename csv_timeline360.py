@@ -41,29 +41,13 @@ Schema sections in point txt file:
   - interfacefikles.write_co_rail_sketch_files()
   - interfacefiles.write_cross_rail_sketch_files()
 
-. Object keyword: loft
-  Create loft CSV files to use with loft.
-  - interfacefiles.write_loft_files()
-
-. Object keyword: plane
-  Create plane CSV files to use as split plane
-  - interfacefiles.write_plane_files()
-
-. Object keyword: combine
-  Create combine bodies CSV files to use with combine bodies
-  - interfacefiles.write_combine_bodies_files()
-
-. Object keyword: split
-  Create split body CSV files to use with split body
-  - interfacefiles.write_split_body_files()
-
-. Object keyword: movecopy
-  Create movecopy CSV files to use with move, copy, translate component or body
-  - interfacefiles.write_movecopy_files()
+. Object keyword: plane, sketch, loft, extrude, combine, split, movecopy,
+  mirror.
+  - interfacefiles.write_csv_files()
 
 . Object keyword: assembly
   Create assembly CSV files to define assemblies
-  - interfacefiles.write_assembly_files()
+  - interfacefiles.write_assembly_csv_file()
 
 Usage of CSV files in Fusion360:
 1) Manually: Select active component in Fusion360 GUI and then use script from
@@ -128,6 +112,9 @@ if __name__ == '__main__':
 
     # Write movecopy CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'movecopy', units)
+
+    # Write mirror CSV files into folder(s)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'mirror')
 
     # Write assembly CSV file
     nofFiles += interfacefiles.write_assembly_csv_file(fileLines)
