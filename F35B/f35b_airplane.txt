@@ -39,7 +39,8 @@ mirror_results
 ################################################################################
 # Assembly
 
-assembly, csv/F35B-CSV, F35B-airplane
+assembly, csv/F35B-CSV, F35B-airplane, F35B-CSV
+
 echo, --------------------------------------------------------------------------
 echo, Created F35B airplane, complete with all surfaces!
 echo, --------------------------------------------------------------------------

@@ -51,12 +51,12 @@ parameters
   zPointTipLeft, zTip + zOffset
   zPointTipRight, zTip - zOffset
 
-plane, csv/F35B-CSV/vertical_stabilizer, plane_left_fin_base
+plane, csv/F35B-CSV/vertical_stabilizer, plane_left_fin_base, vertical_stabilizer
 point, $xBaseFront, -$yBase, $zBase
 point, $xBaseRear, -$yPointBaseLeft, $zPointBaseLeft
 point, $xBaseRear, -$yPointBaseRight, $zPointBaseRight
 
-plane, csv/F35B-CSV/vertical_stabilizer, plane_left_fin_tip
+plane, csv/F35B-CSV/vertical_stabilizer, plane_left_fin_tip, vertical_stabilizer
 point, $xTipFront, -$yTip, $zTip
 point, $xTipRear, -$yPointTipLeft, $zPointTipLeft
 point, $xTipRear, -$yPointTipRight, $zPointTipRight
@@ -73,7 +73,7 @@ parameters
 
 # Use rearEdgeWidth = 1.6 instead of 0 and skip point 190, 3.93 to have
 # smooth spline profile
-sketch, csv/F35B-CSV/vertical_stabilizer, fin_base_profile
+sketch, csv/F35B-CSV/vertical_stabilizer, fin_base_profile, vertical_stabilizer
 offset_plane, z, -$baseOffset
 spline
    0,  0
@@ -94,7 +94,7 @@ line
  216,-$rearEdgeWidth / 2
 
 # Use rearEdgeWidth = 1.6 instead of 0 and add 0.8 to all point except at front
-sketch, csv/F35B-CSV/vertical_stabilizer, fin_tip_profile
+sketch, csv/F35B-CSV/vertical_stabilizer, fin_tip_profile, vertical_stabilizer
 offset_plane, z, $finHeight
 spline
    0 + $xTipOffset,  0
@@ -115,7 +115,7 @@ line
  139 + $xTipOffset,-$rearEdgeWidth / 2
 
 # Create fin at origin
-loft, csv/F35B-CSV/vertical_stabilizer, loft_fin
+loft, csv/F35B-CSV/vertical_stabilizer, loft_fin, vertical_stabilizer
 profiles
   fin_base_profile
   fin_tip_profile
@@ -128,7 +128,7 @@ operation, rotate, 1, 0, 0, 90 - $tiltAngle
 operation, translate, $xBaseFront, -$yBase, $zBase
 
 # Extrude pedestal from fin to fuselage
-extrude, csv/F35B-CSV/vertical_stabilizer, extrude_fin_pedestal, F35B-CSV
+extrude, csv/F35B-CSV/vertical_stabilizer, extrude_fin_pedestal, vertical_stabilizer
 face, loft_fin, 1
 offset, 0
 taper_angle, 20
@@ -139,7 +139,7 @@ operation, new_body
 extrude_results, fin_pedestal, loft_fin
 
 # Join fin pedestal with fuselage
-combine, csv/F35B-CSV/vertical_stabilizer, shell_plane_with_pedestal, F35B-CSV
+combine, csv/F35B-CSV/vertical_stabilizer, shell_plane_with_pedestal
 operation, join
 combine_bodies
   shell_plane_0_1403
@@ -149,7 +149,8 @@ combine_bodies
 ################################################################################
 # Assembly
 
-assembly, csv/F35B-CSV, F35B-vertical-stabilizer
+assembly, csv/F35B-CSV, F35B-vertical-stabilizer, F35B-CSV
+
 echo, --------------------------------------------------------------------------
 echo, Created vertical stabilizer !
 echo, --------------------------------------------------------------------------

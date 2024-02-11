@@ -23,7 +23,7 @@
 ################################################################################
 # Sketches to position the pin holes
 
-sketch, csv/F35B-CSV/pin_holes, y_0_wing_pin_holes
+sketch, csv/F35B-CSV/pin_holes, y_0_wing_pin_holes, pin_holes
 offset_plane, y, 0
 circle
  850, 19, 3
@@ -34,7 +34,7 @@ echo, --------------------------------------------------------------------------
 echo, Extrudes to make pin bodies
 echo, --------------------------------------------------------------------------
 
-extrude, csv/F35B-CSV/pin_holes, extrude_wing_front_pin
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_front_pin, pin_holes
 profile, y_0_wing_pin_holes, 0
 offset, -220
 taper_angle, 0
@@ -42,7 +42,7 @@ extent_type, distance, -80
 operation, new_body
 extrude_results, extrude_wing_front_pin
 
-extrude, csv/F35B-CSV/pin_holes, extrude_wing_center_pin
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_center_pin, pin_holes
 profile, y_0_wing_pin_holes, 1
 offset, -100
 taper_angle, 0
@@ -50,7 +50,7 @@ extent_type, distance, -400
 operation, new_body
 extrude_results, extrude_wing_center_pin
 
-extrude, csv/F35B-CSV/pin_holes, extrude_wing_rear_pin
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_rear_pin, pin_holes
 profile, y_0_wing_pin_holes, 2
 offset, -220
 taper_angle, 0
@@ -63,7 +63,7 @@ echo, --------------------------------------------------------------------------
 echo, Combines to cut pin holes
 echo, --------------------------------------------------------------------------
 
-combine, csv/F35B-CSV/pin_holes, wing_with_pin_holes, F35B-CSV
+combine, csv/F35B-CSV/pin_holes, wing_with_pin_holes
 operation, cut
 combine_bodies
   loft_solid_wing
@@ -71,7 +71,7 @@ combine_bodies
   extrude_wing_center_pin
   extrude_wing_rear_pin
 
-combine, csv/F35B-CSV/pin_holes, fuselage_with_pin_holes, F35B-CSV
+combine, csv/F35B-CSV/pin_holes, fuselage_with_pin_holes
 operation, cut
 combine_bodies
   shell_plane_0_1403
@@ -82,7 +82,8 @@ combine_bodies
 ################################################################################
 # Assembly
 
-assembly, csv/F35B-CSV, F35B-pin-holes
+assembly, csv/F35B-CSV, F35B-pin-holes, F35B-CSV
+
 echo, --------------------------------------------------------------------------
 echo, Extruded pin holes for fuselage and wing !
 echo, --------------------------------------------------------------------------

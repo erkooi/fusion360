@@ -22,7 +22,8 @@ planes that are parallel to the origin planes (xy, yz, and zx) are supported.
 
 Sketch CSV file format:
 . no comment lines or comment in line
-. first line: 'sketch' as filetype
+. first line: 'sketch' as filetype, name of the sketch, name of the group
+  component for the sketch.
 . second line: resolution 'mm' or 'cm'
 . next line: 'offset_plane', plane normal axis 'x', 'y' or 'z', plane offset
   value.
@@ -258,8 +259,10 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
     Input:
     . lineLists: list of lists of data values per read line
     Return:
-    . result: True when valid locationsTuple, else False with None
-    . locationsTuple:
+    . result: True when valid sketchLocationsTuple, else False with None
+    . sketchLocationsTuple:
+      - sketchName: name of the sketch object
+      - groupComponentName: group component for the sketch object
       - unitScale: scale factor between sketch unit and API cm unit
       - planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
       - planeOffset: offset from origin plane
@@ -276,6 +279,10 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
             # Read file type
             if lineWord != 'sketch':
                 return resultFalse
+            sketchName = lineArr[1]
+            groupComponentName = ''
+            if len(lineArr) > 2:
+                groupComponentName = lineArr[2]
         elif li == 1:
             # Read units
             result, unitScale = schemacsv360.read_units(ui, title, filename, lineWord)
@@ -311,8 +318,8 @@ def find_sketch_segment_sections(ui, title, filename, lineLists):
     # Append location and type of last sketch segment
     segmentLocations.append((liStart, liLast, segmentType))
     # Successfully reached end of file
-    locationsTuple = (unitScale, planeNormal, planeOffset, segmentLocations)
-    return (True, locationsTuple)
+    sketchLocationsTuple = (sketchName, groupComponentName, unitScale, planeNormal, planeOffset, segmentLocations)
+    return (True, sketchLocationsTuple)
 
 
 def parse_sketch_segment_sections(ui, title, filename, planeNormal, unitScale, lineLists, segmentLocations):
@@ -372,6 +379,8 @@ def parse_csv_sketch_file(ui, title, filename):
     Return:
     . result: True when valid sketchTuple, else False with None
     . sketchTuple:
+      - sketchName: name of the sketch object
+      - groupComponentName: group component for the sketch object
       - planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
       - planeOffset: offset from origin plane
       - segments: list of (segmentType, ... segment data ...)
@@ -386,13 +395,10 @@ def parse_csv_sketch_file(ui, title, filename):
     lineLists = interfacefiles.convert_data_lines_to_lists(fileLines)
 
     # Find sketch segment sections in file lines
-    result, locationsTuple = find_sketch_segment_sections(ui, title, filename, lineLists)
+    result, sketchLocationsTuple = find_sketch_segment_sections(ui, title, filename, lineLists)
     if not result:
         return resultFalse
-    unitScale = locationsTuple[0]
-    planeNormal = locationsTuple[1]
-    planeOffset = locationsTuple[2]
-    segmentLocations = locationsTuple[3]
+    sketchName, groupComponentName, unitScale, planeNormal, planeOffset, segmentLocations = sketchLocationsTuple
 
     # Parse sketch segment sections
     result, segments = parse_sketch_segment_sections(ui, title, filename,
@@ -400,7 +406,7 @@ def parse_csv_sketch_file(ui, title, filename):
     if not result:
         return resultFalse
     # Successfully reached end of file
-    sketchTuple = (planeNormal, planeOffset, segments)
+    sketchTuple = (sketchName, groupComponentName, planeNormal, planeOffset, segments)
     return (True, sketchTuple)
 
 
@@ -630,11 +636,14 @@ def parse_segment_point(ui, title, filename, planeNormal, unitScale, liStart, li
 
 
 def create_sketch_from_csv_file(ui, title, filename, hostComponent):
-    """Create sketch from CSV file, in hostComponent in Fusion360
+    """Create sketch from CSV file, in Fusion360
+
+    Dependent on the groupComponentName the sketch will be put in the Sketches
+    folder of hostComponent or hostComponent/groupComponent.
 
     Input:
     . filename: full path and name of CSV file
-    . hostComponent: place the sketch in hostComponent Sketches folder
+    . hostComponent: host component for the sketch
     Return: True CSV file is a valid sketch file, else False.
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
@@ -645,18 +654,21 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
     result, sketchTuple = parse_csv_sketch_file(ui, title, filename)
     if not result:
         return False
-    planeNormal, planeOffset, segments = sketchTuple
-
-    # Use stripped filename as offset plane name and as sketch name
-    objectName = interfacefiles.extract_object_name(filename)
+    # Use sketch name also as object name for plane
+    objectName, groupComponentName, planeNormal, planeOffset, segments = sketchTuple
 
     # Create sketch if there are valid segments
     if len(segments) > 0:
-        # Create offset normal plane in hostComponent
-        plane = schemacsv360.create_offset_normal_plane(hostComponent, objectName, planeNormal, planeOffset)
+        # Create groupComponent in hostComponent for sketch object, if it does
+        # not already exist, else use hostComponent if groupComponentName is
+        # empty string or is the hostComponent.
+        groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
+
+        # Create offset normal plane in groupComponent
+        plane = schemacsv360.create_offset_normal_plane(groupComponent, objectName, planeNormal, planeOffset)
 
         # Create sketch in offset plane
-        sketch = utilities360.create_sketch_in_plane(hostComponent, objectName, plane)
+        sketch = utilities360.create_sketch_in_plane(groupComponent, objectName, plane)
         interface360.print_text(ui, 'sketch x = ' + str(sketch.xDirection.asArray()), verbosity)
         interface360.print_text(ui, 'sketch y = ' + str(sketch.yDirection.asArray()), verbosity)
 
@@ -726,11 +738,11 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
 
 
 def create_sketches_from_csv_files(ui, title, folderName, hostComponent):
-    """Create sketches from CSV files in folder, in hostComponent in Fusion360
+    """Create sketches from CSV files in folder, in Fusion360
 
     Input:
     . folderName: full path and folder name
-    . hostComponent: place the sketch in hostComponent Sketches folder.
+    . hostComponent: host component for the sketches
     Return: None
 
     Uses ui, title, folderName to report faults via Fusion360 GUI.

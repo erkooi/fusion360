@@ -20,31 +20,25 @@ Fusion360.
 
 Assembly CSV file format:
 . comment lines or comment in line will be removed
-. first line: 'assembly' as filetype, name of the assembly component
+. first line: 'assembly' as filetype, filename of the assembly CSV file, name
+  of the assembly component.
 . next lines: one assembly action per line, order of actions defines the design
   timeline. Valid actions are defined in interfacefiles.validAssemblyActions.
   Assembly actions can be done per csv directory or per csv file:
-  . multiple_run_<action>, 'csv directory name', groupComponent
-  . run_<action>, 'csv filename', groupComponentName
+  . multiple_run_<action>, 'csv directory name'
+  . run_<action>, 'csv filename'
 
 Remarks:
-- If necessary create the assemblyComponent in the hostComponent
+- If necessary construct_assembly_from_csv_file() creates the assemblyComponent
+  in the hostComponent. If the assemblyComponentName is not specified, then use
+  the activeComponent as assemblyComponent.
 . Sketches and planes can be in seperate groupComponents within the
   assemblyComponent, because they do not rely other objects and can be found
   from the assemblyComponent. Therefor multiple_run_<action> can be used for
   action = sketch, plane.
-. The groupComponent can be derived from the CSV sub directory name, or it can
-  be specified explicitely in the assembly CSV file
-. If an action depends on objects that are all in the same groupComponent,
-  then the action can be done in that groupComponent as well. Therefor then
-  the groupComponent can be derived from the CSV sub directory name
-. If an action depends on objects that are in different groupComponents, then
-  the action has to be done in their (parent) assemblyComponent. Therefor
-  then specify the assemblyComponent as groupComponent for the action in the
-  assembly CSV file.
-- Object names have to be unique in whole assembly, so they can be referred
-  to from anywhere in the assembly component without having to specify
-  where they are located.
+- Object names have to be unique in whole design, so they can be referred
+  to from anywhere in the rootComponent without having to specify where they
+  are located exactly.
 """
 
 import os.path
@@ -76,11 +70,9 @@ def parse_csv_assembly_file(ui, title, filename):
       - actions: list of actionTuples
         . actionTuple:
           - action: assembly action from interfacefiles.validAssemblyActions.
-          - locationName: sub directory name of action CSV files or sub.
+          - actionFilename: sub directory name of action CSV files or sub.
             directory name plus filename of one action CSV file. The
-            locationName directory is relative to the directory of filename.
-          - groupComponentName: Optional group component name for action
-            results. Default extract group component name from locationName.
+            actionFilename directory is relative to the directory of filename.
 
     Uses ui, title, filename to interact with user and report faults
     via Fusion360 GUI.
@@ -96,25 +88,27 @@ def parse_csv_assembly_file(ui, title, filename):
         if li == 0:
             if lineWord != 'assembly':
                 return resultFalse
-            assemblyComponentName = lineArr[1]
+            assemblyFileName = lineArr[1]
+            if assemblyFileName not in filename:
+                ui.messageBox('Filename %s in assembly CSV file does not match assembly CSV filename %s' %
+                              (assemblyFileName, filename), title)
+                return resultFalse
+            assemblyComponentName = ''
+            if len(lineArr) > 2:
+                assemblyComponentName = lineArr[2]
             actions = []
         else:
             # Read assembly actions, one per line
             if lineWord not in interfacefiles.validAssemblyActions:
                 ui.messageBox('Not a valid action %s in %s' % (lineWord, filename), title)
                 return resultFalse
-            echoString, locationName, groupComponentName = ('', '', '')
+            echoString, actionFilename = ('', '')
             action = lineWord
             if action == 'echo':
                 echoString = interfacefiles.convert_entries_to_single_string(lineArr[1:])
             else:
-                locationName = lineArr[1]
-                groupComponentName = interfacefiles.extract_component_name(locationName)
-                if len(lineArr) > 2:
-                    groupComponentName = lineArr[2]
-                if not groupComponentName:
-                    ui.messageBox('Cannot extract or read group component name from %s' % filename, title)
-            actionTuple = (action, echoString, locationName, groupComponentName)
+                actionFilename = lineArr[1]
+            actionTuple = (action, echoString, actionFilename)
             actions.append(actionTuple)
     if len(actions) == 0:
         ui.messageBox('No actions in %s' % filename, title)
@@ -124,53 +118,56 @@ def parse_csv_assembly_file(ui, title, filename):
     return (True, assemblyTuple)
 
 
-def perform_action(ui, title, locationName, groupComponent, action):
-    """Perform action in groupComponent
+def perform_action(ui, title, actionFilename, assemblyComponent, action):
+    """Perform action in assemblyComponent
+
+    If the action CSV file with actionFilename contains an optional
+    groupComponentName, then the action will be performed in that
+    groupComponent.
 
     Input:
     . action: Fusion 360 command, specified in CSV file
-    . locationName: full location name for CSV directory or file
-    . groupComponent: group component name for action results
+    . actionFilename: full location name for CSV directory or file
 
     Return: True when action is done, else False
     """
     # . Sketches and planes can be in seperate group components within the
     #   hostComponent.
     if action == 'create_sketch':
-        importsketch.create_sketch_from_csv_file(ui, title, locationName, groupComponent)
+        importsketch.create_sketch_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_create_sketch':
-        importsketch.create_sketches_from_csv_files(ui, title, locationName, groupComponent)
+        importsketch.create_sketches_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'create_plane':
-        createplane.create_plane_from_csv_file(ui, title, locationName, groupComponent)
+        createplane.create_plane_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_create_plane':
-        createplane.create_planes_from_csv_files(ui, title, locationName, groupComponent)
+        createplane.create_planes_from_csv_files(ui, title, actionFilename, assemblyComponent)
 
     # . Bodies need to be in the groupComponent = hostComponent, because
     #   they build upon on sketches, planes and bodies.
     elif action == 'run_extrude':
-        extrude.extrude_from_csv_file(ui, title, locationName, groupComponent)
+        extrude.extrude_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_extrude':
-        extrude.extrudes_from_csv_files(ui, title, locationName, groupComponent)
+        extrude.extrudes_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'create_loft':
-        createloft.create_loft_from_csv_file(ui, title, locationName, groupComponent)
+        createloft.create_loft_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_create_loft':
-        createloft.create_lofts_from_csv_files(ui, title, locationName, groupComponent)
+        createloft.create_lofts_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'run_combine':
-        combinebodies.combine_bodies_from_csv_file(ui, title, locationName, groupComponent)
+        combinebodies.combine_bodies_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_combine':
-        combinebodies.combine_bodies_from_csv_files(ui, title, locationName, groupComponent)
+        combinebodies.combine_bodies_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'run_split':
-        splitbody.split_body_from_csv_file(ui, title, locationName, groupComponent)
+        splitbody.split_body_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_split':
-        splitbody.split_bodies_from_csv_files(ui, title, locationName, groupComponent)
+        splitbody.split_bodies_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'run_movecopy':
-        movecopy.movecopy_from_csv_file(ui, title, locationName, groupComponent)
+        movecopy.movecopy_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_movecopy':
-        movecopy.movecopy_from_csv_files(ui, title, locationName, groupComponent)
+        movecopy.movecopy_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'run_mirror':
-        mirror.mirror_from_csv_file(ui, title, locationName, groupComponent)
+        mirror.mirror_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_mirror':
-        mirror.mirror_from_csv_files(ui, title, locationName, groupComponent)
+        mirror.mirror_from_csv_files(ui, title, actionFilename, assemblyComponent)
     else:
         return False
     return True
@@ -198,27 +195,25 @@ def construct_assembly_from_csv_file(ui, title, filename, hostComponent):
     assemblyFolderName = os.path.dirname(filename)
 
     # Create assembly component in hostComponent, if it does not already exist,
-    # and make it visible via isLightBulbOn
+    # and make it visible via isLightBulbOn in create_component().
     assemblyComponent = utilities360.find_or_create_component(hostComponent, assemblyComponentName)
     interface360.print_text(ui, '> Assembly component: ' + assemblyComponent.name)
 
     # Construct assembly by processing the actions
     for actionTuple in actions:
-        action, echoString, locationName, groupComponentName = actionTuple
-
+        action, echoString, actionFilename = actionTuple
+        # Log echoString
         if action == 'echo':
             interface360.print_text(ui, 'Echo: ' + echoString)
             continue
 
         # Derive full location name of action CSV files folder or of single
         # action CSV file
-        locationName = os.path.join(assemblyFolderName, locationName)
-        locationName = os.path.normpath(locationName)
+        actionFilename = os.path.join(assemblyFolderName, actionFilename)
+        actionFilename = os.path.normpath(actionFilename)
 
-        # Create group component for action result, if it does not already exist
-        groupComponent = utilities360.find_or_create_component(assemblyComponent, groupComponentName)
-        # Perform Fusion 360 command in groupComponent
-        perform_action(ui, title, locationName, groupComponent, action)
+        # Perform Fusion 360 command in assemblyComponent
+        perform_action(ui, title, actionFilename, assemblyComponent, action)
     interface360.print_text(ui, 'Created assembly for ' + filename)
     return True
 

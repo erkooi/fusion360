@@ -20,7 +20,8 @@
 
 Mirror CSV file format:
 . comment lines or comment in line will be removed
-. first line: 'mirror' as filetype
+. first line: 'mirror' as filetype, name of the mirror file, name of the
+  group component for the mirrored result.
 . second line: 'mirror_plane', name of mirror plane
 . third line: operation 'new_component', 'new_body', 'join'
   - For 'new_component' the object must be a component,
@@ -86,6 +87,10 @@ def parse_csv_mirror_file(ui, title, filename):
         if li == 0:
             if lineWord != 'mirror':
                 return resultFalse
+            mirrorFilename = lineArr[1]
+            groupComponentName = ''
+            if len(lineArr) > 2:
+                groupComponentName = lineArr[2]
         elif li == 1:
             # Read mirror operation
             if lineWord != 'operation':
@@ -123,7 +128,7 @@ def parse_csv_mirror_file(ui, title, filename):
         return resultFalse
 
     # Successfully reached end of file
-    mirrorTuple = (operation, planeName, mirrorObjectNames, mirrorResultNames)
+    mirrorTuple = (mirrorFilename, groupComponentName, operation, planeName, mirrorObjectNames, mirrorResultNames)
     return (True, mirrorTuple)
 
 
@@ -138,15 +143,15 @@ def mirror_from_csv_file(ui, title, filename, hostComponent):
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
-    # Parse CSV file
+    # Parse CSV file, mirrorFilename is not used
     result, mirrorTuple = parse_csv_mirror_file(ui, title, filename)
     if not result:
         return False
-    operation, planeName, mirrorObjectNames, mirrorResultNames = mirrorTuple
+    _, groupComponentName, operation, planeName, mirrorObjectNames, mirrorResultNames = mirrorTuple
 
     # Find mirror plane in hostComponent Construction folder or in any sub
     # component
-    mirrorPlane = utilities360.find_plane_anywhere(ui, hostComponent, planeName)
+    mirrorPlane = utilities360.find_plane_anywhere(hostComponent, planeName)
     if not mirrorPlane:
         interface360.error_text(ui, 'Mirror plane %s not found in %s' % (mirrorPlane, hostComponent.name))
         return False
@@ -171,7 +176,25 @@ def mirror_from_csv_file(ui, title, filename, hostComponent):
     if operation == 'new_component':
         result = mirror_occurrences(ui, hostComponent, mirrorPlane, mirrorObjects, mirrorResultNames)
     else:
-        result = mirror_bodies(ui, hostComponent, operation, mirrorPlane, mirrorObjects, mirrorResultNames)
+        result, resultBodies = mirror_bodies(ui, hostComponent, operation,
+                                             mirrorPlane, mirrorObjects, mirrorResultNames)
+
+    # Move mirrored objects to the groupComponent, if the groupComponent is
+    # another component then the parentComponent of the object.
+    # . Create groupComponent in hostComponent for the mirrored objects, if
+    #   it does not already exist, else use hostComponent if groupComponentName
+    #   is empty string or is the hostComponent.
+    # . Get parentComponent of the mirrored objects (component or body),
+    #   because that is where the mirrored objects are.
+    groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
+    groupOccurrence = utilities360.get_occurrence_anywhere(groupComponent)
+    if operation == 'new_component':
+        pass
+    else:
+        for body in resultBodies:
+            if groupComponent != body.parentComponent:
+                utilities360.move_body_to_occurrence(body, groupOccurrence)
+
     if result:
         interface360.print_text(ui, 'Mirror for ' + filename)
     return result
@@ -218,16 +241,19 @@ def mirror_bodies(ui, hostComponent, operation, mirrorPlane, mirrorObjects, mirr
     . mirrorPlane: mirror plane
     . mirrorObjects: objectCollection of bodies to mirror in mirrorPlane
     . mirrorResultNames: list of names for the mirror results
-    Return: True when mirror went OK, else False
+    Return:
+    . result: True when mirror went OK, else False
+    . resultBodies: list of mirror result body objects
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    resultFalse = (False, None)
     # Copy bodies to keep original bodies in case of join operation
     if operation == 'join':
         copyBodies = adsk.core.ObjectCollection.create()
         for body in mirrorObjects:
             # The body is anywhere in hostComponent.
-            parentOccurrence = utilities360.get_last_occurrence_anywhere(body.parentComponent, hostComponent)
+            parentOccurrence = utilities360.get_occurrence_anywhere(body.parentComponent, hostComponent)
             copyBody = utilities360.copy_body_to_occurrence(body, parentOccurrence)
             copyBodies.add(copyBody)
         mirrorObjects = copyBodies
@@ -242,8 +268,11 @@ def mirror_bodies(ui, hostComponent, operation, mirrorPlane, mirrorObjects, mirr
     mirrorResult = mirrorFeatures.add(mirrorFeaturesInput)
 
     # Rename the result oject or bodies of the mirror
-    result = _rename_result_bodies(ui, mirrorResultNames, mirrorResult)
-    return result
+    result, resultBodies = _rename_result_bodies(ui, mirrorResultNames, mirrorResult)
+    if not result:
+        interface360.error_text(ui, 'Rename result mirror bodies with %s failed' % str(mirrorResultNames))
+        return resultFalse
+    return (True, resultBodies)
 
 
 def _rename_result_occurrences(ui, hostComponent, mirrorObjects, resultObjectNames):
@@ -310,10 +339,14 @@ def _rename_result_bodies(ui, resultObjectNames, mirrorResult):
       resultObjectNames contains not the same amount of names as the number of
       bodies in mirrorResult, then report error via ui.
     . mirrorResult: result feature of mirror.
-    Return: True when rename went OK, else False
+    Return:
+    . result: True when rename went OK, else False
+    . resultBodies: list of mirror result body objects
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    resultFalse = (False, None)
+    resultBodies = []
     nofResultObjectNames = len(resultObjectNames)
     if nofResultObjectNames > 0:
         if nofResultObjectNames == mirrorResult.bodies.count:
@@ -321,19 +354,23 @@ def _rename_result_bodies(ui, resultObjectNames, mirrorResult):
             for oi in range(mirrorResult.bodies.count):
                 body = mirrorResult.bodies.item(oi)
                 body.name = resultObjectNames[oi]
-            return True
+                resultBodies.append(body)
+            return (True, resultBodies)
         else:
             # Report actual mirror body names
-            interface360.error_text(ui, 'resultObjectNames = ' + str(resultObjectNames))
-            interface360.error_text(ui, 'nofResultObjectNames %d != %d mirrorResult.bodies.count' %
+            interface360.error_text(ui, 'mirror resultObjectNames = ' + str(resultObjectNames))
+            interface360.error_text(ui, 'mirror nofResultObjectNames %d != %d mirrorResult.bodies.count' %
                                     (nofResultObjectNames, mirrorResult.bodies.count))
             for oi in range(mirrorResult.bodies.count):
                 body = mirrorResult.bodies.item(oi)
-                interface360.error_text(ui, 'body.name = ' + str(body.name))
-            return False
+                interface360.error_text(ui, 'mirror body.name = ' + str(body.name))
+            return resultFalse
     else:
-        # Keep default bodies names
-        return True
+        # Keep default body names of the mirror
+        for bi in range(mirrorResult.bodies.count):
+            body = mirrorResult.bodies.item(bi)
+            resultBodies.append(body)
+        return (True, resultBodies)
 
 
 def mirror_from_csv_files(ui, title, folderName, hostComponent):

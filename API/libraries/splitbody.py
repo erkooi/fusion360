@@ -19,7 +19,8 @@
 
 Split body CSV file format:
 . comment lines or comment in line will be removed
-. first line: 'split' as filetype
+. first line: 'split' as filetype, name of the split body file, name of the
+  group component for the splitted bodies.
 . second line: split_body, body name
 . third line, split tool can one from validSplitToolType:
   - split_tool, plane, plane name
@@ -52,6 +53,8 @@ def parse_csv_split_body_file(ui, title, filename):
     Return:
     . result: True when valid splitBodyTuple, else False with None
     . splitBodyTuple:
+      - splitBodyFilename: name of the split body file
+      - groupComponentName: group component for the splitted bodies objects
       - splitBodyName: body name
       - splitToolName: plane name
       - splittedBodiesNames: list of body names, must match number of splitted
@@ -73,23 +76,25 @@ def parse_csv_split_body_file(ui, title, filename):
     readRemoveBodies = False
     for li, lineArr in enumerate(lineLists):
         lineWord0 = lineArr[0]
-        if len(lineArr) > 1:
-            lineWord1 = lineArr[1]
         if li == 0:
             if lineWord0 != 'split':
                 return resultFalse
+            splitBodyFilename = lineArr[1]
+            groupComponentName = ''
+            if len(lineArr) > 2:
+                groupComponentName = lineArr[2]
         elif li == 1:
             # Read split_body
             if lineWord0 != 'split_body':
                 ui.messageBox('Expected split_body instead of %s in %s' % (lineWord0, filename), title)
                 return resultFalse
-            splitBodyName = lineWord1
+            splitBodyName = lineArr[1]
         elif li == 2:
             # Read split_tool
             if lineWord0 != 'split_tool':
                 ui.messageBox('Expected split_tool instead of %s in %s' % (lineWord0, filename), title)
                 return resultFalse
-            splitToolType = lineWord1
+            splitToolType = lineArr[1]
             if splitToolType not in interfacefiles.validSplitToolTypes:
                 ui.messageBox('Unexpected split_tool type %s in %s' % (splitToolType, filename), title)
                 return resultFalse
@@ -111,16 +116,18 @@ def parse_csv_split_body_file(ui, title, filename):
                     removeBodiesNames.append(lineWord0)
 
     # Successfully reached end of file
-    splitBodyTuple = (splitBodyName, splitToolType, splitToolName, splittedBodiesNames, removeBodiesNames)
+    splitBodyTuple = (splitBodyFilename, groupComponentName, splitBodyName,
+                      splitToolType, splitToolName, splittedBodiesNames, removeBodiesNames)
     return (True, splitBodyTuple)
 
 
-def split_body(ui, hostComponent, splitBody, splitTool, splittedBodiesNames):
+def split_body(ui, hostComponent, groupComponent, splitBody, splitTool, splittedBodiesNames):
     """Split body using splitTool into splitted bodies. Rename splitted bodies
        with splittedBodiesNames.
 
     Input:
-    . hostComponent: host component with the bodies
+    . hostComponent: host component with the splitBody and splitTool
+    . groupComponent: group component for splitted bodies
     . splitBody: body to split
     . splitTool: split tool
     . splittedBodiesNames: list of body names, must match number of splitted
@@ -132,9 +139,8 @@ def split_body(ui, hostComponent, splitBody, splitTool, splittedBodiesNames):
     result = True
 
     # Copy splitBody, because it is used for one of the splitted bodies.
-    # The hostComponent is anywhere in the rootComponent.
-    hostOccurrence = utilities360.get_last_occurrence_anywhere(hostComponent)
-    bodyToSplit = utilities360.copy_body_to_occurrence(splitBody, hostOccurrence)
+    groupOccurrence = utilities360.get_occurrence_anywhere(groupComponent)
+    bodyToSplit = utilities360.copy_body_to_occurrence(splitBody, groupOccurrence)
 
     # Prepare splitBodyFeatureInput.
     splitBodyFeatures = hostComponent.features.splitBodyFeatures
@@ -157,7 +163,10 @@ def split_body(ui, hostComponent, splitBody, splitTool, splittedBodiesNames):
 
 
 def split_body_from_csv_file(ui, title, filename, hostComponent):
-    """Split body from CSV file, in hostComponent in Fusion360
+    """Split body from CSV file, in Fusion360
+
+    Dependent on the groupComponentName the splitted body will be put in the
+    Bodies folder of hostComponent or hostComponent/groupComponent.
 
     Input:
     . filename: full path and name of CSV file
@@ -171,42 +180,52 @@ def split_body_from_csv_file(ui, title, filename, hostComponent):
     result, splitBodyTuple = parse_csv_split_body_file(ui, title, filename)
     if not result:
         return False
-    splitBodyName, splitToolType, splitToolName, splittedBodiesNames, removeBodiesNames = splitBodyTuple
+    splitBodyFilename, groupComponentName, splitBodyName, splitToolType, splitToolName, \
+        splittedBodiesNames, removeBodiesNames = splitBodyTuple
 
-    # Find split body in hostComponent Bodies folder
-    splitBody = hostComponent.bRepBodies.itemByName(splitBodyName)
+    # Find split body anywhere in hostComponent
+    splitBody = utilities360.find_body_anywhere(hostComponent, splitBodyName)
     if not splitBody:
-        interface360.error_text(ui, 'Split body %s not found' % splitBodyName)
+        interface360.error_text(ui, 'Split body %s not found in host component %s' %
+                                (splitBodyName, hostComponent.name))
         return False
 
-    # Find split tool in hostComponent Construction folder or in any sub
-    # component
+    # Find split tool anywhere in hostComponent component
     if splitToolType == 'plane':
-        splitTool = utilities360.find_plane_anywhere(ui, hostComponent, splitToolName)
+        splitTool = utilities360.find_plane_anywhere(hostComponent, splitToolName)
         if not splitTool:
-            interface360.error_text(ui, 'Split tool plane %s not found in %s' % (splitToolName, hostComponent.name))
+            interface360.error_text(ui, 'Split tool plane %s not found in host component %s' %
+                                    (splitToolName, hostComponent.name))
             return False
     elif splitToolType == 'body':
         splitTool = utilities360.find_body_anywhere(hostComponent, splitToolName)
         if not splitTool:
-            interface360.error_text(ui, 'Split tool body %s not found in %s' % (splitToolName, hostComponent.name))
+            interface360.error_text(ui, 'Split tool body %s not found in host component %s' %
+                                    (splitToolName, hostComponent.name))
             return False
     else:
         return False
 
-    # Split body
-    result = split_body(ui, hostComponent, splitBody, splitTool, splittedBodiesNames)
+    # Create groupComponent in hostComponent for split body object, if it does
+    # not already exist, else use hostComponent if groupComponentName is empty
+    # string or is the hostComponent.
+    groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
+
+    # Split body and put result in groupComponent
+    result = split_body(ui, hostComponent, groupComponent, splitBody, splitTool, splittedBodiesNames)
     if not result:
         return False
 
     # Remove bodies
-    utilities360.remove_bodies_anywhere(ui, hostComponent, removeBodiesNames)
+    result = utilities360.remove_bodies_anywhere(ui, hostComponent, removeBodiesNames)
+    if not result:
+        return False
     interface360.print_text(ui, 'Splitted body for ' + filename)
     return True
 
 
 def split_bodies_from_csv_files(ui, title, folderName, hostComponent):
-    """Split body from CSV files in folder, in hostComponent in Fusion360
+    """Split body from CSV files in folder, in Fusion360
 
     Input:
     . folderName: full path and folder name of CSV files

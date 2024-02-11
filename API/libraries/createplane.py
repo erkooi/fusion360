@@ -26,8 +26,8 @@ See schemacsv360.py for coordinates and plane definitions.
 
 Plane CSV file format:
 . comment lines or comment in line will be removed
-. use stripped filename as plane name
-. first line: 'plane' as filetype
+. first line: 'plane' as filetype, name of the plane, name of the group
+  component for the plane.
 . second line: resolution 'mm' or 'cm'
 . next line: 'point', first point coordinates x, y, z
 . next line: 'point', second point coordinates x, y, z
@@ -50,7 +50,10 @@ def parse_csv_plane_file(ui, title, filename):
     . filename: full path and name of CSV file
     Return:
     . result: True when valid threePoint3Ds, else False with None
-    . threePoint3Ds: list of three point3D objects that define a plane
+    . planeTuple:
+      - planeName: name of the plane object
+      - groupComponentName: group component for the plane object
+      - threePoint3Ds: list of three point3D objects that define a plane
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
@@ -68,6 +71,10 @@ def parse_csv_plane_file(ui, title, filename):
             # Read file type
             if lineWord != 'plane':
                 return resultFalse
+            planeName = lineArr[1]
+            groupComponentName = ''
+            if len(lineArr) > 2:
+                groupComponentName = lineArr[2]
         elif li == 1:
             # Read units
             result, scale = schemacsv360.read_units(ui, title, filename, lineWord)
@@ -86,7 +93,8 @@ def parse_csv_plane_file(ui, title, filename):
             return resultFalse
 
     # Successfully reached end of file
-    return (True, threePoint3Ds)
+    planeTuple = (planeName, groupComponentName, threePoint3Ds)
+    return (True, planeTuple)
 
 
 # The _create_three_points_in_separate_sketches() fails if the three points
@@ -102,11 +110,11 @@ def parse_csv_plane_file(ui, title, filename):
 #   This doesn't change the sketch itself, but just the GUI to make it easier
 #   to draw in 3D. Another way to see this is to draw geometry on the X-Y plane
 #   and then use the Move command to move sketch geometry out of the X-Y plane.
-def _create_three_points_in_separate_sketches(ui, hostComponent, planeName, threePoint3Ds):
+def _create_three_points_in_separate_sketches(ui, groupComponent, planeName, threePoint3Ds):
     """Create three points in separate sketches.
 
     Input:
-    . hostComponent: place the plane in hostComponent Construction folder.
+    . groupComponent: place the plane in groupComponent Construction folder.
     . planeName: name prefix for the offset planes and sketches
     . threePoint3Ds: list of three point3D objects that define a plane
     Return:
@@ -122,10 +130,10 @@ def _create_three_points_in_separate_sketches(ui, hostComponent, planeName, thre
         # . x, y, z coordinates become -z, y, 0 in offset normal plane, as
         #   explained for get_3d_point_in_offset_plane() in schemacsv360.py
         name = planeName + '_point_' + str(pIndex)
-        offsetPlane = schemacsv360.create_offset_normal_plane(hostComponent, name, 'x', p3D.x)
+        offsetPlane = schemacsv360.create_offset_normal_plane(groupComponent, name, 'x', p3D.x)
         offsetPlane.isLightBulbOn = False
         # Create a separate auxiliary sketch for each point
-        sketch = utilities360.create_sketch_in_plane(hostComponent, name, offsetPlane)
+        sketch = utilities360.create_sketch_in_plane(groupComponent, name, offsetPlane)
         sketch.isLightBulbOn = False
         # Create auxiliary sketch point
         point = adsk.core.Point3D.create(-p3D.z, p3D.y, 0)
@@ -139,11 +147,11 @@ def _create_three_points_in_separate_sketches(ui, hostComponent, planeName, thre
     return threeSketchPoints
 
 
-def _create_three_points_in_one_sketch(ui, hostComponent, sketchName, threePoint3Ds):
+def _create_three_points_in_one_sketch(ui, groupComponent, sketchName, threePoint3Ds):
     """Create three points in one 3D sketch in the yZ origin plane.
 
     Input:
-    . hostComponent: place the plane in hostComponent Construction folder.
+    . groupComponent: place the plane in groupComponent Construction folder.
     . sketchName: name prefix for the sketch in the origin plane
     . threePoint3Ds: list of three point3D objects that define a plane
     Return:
@@ -156,11 +164,11 @@ def _create_three_points_in_one_sketch(ui, hostComponent, sketchName, threePoint
     # . use x coordinate as z coordinate plane offset,
     # . x, y, z coordinates become -z, y, x in the yZ origin plane, as
     #   explained for get_3d_point_in_offset_plane() in schemacsv360.py
-    originPlane = hostComponent.yZConstructionPlane
+    originPlane = groupComponent.yZConstructionPlane
 
     # Create the one auxiliary sketch in the originPlane
     name = sketchName + '_three_points'
-    sketch = utilities360.create_sketch_in_plane(hostComponent, name, originPlane)
+    sketch = utilities360.create_sketch_in_plane(groupComponent, name, originPlane)
     sketch.isLightBulbOn = False
 
     threeSketchPoints = []
@@ -177,16 +185,16 @@ def _create_three_points_in_one_sketch(ui, hostComponent, sketchName, threePoint
     return threeSketchPoints
 
 
-def create_three_point_plane(ui, hostComponent, planeName, threePoint3Ds):
+def create_three_point_plane(ui, groupComponent, planeName, threePoint3Ds):
     """Create plane through three points in threePoint3Ds.
 
-    The three points have to be real objects in the hostComponent like a
+    The three points have to be real objects in the groupComponent like a
     sketchPoint, instead of base objects like point3D or vector3D. Therefore
     first create three planes and sketches to define the three sketchPoints
     for the three 3D points in threePoint3Ds.
 
     Input:
-    . hostComponent: place the plane in hostComponent Construction folder.
+    . groupComponent: place the plane in groupComponent Construction folder.
     . planeName: name for the plane
     . threePoint3Ds: list of three point3D objects that define a plane
     Return:
@@ -195,11 +203,11 @@ def create_three_point_plane(ui, hostComponent, planeName, threePoint3Ds):
     Uses ui to report faults via Fusion360 GUI.
     """
     # Create list of three sketch points for the threePoint3Ds
-    # threeSketchPoints = _create_three_points_in_separate_sketches(ui, hostComponent, planeName, threePoint3Ds)
-    threeSketchPoints = _create_three_points_in_one_sketch(ui, hostComponent, planeName, threePoint3Ds)
+    # threeSketchPoints = _create_three_points_in_separate_sketches(ui, groupComponent, planeName, threePoint3Ds)
+    threeSketchPoints = _create_three_points_in_one_sketch(ui, groupComponent, planeName, threePoint3Ds)
 
     # Get construction planes
-    planes = hostComponent.constructionPlanes
+    planes = groupComponent.constructionPlanes
     # Create construction plane input
     planeInput = planes.createInput()
     # Add construction plane by three points
@@ -208,18 +216,21 @@ def create_three_point_plane(ui, hostComponent, planeName, threePoint3Ds):
     plane.name = planeName
     plane.isLightBulbOn = True
     # Hide auxiliary Sketches folder
-    hostComponent.isSketchFolderLightBulbOn = False
+    groupComponent.isSketchFolderLightBulbOn = False
     # Show Construction folder with planes
-    hostComponent.isConstructionFolderLightBulbOn = True
+    groupComponent.isConstructionFolderLightBulbOn = True
     return plane
 
 
 def create_plane_from_csv_file(ui, title, filename, hostComponent):
-    """Create plane from CSV file, in hostComponent Construction folder in Fusion360
+    """Create plane from CSV file, in Fusion360
+
+    Dependent on the groupComponentName the plane will be put in the
+    Construction folder of hostComponent or hostComponent/groupComponent.
 
     Input:
     . filename: full path and name of CSV file
-    . hostComponent: place the plane in hostComponent Construction folder.
+    . hostComponent: host component for the plane
     Return:
     . result: True when valid plane, else False with None
     . plane: plane object
@@ -227,17 +238,19 @@ def create_plane_from_csv_file(ui, title, filename, hostComponent):
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
     # Parse CSV file
-    result, threePoint3Ds = parse_csv_plane_file(ui, title, filename)
+    result, planeTuple = parse_csv_plane_file(ui, title, filename)
     if not result:
         return (False, None)
-
-    # Use stripped filename as plane name
-    objectName = interfacefiles.extract_object_name(filename)
+    planeName, groupComponentName, threePoint3Ds = planeTuple
 
     # Create plane if there are valid points
     if len(threePoint3Ds) == 3:
-        # Create plane in hostComponent
-        plane = create_three_point_plane(ui, hostComponent, objectName, threePoint3Ds)
+        # Create groupComponent in hostComponent for plane object, if it does
+        # not already exist, else use hostComponent if groupComponentName is
+        # empty string or is the hostComponent.
+        groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
+        # Create plane in groupComponent
+        plane = create_three_point_plane(ui, groupComponent, planeName, threePoint3Ds)
     else:
         ui.messageBox('No valid points in %s' % filename, title)
         return (False, None)
@@ -246,12 +259,11 @@ def create_plane_from_csv_file(ui, title, filename, hostComponent):
 
 
 def create_planes_from_csv_files(ui, title, folderName, hostComponent):
-    """Create planes from CSV files in folder, in hostComponent Construction
-    folder in Fusion360
+    """Create planes from CSV files in folder, in Fusion360
 
     Input:
     . folderName: full path and folder name
-    . hostComponent: place the plane in hostComponent Construction folder.
+    . hostComponent: host component for the planes
     Return: None
 
     Uses ui, title, filename to report faults via Fusion360 GUI.

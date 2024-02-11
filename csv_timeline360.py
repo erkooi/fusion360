@@ -30,32 +30,73 @@ files for generating objects in Fusion360:
 
 Schema sections in point txt file:
 
-. Object keyword: sketch
-  Create sketch CSV files. The sketch files can be used for profiles and rails
-  to use with loft. For the sketch sections the segmentType can have optional
-  railName(s), that will not appear in the CSV file, but are used by
-  interfacefiles.get_cross_rail_points() to include that segment point in a
-  rail sketch. The rails are made between points with equal coordinate in
-  different profile sketches.
-  - interfacefiles.write_sketch_files()
-  - interfacefikles.write_co_rail_sketch_files()
-  - interfacefiles.write_cross_rail_sketch_files()
-
-. Object keyword: plane, sketch, loft, extrude, combine, split, movecopy,
+. Object keyword: sketch, plane, loft, extrude, combine, split, movecopy,
   mirror.
   - interfacefiles.write_csv_files()
+
+. Object keyword: sketch, cross_rails
+  Create cross rail sketches CSV files. The sketch files can be used for
+  profiles and cross rails to use with loft. For the sketch sections the
+  segmentType can have optional cross_rail railName(s), that will not appear in
+  the CSV file, but are used by interfacefiles.read_cross_rails_definitions()
+  to include that segment point in a cross rail sketch. The cross rails are
+  made between points with equal coordinate in different profile sketches.
+  - interfacefiles.write_cross_rail_sketch_csv_file()
+
+. Object keyword: sketch, co_rails
+  Creat co rail sketches CSV files. The co-rails are derived from segmentType
+  sections in a profile sketch that can have optional co_rail railName(s) that
+  will not appear in the CSV file of the sketch, but are used by
+  interfacefiles.determine_co_rail_sketch_csv_files() to include that segment
+  in a co rail sketch.
+  - interfacefikles.write_co_rail_sketch_csv_files()
 
 . Object keyword: assembly
   Create assembly CSV files to define assemblies
   - interfacefiles.write_assembly_csv_file()
 
+In CSV directory tree:
+  The CSV file for an assembly defines the assembly folder. The assembly
+  folder can contain one or more assembly CSV files, that in series form a
+  seuence of timeline actions together form the entire timeline for that
+  assembly.
+  The CSV files for timeline actions that belong to the assembly and that
+  belong together are grouped in group folders. The group folder can be the
+  same folder as the assembly folder, or a sub folder within the assembly
+  folder.
+  For example:
+    assembly folder/group folder a
+                    group folder b
+                    group folder ...
+                    assembly csv file 0
+                    assembly csv file 1
+                    assembly csv file ...
+                    
+In Fusion360 hierarchy:
+  The assembly consist of an assemblyComponent and groupComponents. For an
+  assembly the assemblyComponent is placed under the activeComponent. If the
+  assemblyComponentName is not specified, then it defaults to the
+  activeComponent.
+  The assemblyComponent is used as hostComponent for the groupComponents.
+  The results of a timeline action are placed in the groupComponent. If the
+  groupComponent is used, then the groupComponentName must be the same as the
+  group folder name. If the groupComponentName is not specified, then the
+  group result objects will be placed in the hostComponent.
+  A groupComponent contains the result objects of one or more timeline actions
+  that belong together. If a timeline action depends on other objects, then it
+  looks anywhere in the assemblyComponent to find objects that it has to
+  operate on. In this way it can also find objects that are placed in other
+  groupComponents.
+
 Usage of CSV files in Fusion360:
 1) Manually: Select active component in Fusion360 GUI and then use script from
    Utilities/Add-Ins/Scripts to generate the objects, either for all CSV files
-   in folder or for one specific CSV at a time.
+   in folder or for one specific CSV at a time. The active component is then
+   the hostComponent.
 2) Automatically: Use Script/AssemblyCSV script to load all necessary CSV files
    and use assembly CSV file to apply the CSV files in Fusion 360 in the
-   correct order.
+   correct order. The assemblyComponent is then the hostComponent for the
+   groupComponents.
 
 Usage on command line:
 > python csv_timeline360.py -f f35b_points.txt

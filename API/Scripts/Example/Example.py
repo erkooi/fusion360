@@ -30,8 +30,10 @@ import importlib
 from . import append_sys_path_libraries  # noqa: F401
 import interface360
 import utilities360
+import samples360
 importlib.reload(interface360)
 importlib.reload(utilities360)
+importlib.reload(samples360)
 
 
 def run(context):
@@ -61,8 +63,8 @@ def run(context):
         application = document.parent  # = app
 
         # Create example component in rootComponent with example objects
-        exampleComponent = utilities360.create_component(rootComponent, 'Example_component', isLightBulbOn=False)
-        objectsTuple = utilities360.create_example_objects(exampleComponent)
+        exampleComponent = utilities360.create_component(rootComponent, 'Example_component')
+        objectsTuple = samples360.create_example_objects(exampleComponent)
         sketchTuple, extrudeTuple, planeTuple, mirrorTuple = objectsTuple
         sketch, profile = sketchTuple
         extrudeFeaturesInput, extrudeResult, extrudeBody, extrudeFace = extrudeTuple

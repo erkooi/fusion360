@@ -101,6 +101,24 @@ def value_to_str(value, toAbs=False, pointChar='.'):
     return valStr
 
 
+def append_string_to_csv_line(inputLine, appendString, endOfLine='\n'):
+    """Append comma appendString to inputLine
+
+    Input:
+    . inputLine: CSV input line string
+    . appendString: string to append to inputLine
+    Return:
+    . outputLine: If appendString is enmpty string then return inputLine, else
+      return with comma and appendString appended to inputLine. Append
+      endOfLine to outputLine.
+    """
+    outputLine = inputLine
+    if appendString:
+        outputLine += ', ' + appendString
+    outputLine += endOfLine
+    return outputLine
+
+
 def convert_entries_to_integers(entries):
     """Convert list of strings into list of integers."""
     return [int(s) for s in entries]
@@ -150,19 +168,19 @@ def extract_object_name(filename):
         return ''
 
 
-def extract_component_name(filename):
-    """Extract component name from last sub directory in filename.
+def extract_sub_folder_name(filename):
+    """Extract sub folder name from last sub directory in filename.
 
     For example:
-    . /a/b/c.csv -> componentName = 'b'
-    . /a/b/c -> componentName = 'c'
-    . c -> componentName = 'c'
-    . c.txt -> componentName = ''
+    . /a/b/c.csv -> subFolderName = 'b'
+    . /a/b/c -> subFolderName = 'c'
+    . c -> subFolderName = 'c'
+    . c.txt -> subFolderName = ''
 
     Input:
     . filename: filename or directory name
     Return:
-    . componentName: extracted name or empty string when filename contains
+    . subFolderName: extracted name or empty string when filename contains
       no directory
     """
     # Directory name is last last part in filename, without the file name
@@ -173,16 +191,36 @@ def extract_component_name(filename):
     return basename
 
 
-def create_folder(folderStr):
+def verify_component_folder_name(li, componentName, folderName):
+    """Verify whether component name equals folder name in timeline file
+
+    Print ERROR message when names are not equal.
+
+    Input:
+    . li: line index in timeline file
+    . componentName: name of component
+    . folderName: name of sub folder with CSV files that define the component
+
+    Return: True when names are equal, else False
+    """
+    subFolderName = extract_sub_folder_name(folderName)
+    if componentName != subFolderName:
+        print('ERROR line %d: component name %s != %s sub folder name' %
+              (li, componentName, subFolderName))
+        return False
+    return True
+
+
+def create_folder(folderName):
     """Create (sub)folder(s) if it not already exists and return path name.
 
     Input:
-    . folderStr: name of folder, or path and name of subfolder
+    . folderName: name of folder, or path and name of subfolder
     Return:
     . folder: created name of folder, or created path and name of sub folder
     """
     # Convert to path separators (/, \\) for local system
-    folder = os.path.normpath(folderStr)
+    folder = os.path.normpath(folderName)
     try:
         os.makedirs(folder)
         print('create_folder: %s' % folder)
@@ -425,16 +463,20 @@ def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
     # Find sketches in fileLines, seperated by one empty line
     for fLine in fileLines:
         if li == 0:
-            # First line of a sketch in fileLines contains:
-            # . file type 'sketch',
-            # . folder name for CSV file.
-            # . filename for CSV file.
+            # First line of a sketch section in fileLines contains:
+            # . CSV file type 'sketch',
+            # . folder name for sketch CSV file,
+            # . filename for sketch CSV file,
+            # . optional name of group component
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'sketch':
-                coRailFolderStr = entries[1] + '_co_rails'
+                coRailFolderName = entries[1] + '_co_rails'
                 sketchName = entries[2]
+                groupComponentName = ''
+                if len(entries) > 3:
+                    groupComponentName = entries[3] + '_co_rails'
                 li += 1
         elif li == 1:
             li += 1
@@ -443,11 +485,8 @@ def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
             # Ignore entries[0] = 'offset_plane'
             planeNormal = entries[1]
             planeOffset = entries[2]
+            # Prepare for a co_rail sketch
             sketchLines = []
-            sketchLines.append('sketch\n')  # write file type
-            if units in validUnits:
-                sketchLines.append(units + '\n')  # write units
-            sketchLines.append('offset_plane, ' + planeNormal + ', ' + planeOffset + '\n')
             coRailName = []
             coRailFilename = ''
             coRailLines = []
@@ -457,6 +496,7 @@ def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
             entries = get_file_line_entries(fLine)
             segmentType = entries[0]
             if segmentType in validSegmentTypes:
+                # Process previous co_rail sketch
                 if coRailName:
                     if writeFile:
                         # Write co rail sketch file for previous segment
@@ -467,17 +507,29 @@ def determine_co_rail_sketch_csv_files(fileLines, units, writeFile=True):
                             nofFiles += 1
                     else:
                         # Make timeline list of co rail sketch files
-                        timelineTuple = ('co_rails', coRailFilename)
+                        timelineTuple = ('co_rails', coRailFilename, groupComponentName)
                         timelineList.append(timelineTuple)
-                # Get optional co_rail name
+                    # Prepare for next co_rail sketch
+                    sketchLines = []
+                    coRailName = []
+                    coRailFilename = ''
+                    coRailLines = []
+                # Get name for next optional co_rail sketch
                 coRailName = get_rail_names(entries[1:], 'co_rail')
-                coRailFilename = ''
-                coRailLines = []
                 if coRailName:
-                    # Use new segment as co rail
-                    coRailFolder = create_folder(coRailFolderStr)
-                    coRailFilename = sketchName + '_' + coRailName[0] + '.csv'
-                    coRailFilename = os.path.join(coRailFolder, coRailFilename)
+                    # Use new segment as co_rail sketch
+                    coRailFolderName = create_folder(coRailFolderName)
+                    coRailSketchName = sketchName + '_' + coRailName[0]
+                    # . initialize sketchLines
+                    coRailSketchLine = 'sketch, ' + coRailSketchName
+                    coRailSketchLine = append_string_to_csv_line(coRailSketchLine, groupComponentName)
+                    sketchLines.append(coRailSketchLine)  # write co rail sketch line
+                    if units in validUnits:
+                        sketchLines.append(units + '\n')  # write units
+                    sketchLines.append('offset_plane, ' + planeNormal + ', ' + planeOffset + '\n')
+                    # . initialize coRailLines
+                    coRailFilename = coRailSketchName + '.csv'
+                    coRailFilename = os.path.join(coRailFolderName, coRailFilename)
                     coRailFilename = os.path.normpath(coRailFilename)
                     coRailLines.append(segmentType + '\n')
             else:
@@ -606,7 +658,7 @@ def read_cross_rails_definitions(fileLines):
     """Read cross rails definitions from fileLines.
 
     Format for cross_rails definition section in fileLines:
-    . cross_rails, <rails folder>, <optional rail filename prefix>
+    . cross_rails, <rails folder>
     . rail_names, <strings>
     . profile_plane_normal, <x, y, or z>
     . rail_plane_normal, <x, y, or z>
@@ -617,8 +669,8 @@ def read_cross_rails_definitions(fileLines):
     . fileLines: lines from a timeline file with cross rails definitions, that
       define profile sketches and cross rails between them.
     Return: List of crossRailsTuples():
-      . railsFolder
-      . railFilenamePrefix
+      . railFolderName
+      . groupComponentName
       . railNames[]
       . profilePlaneNormal
       . railPlaneNormal
@@ -632,17 +684,18 @@ def read_cross_rails_definitions(fileLines):
     for ln, fLine in enumerate(fileLines):
         if li == 0:
             # First line of a cross_rails in fileLines contains:
-            # . file type 'cross_rails',
-            # . folder name for CSV files.
-            # . optional prefix for rails filename.
+            # . CSV file type 'cross_rails',
+            # . folder name for cross_rails CSV files
+            # . optional name of group component
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'cross_rails':
-                railsFolder = create_folder(entries[1])
-                railFilenamePrefix = ''
+                railFolderName = create_folder(entries[1])
+                groupComponentName = ''
                 if len(entries) > 2:
-                    railFilenamePrefix = entries[2]
+                    groupComponentName = entries[2]
+                    verify_component_folder_name(li, groupComponentName, railFolderName)
                 li += 1
         elif li == 1:
             li += 1
@@ -660,7 +713,7 @@ def read_cross_rails_definitions(fileLines):
             li += 1
             railSegmentType = _get_cross_rails_rail_segment_type(fLine, ln)
             # Add cross_rails definition to crossRailsTuples list
-            crossRailsTuple = (railsFolder, railFilenamePrefix, railNames,
+            crossRailsTuple = (railFolderName, groupComponentName, railNames,
                                profilePlaneNormal, railPlaneNormal, railPlaneOffsets,
                                railSegmentType)
             crossRailsTuples.append(crossRailsTuple)
@@ -744,11 +797,14 @@ def get_cross_rail_points(fileLines, profilePlaneNormal, railName, railPlaneNorm
     return result
 
 
-def write_cross_rail_sketch_csv_file(filename, units, railPlaneNormal, railPlaneOffset, segmentType, railPoints):
+def write_cross_rail_sketch_csv_file(filename, railSketchName, groupComponentName, units,
+                                     railPlaneNormal, railPlaneOffset, segmentType, railPoints):
     """Write rail of railPoints into sketch file.
 
     Input:
     . filename: full path and name of file
+    . railSketchName: name of the cross_rail sketch
+    . groupComponentName: group component for the cross_rail sketch
     . units: units from validUnits
     . railPlaneNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
     . railPlaneOffset: offset from origin plane
@@ -762,7 +818,9 @@ def write_cross_rail_sketch_csv_file(filename, units, railPlaneNormal, railPlane
         print('write_cross_rail_sketch_csv_file: %s' % filename)
         with open(filename, 'w') as fp:
             # Write file type
-            fp.write('sketch\n')
+            sketchLine = 'sketch, ' + railSketchName
+            sketchLine = append_string_to_csv_line(sketchLine, groupComponentName)
+            fp.write(sketchLine)
             # Write units
             if units in validUnits:
                 fp.write(units + '\n')
@@ -812,7 +870,7 @@ def write_cross_rail_sketch_csv_files(fileLines, units):
     # Process per cross_rails definition
     for crossRailsTuple in crossRailsTuples:
         # Extract cross_rails definition
-        railsFolder, railFilenamePrefix, railNames, \
+        railFolderName, groupComponentName, railNames, \
                 profilePlaneNormal, railPlaneNormal, railPlaneOffsets, railSegmentType = crossRailsTuple
 
         # Write CSV sketch files for cross_rails definition
@@ -822,19 +880,17 @@ def write_cross_rail_sketch_csv_files(fileLines, units):
                 railPoints = get_cross_rail_points(fileLines, profilePlaneNormal,
                                                    railName, railPlaneNormal, railPlaneOffset)
                 # Construct filename
-                filename = ''
-                if railFilenamePrefix:
-                    filename = railFilenamePrefix + '_'
                 railPlaneOffsetStr = value_to_str(railPlaneOffset, toAbs=True, pointChar='_')
-                filename += railPlaneNormal + '_' + railPlaneOffsetStr + '_' + railName + '.csv'
-                filename = os.path.join(railsFolder, filename)
+                railSketchName = railPlaneNormal + '_' + railPlaneOffsetStr + '_' + railName
+                filename = railSketchName + '.csv'
+                filename = os.path.join(railFolderName, filename)
                 filename = os.path.normpath(filename)
                 # Write sketch file
-                nofFiles += write_cross_rail_sketch_csv_file(filename, units,
+                nofFiles += write_cross_rail_sketch_csv_file(filename, railSketchName, groupComponentName, units,
                                                              railPlaneNormal, railPlaneOffset,
                                                              railSegmentType, railPoints)
         if nofFiles > 0:
-            print('write_cross_rail_sketch_csv_files: Wrote %d CSV files in %s' % (nofFiles, railsFolder))
+            print('write_cross_rail_sketch_csv_files: Wrote %d CSV files in %s' % (nofFiles, railFolderName))
     return nofFiles
 
 
@@ -855,18 +911,26 @@ def write_csv_files(fileLines, csvFileType, units=''):
         if li == 0:
             # First line of a CSV file section in fileLines contains:
             # . CSV file type,
-            # . folder name for CSV file,
-            # . filename for CSV file.
+            # . folder name for fileType CSV file,
+            # . filename for fileType CSV file,
+            # . optional name of group component
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == csvFileType:
-                csvFolder = create_folder(entries[1])
-                csvFilename = entries[2] + '.csv'
-                csvFilename = os.path.join(csvFolder, csvFilename)
+                csvFolderName = create_folder(entries[1])
+                fileTypeFilename = entries[2]
+                csvFilename = fileTypeFilename + '.csv'
+                csvFilename = os.path.join(csvFolderName, csvFilename)
                 csvFilename = os.path.normpath(csvFilename)
+                groupComponentName = ''
+                if len(entries) > 3:
+                    groupComponentName = entries[3]
+                    verify_component_folder_name(li, groupComponentName, csvFolderName)
+                fileTypeLine = fileType + ', ' + fileTypeFilename
+                fileTypeLine = append_string_to_csv_line(fileTypeLine, groupComponentName)
                 csvLines = []
-                csvLines.append(csvFileType + '\n')  # write CSV file type
+                csvLines.append(fileTypeLine)  # write fileType line
                 if units:
                     csvLines.append(units + '\n')  # write units
                 li += 1
@@ -909,18 +973,24 @@ def write_assembly_csv_file(fileLines):
         if li == 0:
             # First line of a CSV file section in fileLines contains:
             # . CSV file type,
-            # . folder name for CSV file,
-            # . filename for CSV file.
+            # . folder name for assembly CSV file,
+            # . filename for assembly CSV file,
+            # . optional name of assembly component
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'assembly':
-                csvFolder = create_folder(entries[1])
-                csvFilename = entries[2] + '.csv'
-                csvFilename = os.path.join(csvFolder, csvFilename)
+                assemblyFolderName = create_folder(entries[1])
+                assemblyFilename = entries[2]
+                csvFilename = assemblyFilename + '.csv'
+                csvFilename = os.path.join(assemblyFolderName, csvFilename)
                 csvFilename = os.path.normpath(csvFilename)
-                componentName = extract_component_name(csvFolder)
-                assemblyLine = 'assembly' + ', ' + componentName + '\n'
+                assemblyComponentName = ''
+                if len(entries) > 3:
+                    assemblyComponentName = entries[3]
+                    verify_component_folder_name(li, assemblyComponentName, assemblyFolderName)
+                assemblyLine = fileType + ', ' + assemblyFilename
+                assemblyLine = append_string_to_csv_line(assemblyLine, assemblyComponentName)
                 csvLines = []
                 csvLines.append(assemblyLine)  # write assembly line
                 li += 1
@@ -1002,10 +1072,11 @@ def _read_timeline_multi_co_rails_sketches_from_file_lines(fileLines):
     # Find sketches co_rails components from fileLines
     coRailsList = list_co_rail_sketch_csv_files(fileLines)
     for coRailTuple in coRailsList:
-        folderName = coRailTuple[1]
-        componentName = extract_component_name(folderName)
-        assemblyLine = 'multiple_create_sketch, ' + componentName
-        assemblyLine += '\n'
+        # Use groupComponentName as group folder name within the assembly
+        # folder
+        groupComponentName = coRailTuple[2]
+        assemblyLine = 'multiple_create_sketch'
+        assemblyLine = append_string_to_csv_line(assemblyLine, groupComponentName)
         if assemblyLine not in timelineList:
             timelineList.append(assemblyLine)
     return timelineList
@@ -1019,6 +1090,7 @@ def _read_timeline_multi_objects_from_file_lines(fileLines, sectionType):
 
     Input:
     . fileLines: read lines from comma separate values file
+    . sectionType: action section type in fileLines
     Return:
     . timelineList: timeline list with assembly lines to create objects from
       CSV folders for which order in fileLines is don't care.
@@ -1029,16 +1101,21 @@ def _read_timeline_multi_objects_from_file_lines(fileLines, sectionType):
         entries = get_file_line_entries(fLine)
         lineWord = entries[0]
         if lineWord == sectionType:
+            # Use sub folder relative to assembly CSV file
             folderName = entries[1]
-            componentName = extract_component_name(folderName)
+            subFolderName = extract_sub_folder_name(folderName)
+            # Name of action type
             if sectionType in validCsvFileTypes:
-                assemblyLine = 'multiple_create_%s, ' % sectionType + componentName
+                # Define multiple actions for sectionType
+                assemblyLine = 'multiple_create_%s' % sectionType
+            elif sectionType == 'cross_rails':
+                # Use sketch for multiple actions when sectionType is
+                # cross_rails
+                assemblyLine = 'multiple_create_sketch'
             else:
-                assemblyLine = 'multiple_create_sketch, ' + componentName
-            if len(entries) > 3:
-                groupComponentName = entries[3]
-                assemblyLine += ', ' + groupComponentName
-            assemblyLine += '\n'
+                print('ERROR: invalid sectionType %s' % sectionType)
+                return None
+            assemblyLine = append_string_to_csv_line(assemblyLine, subFolderName)
             if assemblyLine not in timelineList:
                 timelineList.append(assemblyLine)
     return timelineList
@@ -1064,16 +1141,14 @@ def _read_timeline_single_objects_from_file_lines(fileLines):
             assemblyLine = 'echo, ' + convert_entries_to_single_string(entries[1:]) + '\n'
             timelineList.append(assemblyLine)
         elif lineWord in ['extrude', 'combine', 'split', 'movecopy', 'mirror', 'echo']:
+            # Use sub folder relative to assembly CSV file
             folderName = entries[1]
-            componentName = extract_component_name(folderName)
+            subFolderName = extract_sub_folder_name(folderName)
+            # Name of action file
             filename = entries[2] + '.csv'
-            filename = os.path.join(componentName, filename)
+            filename = os.path.join(subFolderName, filename)
             filename = os.path.normpath(filename)
-            assemblyLine = 'run_%s, ' % lineWord + filename
-            if len(entries) > 3:
-                groupComponentName = entries[3]
-                assemblyLine += ', ' + groupComponentName
-            assemblyLine += '\n'
+            assemblyLine = ('run_%s, ' % lineWord) + filename + '\n'
             if assemblyLine not in timelineList:
                 timelineList.append(assemblyLine)
     return timelineList

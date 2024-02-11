@@ -26,7 +26,8 @@ default name. With extrude_results the result bodies can be renamed.
 
 Extrude CSV file format:
 . comment lines or comment in line will be removed
-. first line: 'extrude' as filetype
+. first line: 'extrude' as filetype, name of the extrude file, name of the
+  group component for the extrude results.
 . second line: resolution 'mm' or 'cm'
 . 3-th line:
   - 'profile', sketch name, profile indices, or
@@ -68,10 +69,7 @@ Extrude CSV file format:
   resultBodyNames:
   . If resultBodyNames is not specified, then keep the default names, else
     rename the extrude result bodies, the number of resultBodyNames must be
-    equal to the number of extrude result bodies
-
-Remark:
-. No need to support: operation newcomponent.
+    equal to the number of extrude result bodies.
 """
 
 import math
@@ -97,7 +95,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
       - planarTuple: sketch name, from body name, planar (profile or face)
         indices
       - offset: start extrude at offset distance from sketch plane or body face
-      - taperAngles:  taper angle in degrees for the extrude, one or two values
+      - taperAngles: taper angle in degrees for the extrude, one or two values
         for one side or two sided extent extrude
       - extentType: 'distance' or 'to_object'
       - toBodyName: body name for extent 'to_object'
@@ -130,6 +128,10 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
         if li == 0:
             if lineWord != 'extrude':
                 return resultFalse
+            extrudeFilename = lineArr[1]
+            groupComponentName = ''
+            if len(lineArr) > 2:
+                groupComponentName = lineArr[2]
         elif li == 1:
             result, scale = schemacsv360.read_units(ui, title, filename, lineWord)
             if not result:
@@ -184,7 +186,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             return resultFalse
 
     # Successfully reached end of file
-    planarTuple = (sketchName, fromBodyName, planarIndices)
+    planarTuple = (extrudeFilename, groupComponentName, sketchName, fromBodyName, planarIndices)
     extentTuple = (offset, taperAngles, extentType, distanceValues, toBodyName)
     operationTuple = (operation, participantBodyNames, resultBodyNames)
     extrudeTuple = (planarTuple, extentTuple, operationTuple)
@@ -316,13 +318,13 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     result, extrudeTuple = parse_csv_extrude_file(ui, title, filename)
     if not result:
         return False
-    # Extract tuples
+    # Extract tuples, extrudeFilename is not used
     planarTuple, extentTuple, operationTuple = extrudeTuple
-    sketchName, fromBodyName, planarIndices = planarTuple
+    _, groupComponentName, sketchName, fromBodyName, planarIndices = planarTuple
     offset, taperAngles, extentType, distanceVales, toBodyName = extentTuple
     operation, participantBodyNames, resultBodyNames = operationTuple
 
-    # Find object planar to extrude
+    # Find object planar to extrude anywhere in hostComponent
     objectTuple = None
     if sketchName:
         # Find profiles in sketch to determine profileTuple
@@ -369,10 +371,27 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     extrudeResult = extrude_planars(ui, objectTuple, operationTuple, extentTuple)
 
     # Rename the body or bodies of the extrude
-    result = _rename_result_bodies(ui, resultBodyNames, extrudeResult)
-    if result:
-        interface360.print_text(ui, 'Extruded for ' + filename)
-    return result
+    result, resultBodies = _rename_result_bodies(ui, resultBodyNames, extrudeResult)
+    if not result:
+        interface360.error_text(ui, 'Rename result extrude bodies with %s failed' % str(resultBodyNames))
+        return False
+
+    # Move extruded bodies to the groupComponent, if the groupComponent is
+    # another component then the parentComponent of the object.
+    # . Create groupComponent in hostComponent for extruded bodies objects, if
+    #   it does not already exist, else use hostComponent if groupComponentName
+    #   is empty string or is the hostComponent.
+    # . Get parentComponent of the object (sketch or fromBody), because that is
+    #   where the resultBodies are. No need for the planars here.
+    groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
+    object, _ = objectTuple
+    if groupComponent != object.parentComponent:
+        groupOccurrence = utilities360.get_occurrence_anywhere(groupComponent)
+        for body in resultBodies:
+            utilities360.move_body_to_occurrence(body, groupOccurrence)
+
+    interface360.print_text(ui, 'Extruded for ' + filename)
+    return True
 
 
 def _rename_result_bodies(ui, resultBodyNames, extrudeResult):
@@ -383,12 +402,16 @@ def _rename_result_bodies(ui, resultBodyNames, extrudeResult):
       names from list to rename the bodies in extrudeResult. If resultBodyNames
       contains not the same amount of names as the number of bodies in
       extrudeResult, then report error via ui.
-    . extrudeResult: result object of extrude
+    . extrudeResult: result feature of extrude
 
-    Return: True when rename went OK, else False
+    Return:
+    . result: True when rename went OK, else False
+    . resultBodies: list of extrude result body objects
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    resultFalse = (False, None)
+    resultBodies = []
     nofResultBodyNames = len(resultBodyNames)
     if nofResultBodyNames > 0:
         if len(resultBodyNames) == extrudeResult.bodies.count:
@@ -396,19 +419,23 @@ def _rename_result_bodies(ui, resultBodyNames, extrudeResult):
             for bi in range(extrudeResult.bodies.count):
                 body = extrudeResult.bodies.item(bi)
                 body.name = resultBodyNames[bi]
-            return True
+                resultBodies.append(body)
+            return (True, resultBodies)
         else:
             # Report actual extrude body names
-            interface360.error_text(ui, 'resultBodyNames = ' + str(resultBodyNames))
-            interface360.error_text(ui, 'nofResultBodyNames %d != %d extrudeResult.bodies.count' %
+            interface360.error_text(ui, 'extrude resultBodyNames = ' + str(resultBodyNames))
+            interface360.error_text(ui, 'extrude nofResultBodyNames %d != %d extrudeResult.bodies.count' %
                                     (nofResultBodyNames, extrudeResult.bodies.count))
             for bi in range(extrudeResult.bodies.count):
                 body = extrudeResult.bodies.item(bi)
-                interface360.error_text(ui, 'body.name = ' + str(body.name))
-            return False
+                interface360.error_text(ui, 'extrude body.name = ' + str(body.name))
+            return resultFalse
     else:
-        # Keep default body names
-        return True
+        # Keep default body names of the extrude
+        for bi in range(extrudeResult.bodies.count):
+            body = extrudeResult.bodies.item(bi)
+            resultBodies.append(body)
+        return (True, resultBodies)
 
 
 def extrudes_from_csv_files(ui, title, folderName, hostComponent):

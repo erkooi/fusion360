@@ -68,7 +68,7 @@ echo, --------------------------------------------------------------------------
 echo, Auxiliary aileron box to measure aileron radius
 echo, --------------------------------------------------------------------------
 
-sketch, csv/F35B-CSV/aileron, z_40_aileron_box_top
+sketch, csv/F35B-CSV/aileron, z_40_aileron_box_top, aileron
 offset_plane, z, 40
 line
   $xBase + $widthBox, $yBase
@@ -79,7 +79,7 @@ line
 offset_curve
   0, 0, 1
 
-sketch, csv/F35B-CSV/aileron, z_0_aileron_box_bottom
+sketch, csv/F35B-CSV/aileron, z_0_aileron_box_bottom, aileron
 offset_plane, z, 0
 line
   $xBase + $widthBox, $yBase
@@ -93,18 +93,18 @@ offset_curve
 # Create aileron_box_cutter
 # . profile index 1 contains contour, but still creates a outer rectangle loft,
 # . profile index 0 contains the inner rectangle
-loft, csv/F35B-CSV/aileron, loft_aileron_box_inner
+loft, csv/F35B-CSV/aileron, loft_aileron_box_inner, aileron
 profiles
   z_40_aileron_box_top, 0
   z_0_aileron_box_bottom, 0
 
-loft, csv/F35B-CSV/aileron, loft_aileron_box_outer
+loft, csv/F35B-CSV/aileron, loft_aileron_box_outer, aileron
 profiles
   z_40_aileron_box_top, 1
   z_0_aileron_box_bottom, 1
 
 # Use combine-cut to create outer contour body.
-combine, csv/F35B-CSV/aileron, aileron_box_cutter
+combine, csv/F35B-CSV/aileron, aileron_box_cutter, aileron
 operation, cut
 combine_bodies
   loft_aileron_box_outer
@@ -114,7 +114,7 @@ remove_bodies
   loft_aileron_box_inner
 
 # Split to cut out aileron from wing
-split, csv/F35B-CSV/aileron, split_loft_solid_wing_box, F35B-CSV
+split, csv/F35B-CSV/aileron, split_loft_solid_wing_box, aileron
 split_body, loft_solid_wing
 split_tool, body, aileron_box_cutter
 splitted_bodies
@@ -126,11 +126,6 @@ remove_bodies
   split_cut_aileron_box
   split_wing_box
 
-# Move split_aileron_box from host component F35B-CSV to sub component aileron
-movecopy, csv/F35B-CSV/aileron, movecopy_split_aileron_box, F35B-CSV
-body, split_aileron_box
-operation, move, aileron
-
 echo, --------------------------------------------------------------------------
 echo, Aileron with round edge at hinge
 echo, --------------------------------------------------------------------------
@@ -141,7 +136,7 @@ parameters
   aileronTipRadius, 4.6
   wingTipRadius, aileronTipRadius + rotationClearance
 
-sketch, csv/F35B-CSV/aileron, y_250_aileron_arc
+sketch, csv/F35B-CSV/aileron, y_250_aileron_arc, aileron
 offset_plane, y, $yBase
 arc
   $xBase, $zBase + $aileronBaseRadius, $xBase - $aileronBaseRadius, $zBase, $xBase, $zBase - $aileronBaseRadius
@@ -154,7 +149,7 @@ line
   $xBase, $zBase - $wingBaseRadius
   $xBase, $zBase - $aileronBaseRadius
 
-sketch, csv/F35B-CSV/aileron, y_490_aileron_arc
+sketch, csv/F35B-CSV/aileron, y_490_aileron_arc, aileron
 offset_plane, y, $yTip
 arc
   $xTip, $zTip + $aileronTipRadius, $xTip - $aileronTipRadius, $zTip, $xTip, $zTip - $aileronTipRadius
@@ -167,7 +162,7 @@ line
   $xTip, $zTip - $wingTipRadius
   $xTip, $zTip - $aileronTipRadius
 
-sketch, csv/F35B-CSV/aileron, y_490_aileron_end
+sketch, csv/F35B-CSV/aileron, y_490_aileron_end, aileron
 offset_plane, y, $yTip
 arc
   $xTip, $zTip + $wingTipRadius, $xTip - $wingTipRadius, $zTip, $xTip, $zTip - $wingTipRadius
@@ -178,13 +173,13 @@ line
   $xTip, $zTip - $wingTipRadius
 
 # Gap arc between wing and aileron
-loft, csv/F35B-CSV/aileron, gap_aileron_arc
+loft, csv/F35B-CSV/aileron, gap_aileron_arc, aileron
 profiles
   y_250_aileron_arc
   y_490_aileron_arc
 
 # Gap end between wing and aileron
-extrude, csv/F35B-CSV/aileron, gap_aileron_end
+extrude, csv/F35B-CSV/aileron, gap_aileron_end, aileron
 profile, y_490_aileron_end, 0
 offset, 0
 taper_angle, 0
@@ -193,7 +188,7 @@ operation, new_body
 extrude_results, gap_aileron_end
 
 # Gap between wing and aileron
-combine, csv/F35B-CSV/aileron, gap_aileron_cutter
+combine, csv/F35B-CSV/aileron, gap_aileron_cutter, aileron
 operation, join
 combine_bodies
   gap_aileron_arc
@@ -203,7 +198,7 @@ remove_bodies
   gap_aileron_end
 
 # Split to cut out aileron from wing
-split, csv/F35B-CSV/aileron, split_loft_solid_wing_arc, F35B-CSV
+split, csv/F35B-CSV/aileron, split_loft_solid_wing_arc, aileron
 split_body, loft_solid_wing
 split_tool, body, gap_aileron_cutter
 splitted_bodies
@@ -226,13 +221,13 @@ parameters
   alphaZ, -degrees(atan(fabs(zBase - zTip) / fabs(yBase - yTip)))
 
 # Axle center at origine
-sketch, csv/F35B-CSV/aileron, y_0_aileron_axle
+sketch, csv/F35B-CSV/aileron, y_0_aileron_axle, aileron
 offset_plane, y, 0
 circle
   0, 0, $axleRadius
 
 # Extrude axle
-extrude, csv/F35B-CSV/aileron, aileron_axle
+extrude, csv/F35B-CSV/aileron, aileron_axle, aileron
 profile, y_0_aileron_axle, 0
 offset, -$axleOffset
 taper_angle, 0
@@ -260,7 +255,7 @@ parameters
   yHingeTip, -220
 
 # Sketch hinge form
-sketch, csv/F35B-CSV/aileron, y_0_hinge
+sketch, csv/F35B-CSV/aileron, y_0_hinge, aileron
 offset_plane, y, 0
 arc
   0, $hingeRadius, $hingeRadius, 0, 0, -$hingeRadius
@@ -273,7 +268,7 @@ circle
   0, 0, 1  # axle circle
 
 # Extrude hinge
-extrude, csv/F35B-CSV/aileron, hinge
+extrude, csv/F35B-CSV/aileron, hinge, aileron
 profile, y_0_hinge, 0  # 0 = hinge, 1 = axle circle
 offset, 0
 taper_angle, 0
@@ -284,7 +279,7 @@ extrude_results, hinge
 # Make copies of hinge in wing
 movecopy, csv/F35B-CSV/aileron, movecopy_hinge_tip
 body, hinge
-operation, copy, hinge_tip
+operation, copy, hinge_tip, aileron
 operation, translate, 0, $yHingeBase, 0
 operation, rotate, 0, 0, 1, $alphaX
 operation, rotate, 1, 0, 0, $alphaZ
@@ -292,7 +287,7 @@ operation, translate, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, movecopy_hinge_mid
 body, hinge
-operation, copy, hinge_mid
+operation, copy, hinge_mid, aileron
 operation, translate, 0, $yHingeMid, 0
 operation, rotate, 0, 0, 1, $alphaX
 operation, rotate, 1, 0, 0, $alphaZ
@@ -300,14 +295,14 @@ operation, translate, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, movecopy_hinge_base
 body, hinge
-operation, copy, hinge_base
+operation, copy, hinge_base, aileron
 operation, translate, 0, $yHingeTip, 0
 operation, rotate, 0, 0, 1, $alphaX
 operation, rotate, 1, 0, 0, $alphaZ
 operation, translate, $xBase, $yBase, $zBase
 
 # Sketch hinge space
-sketch, csv/F35B-CSV/aileron, y_0_hinge_space
+sketch, csv/F35B-CSV/aileron, y_0_hinge_space, aileron
 offset_plane, y, 0
 line
  -$hingeLength, 10
@@ -317,7 +312,7 @@ line
  -$hingeLength, 10
 
 # Extrude hinge_space
-extrude, csv/F35B-CSV/aileron, hinge_space
+extrude, csv/F35B-CSV/aileron, hinge_space, aileron
 profile, y_0_hinge_space, 0
 offset, 0
 taper_angle, 0
@@ -328,7 +323,7 @@ extrude_results, hinge_space
 # Make copies of hinge_space in aileron
 movecopy, csv/F35B-CSV/aileron, movecopy_hinge_space_tip
 body, hinge_space
-operation, copy, hinge_space_tip
+operation, copy, hinge_space_tip, aileron
 operation, translate, 0, $yHingeBase, 0
 operation, rotate, 0, 0, 1, $alphaX
 operation, rotate, 1, 0, 0, $alphaZ
@@ -336,7 +331,7 @@ operation, translate, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, movecopy_hinge_space_mid
 body, hinge_space
-operation, copy, hinge_space_mid
+operation, copy, hinge_space_mid, aileron
 operation, translate, 0, $yHingeMid, 0
 operation, rotate, 0, 0, 1, $alphaX
 operation, rotate, 1, 0, 0, $alphaZ
@@ -344,14 +339,14 @@ operation, translate, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, movecopy_hinge_space_base
 body, hinge_space
-operation, copy, hinge_space_base
+operation, copy, hinge_space_base, aileron
 operation, translate, 0, $yHingeTip, 0
 operation, rotate, 0, 0, 1, $alphaX
 operation, rotate, 1, 0, 0, $alphaZ
 operation, translate, $xBase, $yBase, $zBase
 
 # Cut hinges from wing
-combine, csv/F35B-CSV/aileron, wing_with_hinge_holes, F35B-CSV
+combine, csv/F35B-CSV/aileron, wing_with_hinge_holes
 operation, cut
 combine_bodies
   split_wing_arc
@@ -363,7 +358,7 @@ remove_bodies
   hinge
 
 # Cut hinge spacers from aileron
-combine, csv/F35B-CSV/aileron, aileron_with_hinge_spaces, F35B-CSV
+combine, csv/F35B-CSV/aileron, aileron_with_hinge_spaces
 operation, cut
 combine_bodies
   split_aileron_arc
@@ -380,7 +375,8 @@ remove_bodies
 ################################################################################
 # Assembly
 
-assembly, csv/F35B-CSV, F35B-aileron
+assembly, csv/F35B-CSV, F35B-aileron, F35B-CSV
+
 echo, --------------------------------------------------------------------------
 echo, Created aileron with hinges in wing !
 echo, --------------------------------------------------------------------------

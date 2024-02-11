@@ -27,8 +27,8 @@ if there is only one profile:
 
 Loft CSV file format:
 . comment lines or comment in line will be removed
-. use stripped filename as loft name
-. first line: 'loft' as filetype
+. first line: 'loft' as filetype, name of the loft, name of the group
+  component for the loft.
 . profiles
   - sketch name, optional item index  # one per line
 . rails
@@ -59,6 +59,7 @@ def parse_csv_loft_file(ui, title, filename):
     . result: True when valid loftTuple, else False with None
     . loftTuple:
       - loftName: name for loft object
+      - groupComponentName: group component for the loft object
       - profileTuples: list of profile sketches (sketch name, profile item
         index)
       - railTuples: list of rail sketches (sketch name, rail item index)
@@ -77,12 +78,14 @@ def parse_csv_loft_file(ui, title, filename):
         if li == 0:
             if lineWord != 'loft':
                 return resultFalse
+            loftName = lineArr[1]
+            groupComponentName = ''
+            if len(lineArr) > 2:
+                groupComponentName = lineArr[2]
             profileTuples = []
             railTuples = []
             addProfiles = False
             addRails = False
-            # Extract loft name from filename
-            loftName = interfacefiles.extract_object_name(filename)
         else:
             # Read sketch names for profiles and rails
             if lineWord == 'profiles':
@@ -105,16 +108,21 @@ def parse_csv_loft_file(ui, title, filename):
         return resultFalse
 
     # Successfully reached end of file
-    loftTuple = (loftName, profileTuples, railTuples)
+    loftTuple = (loftName, groupComponentName, profileTuples, railTuples)
     return (True, loftTuple)
 
 
 def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponent=False):
-    """Create loft from CSV file, in hostComponent Bodies folder in Fusion360
+    """Create loft from CSV file, in Fusion360
+
+    Dependent on the groupComponentName the loft will be put in the
+    hostComponent or in the hostComponent/groupComponent.
+    Dependent on loftNewComponent the loft will be put in the Bodies
+    folder or in the Bodies folder of a new loft component.
 
     Input:
     . filename: full path and name of CSV file
-    . hostComponent: place the loft in hostComponent Bodies folder.
+    . hostComponent: host component for the loft
     . loftNewComponent: when True create loft component, else create loft body
     Return:
     . True when loft was created, else False
@@ -127,12 +135,12 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     result, loftTuple = parse_csv_loft_file(ui, title, filename)
     if not result:
         return False
-    loftName, profileTuples, railTuples = loftTuple
+    loftName, groupComponentName, profileTuples, railTuples = loftTuple
 
     interface360.print_text(ui, 'profileTuples: %s' % profileTuples, verbosity)
     interface360.print_text(ui, 'railTuples   : %s' % railTuples, verbosity)
 
-    # Find profiles in sketches
+    # Find profiles in sketches anywhere in hostComponent
     profiles = []
     for pt in profileTuples:
         name = pt[0]
@@ -154,7 +162,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
             interface360.error_text(ui, 'Profile sketch %s not found' % name)
             return False
 
-    # Find rails in sketches
+    # Find rails in sketches anywhere in hostComponent
     rails = []
     for rt in railTuples:
         name = rt[0]
@@ -171,8 +179,13 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
             interface360.error_text(ui, 'Rail sketch %s not found' % name)
             return False
 
-    # Create loft feature input
-    loftFeatures = hostComponent.features.loftFeatures
+    # Create groupComponent in hostComponent for loft object, if it does not
+    # already exist, else use hostComponent if groupComponentName is empty
+    # string or is the hostComponent.
+    groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
+
+    # Create loft feature input in groupComponent
+    loftFeatures = groupComponent.features.loftFeatures
     if loftNewComponent:
         loftFeatureInput = loftFeatures.createInput(adsk.fusion.FeatureOperations.NewComponentFeatureOperation)
     else:
@@ -208,11 +221,11 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
 
 
 def create_lofts_from_csv_files(ui, title, folderName, hostComponent, loftNewComponents=False):
-    """Create lofts from CSV files in folder, in hostComponent Bodies folder in Fusion360
+    """Create lofts from CSV files in folder, in Fusion360
 
     Input:
     . folderName: full path and folder name
-    . hostComponent: place the loft in hostComponent Bodies folder.
+    . hostComponent: host component for the lofts
     . loftNewComponents: when True create loft components, else create loft
       bodies
     Return: None

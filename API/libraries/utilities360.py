@@ -99,7 +99,7 @@ def find_faces_collection(ui, body, faceIndices):
     return faces
 
 
-def find_plane_anywhere(ui, hostComponent, planeName):
+def find_plane_anywhere(hostComponent, planeName):
     """Find (first) plane with planeName anywhere in hostComponent.
 
     The planeName can be of a custom plane, or the name of one of the three
@@ -273,26 +273,28 @@ def find_occurrences_anywhere(hostComponent, componentName):
     return occurrences
 
 
-def get_last_occurrence_anywhere(component, hostComponent=None):
-    """Get last occurrence of component anywhere.
+def get_occurrence_anywhere(component, hostComponent=None, index=0):
+    """Get occurrence of component anywhere.
 
-    If hostComponent is None then search anywhere in design hierarchy, else
-    only search anywhere in hostComponent.
+    If hostComponent is None then search from rootComponent anywhere in design
+    hierarchy, else only search anywhere in hostComponent.
 
-    The last occurrence is the newest occurrence or the only occurrence.
+    The last occurrence is the newest occurrence (with index = -1) or the only
+    occurrence (then it has index = 0). Default assume there is only one
+    occurrence, so use index = 0 or -1.
 
     Input:
     . component: component object
     . hostComponent: host component to search in for the component. If
       hostComponent is None, then search in the rootComponent.
     Return:
-    . lastOccurrence: last occurrence of component in design hierarchy
+    . occurrence: occurrence of component in design hierarchy
     """
     if hostComponent is None:
         hostComponent = get_root_component(component)
     componentOccurrences = find_occurrences_anywhere(hostComponent, component.name)
-    lastOccurrence = componentOccurrences[-1]
-    return lastOccurrence
+    occurrence = componentOccurrences[index]
+    return occurrence
 
 
 def find_component_anywhere(hostComponent, componentName):
@@ -364,7 +366,7 @@ def find_occurrences_collection_anywhere(ui, hostComponent, componentNames):
     occurrences = adsk.core.ObjectCollection.create()
     for componentName in componentNames:
         component = find_component_anywhere(hostComponent, componentName)
-        occurrence = get_last_occurrence_anywhere(component, hostComponent)
+        occurrence = get_occurrence_anywhere(component, hostComponent)
         if occurrence:
             occurrences.add(occurrence)
         else:
@@ -408,80 +410,6 @@ def get_feature_operation_enum(operation):
 
 ################################################################################
 # Create object
-
-def create_example_objects(component):
-    """Create some objects in Fusion360, like sketch, body, face, plane, mirror
-
-    Purpose is to show how these objects can be created and to get access to
-    their properties.
-
-    Based on code in Mirror Feature API Sample at:
-      https://help.autodesk.com/view/fusion360/ENU/?guid=GUID-81e2da74-eee7-11e4-86e4-f8b156d7cd97
-
-    Input:
-    . component: place the objects in component.
-    Return: objectsTuple with properties and items
-    . sketchTuple
-    . extrudeTuple
-    . planeTuple
-    . mirrorTuple
-    """
-    # Create sketch
-    sketches = component.sketches
-    sketch = sketches.add(component.xZConstructionPlane)
-    sketchLines = sketch.sketchCurves.sketchLines
-    startPoint = adsk.core.Point3D.create(0, 0, 0)
-    endPoint = adsk.core.Point3D.create(5, 5, 0)
-    sketchLines.addTwoPointRectangle(startPoint, endPoint)
-
-    # Get the profile defined by the rectangle.
-    profile = sketch.profiles.item(0)
-
-    # Create an extrusion input.
-    features = component.features
-    extrudeFeatures = features.extrudeFeatures
-    extrudeFeaturesInput = extrudeFeatures.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-
-    # Define that the extent is a distance extent of 5 cm.
-    distance = adsk.core.ValueInput.createByReal(5)
-    extrudeFeaturesInput.setDistanceExtent(False, distance)
-
-    # Create the extrusion.
-    extrudeResult = extrudeFeatures.add(extrudeFeaturesInput)
-
-    # Get the body created by extrusion
-    extrudeBody = extrudeResult.bodies.item(0)
-
-    # Get a face of the body
-    extrudeFace = extrudeBody.faces.item(0)
-
-    # Create a construction plane by offset
-    planes = component.constructionPlanes
-    planeInput = planes.createInput()
-    offsetDistance = adsk.core.ValueInput.createByString('5 cm')
-    planeInput.setByOffset(extrudeFace, offsetDistance)
-    planeResult = planes.add(planeInput)
-
-    # Create input entities for mirror feature
-    inputEntites = adsk.core.ObjectCollection.create()
-    inputEntites.add(extrudeBody)
-
-    # Create the input for mirror feature
-    mirrorFeatures = features.mirrorFeatures
-    mirrorInput = mirrorFeatures.createInput(inputEntites, planeResult)
-
-    # Create the mirror feature
-    mirrorResult = mirrorFeatures.add(mirrorInput)
-
-    # Return objects in tuples
-    sketchTuple = (sketch, profile)
-    extrudeTuple = (extrudeFeaturesInput, extrudeResult, extrudeBody, extrudeFace)
-    planeTuple = (planeInput, planeResult)
-    mirrorTuple = (mirrorInput, mirrorResult)
-
-    objectsTuple = (sketchTuple, extrudeTuple, planeTuple, mirrorTuple)
-    return objectsTuple
-
 
 def create_sketch_in_plane(hostComponent, sketchName, plane):
     """Create sketch in plane.
@@ -543,8 +471,10 @@ def create_component(hostComponent, componentName):
 
 def find_or_create_component(hostComponent, componentName):
     """Find component with componentName in hostComponent or else create
-       component with componentName in hostComponent. If componentName is
-       name of hostComponent then return hostComponent.
+       component with componentName in hostComponent.
+
+    If componentName is empty string or is name of hostComponent then return
+    hostComponent.
 
     Default put isLightBulbOn of new component occurrence on in
     create_component().
@@ -556,8 +486,15 @@ def find_or_create_component(hostComponent, componentName):
     . component object of the component with componentName in hostComponent,
       or the hostComponent itself if it has componentName.
     """
-    # Check whether hostComponent has componentName, or look for componentName
-    # in hostComponent
+    # If componentName is empty string or is hostComponent name, then return
+    # hostComponent as component
+    if not componentName:
+        return hostComponent
+
+    if hostComponent.name == componentName:
+        return hostComponent
+
+    # Look for componentName in hostComponent
     component = find_component_anywhere(hostComponent, componentName)
     if component is None:
         # Create new component in hostComponent
@@ -609,31 +546,31 @@ def copy_component_to_occurrence(component, targetOccurrence):
     return newCopyOccurrence
 
 
-def copy_body_to_occurrence(body, target):
-    """Copy body to target.
+def copy_body_to_occurrence(body, targetOccurrence):
+    """Copy body to targetOccurrence.
 
     Input:
     . body: BRepBody object to copy
-    . target: copy body to bodies in target, target can be either the root
-      component or an occurrence
+    . targetOccurrence: copy body to bodies in targetOccurrence, the
+      targetOccurrence can be either the root component or an occurrence.
     Return:
     . copiedBody: BRepBody object of copied body
     """
-    copiedBody = body.copyToComponent(target)
+    copiedBody = body.copyToComponent(targetOccurrence)
     return copiedBody
 
 
-def move_body_to_occurrence(body, target):
-    """Move body to target.
+def move_body_to_occurrence(body, targetOccurrence):
+    """Move body to targetOccurrence.
 
     Input:
     . body: BRepBody object to copy
-    . target: move body to bodies in target, target can be either the root
-      component or an occurrence
+    . targetOccurrence: move body to bodies in targetOccurrence, the
+      targetOccurrence can be either the root component or an occurrence.
     Return:
     . movedBody: BRepBody object of moved body
     """
-    movedBody = body.moveToComponent(target)
+    movedBody = body.moveToComponent(targetOccurrence)
     return movedBody
 
 
@@ -659,6 +596,7 @@ def remove_bodies_anywhere(ui, hostComponent, bodyNames):
             else:
                 interface360.error_text(ui, 'Remove body %s not found in %s' % (bodyName, hostComponent.name))
                 return False
+    return True
 
 
 ################################################################################

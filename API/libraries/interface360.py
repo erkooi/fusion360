@@ -19,6 +19,7 @@
 """
 
 import adsk.core
+import os.path
 
 
 def print_text(ui, message, verbosity=True):
@@ -42,7 +43,7 @@ def print_text(ui, message, verbosity=True):
 
 def error_text(ui, message):
     """Print error message in Text Commands window of the Fusion360 GUI."""
-    print_text(ui, message, verbosity=True)
+    print_text(ui, 'ERROR: ' + message, verbosity=True)
     return False
 
 
@@ -79,8 +80,8 @@ def get_csv_filename(ui, title):
     # Show file open dialog
     if dialog.showOpen() != adsk.core.DialogResults.DialogOK:
         return None
-    else:
-        return dialog.filename
+    filename = os.path.normpath(dialog.filename)
+    return filename
 
 
 def prompt_string(ui, title, prompt, string=''):
