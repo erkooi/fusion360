@@ -53,4 +53,37 @@ The csv_timeline360.py creates CSV files from F35B/f35b_points.txt for a F35B pl
 
 Additional timeline actions for the F35B-CSV assembly component are defined in f35b-pin-holes.txt and f35b-aileron.txt. First create F35B-pin-holes.csv and F35B-aileron.csv using csv_timeline360.py on the command line in a terminal. After that the AssemblyCSV Script in Fusion360 can be used to perform the additional timeline actions defined in F35B-pin-holes.csv and in F35B-aileron.csv.
 
+## 4 Directory (folder) tree of CSV files
+The CSV files are organised in two folder levels:
+* The CSV file for an assembly defines the assembly folder. The assembly folder can contain one or more assembly CSV files, that in series form a sequence of timeline actions together form the entire timeline for that assembly.
+* The CSV files for timeline actions that belong to the assembly and that belong together are grouped in group folders. The group folder can be the same folder as the assembly folder, or a sub folder within the assembly folder.
+
+For example:
+```
+    assembly folder/group folder a
+                    group folder b
+                    group folder ...
+                    assembly csv file 0
+                    assembly csv file 1
+                    assembly csv file ...
+```
+
+## 5 Hierarchy in Fusion360
+The assembly consist of an assemblyComponent and groupComponents. For an assembly the assemblyComponent is placed under the activeComponent. If the assemblyComponentName is not specified, then it defaults to the activeComponent.
+
+The assemblyComponent is used as hostComponent for the groupComponents. The results of a timeline action are placed in the groupComponent. If the groupComponent is used, then the groupComponentName is typically the same as the group folder name. If the groupComponentName is not specified, then the group result objects will be placed in the hostComponent.
+
+A groupComponent contains the result objects of one or more timeline actions that belong together. If a timeline action depends on other objects, then it looks anywhere in the assemblyComponent to find objects that it has to operate on. In this way it can also find objects that are placed in other groupComponents.
+
+## 6 Fusion360 objects
+
+### 6.1 Component and occurrence
+An occurrence is like an instance of a component. There can be one or more occurrences of a component. The place in design hierarchy of a new component also is its first occurrence. For the root component there is no occurrence, because there can only be one root component.
+* The root component can not be moved or copied.
+* For example in BRepBody.copyToComponent(target) the target can be either the root component or an occurrence. Therefore if component is the root component and the root component has componentName, then return the root component as occurrence.
+* Each component in the design, so anywhere in the root component, has a unique name. To avoid a duplicate name for a new component Fusion360 adds an (index) postfix to the name.
+* The CSV actions only create new components, therefore there is always only one occurrence of each component.
+
+### 6.2 Sketch, plane, body
+Sketches, planes and bodies have an unique name within a component, but can have the same name in different components.
 

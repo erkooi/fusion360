@@ -232,17 +232,6 @@ def find_occurrences_anywhere(hostComponent, componentName):
       - else return occurrences of hostComponent anywhere in rootComponent.
     . else return occurrences of componentName anywhere in hostComponent.
 
-    Component and occurrence:
-      An occurrence is like an instance of a component. There can be one or
-      more occurrences of a component. The place in design hierarchy of a new
-      component also is its first occurrence. For the root component there is
-      no occurrence, because there can only be one root component.
-      . The root component can not be moved or copied.
-      . For example in BRepBody.copyToComponent(target) the target can be
-        either the root component or an occurrence. Therefore if component is
-        the root component and the root component has componentName, then
-        return the root component as occurrence.
-
     Input:
     . hostComponent: host component to search in for the component.
     . componentName: occurrence name to search for
