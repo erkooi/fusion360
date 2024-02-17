@@ -85,5 +85,6 @@ An occurrence is like an instance of a component. There can be one or more occur
 * The CSV actions only create new components, therefore there is always only one occurrence of each component.
 
 ### 6.2 Sketch, plane, body
-Sketches, planes and bodies have an unique name within a component, but can have the same name in different components.
+Sketches, planes and bodies have an unique name within a component, but can have the same name in different components.Therefor is a component is copied or mirrored then there there will be duplicate sketch, plane and bodies names in a design.
+
 
