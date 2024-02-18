@@ -72,7 +72,9 @@ def run(context):
         mirrorInput, mirrorResult = mirrorTuple
         mirrorStitchToleranceModelParameter = mirrorResult.stitchTolerance
 
+        ########################################################################
         # Print some design and component info
+
         interface360.print_text(ui, 'application.version %s' % application.version)
         interface360.print_text(ui, '. application.pointTolerance = %e m = %f nm' %
                                 (application.pointTolerance / 100, application.pointTolerance * 10000000))
@@ -94,7 +96,7 @@ def run(context):
         interface360.print_text(ui, 'design has no name')
         interface360.print_text(ui, '. design.objectType %s' % design.objectType)
         interface360.print_text(ui, '. design.designType %d = %s modelling' % (design.designType, designType))
-        interface360.print_text(ui, '. design.allComponents.count %d' % design.allComponents.count)
+        interface360.print_text(ui, '. design.allComponents.count %d:' % design.allComponents.count)
 
         interface360.print_text(ui, 'rootComponent.name %s' % rootComponent.name)
         interface360.print_text(ui, '. rootComponent.objectType %s' % rootComponent.objectType)
@@ -105,6 +107,74 @@ def run(context):
         interface360.print_text(ui, '. activeComponent.objectType %s' % activeComponent.objectType)
         interface360.print_text(ui, '. activeComponent.revisionId %s' % activeComponent.revisionId)
         interface360.print_text(ui, '. activeComponent.allOccurrences.count %d' % activeComponent.allOccurrences.count)
+        interface360.print_text(ui, '')
+
+        ########################################################################
+        # List items in design
+
+        # Print all component names.
+        # . Component names are unique in the design.
+        # . The design of a component is known via component.parentDesign
+        # . A new empty component is made in the occurrences of a component via
+        #   component.occurrences.addNewComponent(transform), where transform
+        #   is an identy matrix3D.
+        # . A new copy of a component first has to go via the root component
+        #   using newOccurrence = rootComponent.occurrences.addNewComponentCopy
+        #   (component, transform). Then the newOccurrence can be moved to the
+        #   target component if necessary.
+        # . For copy new component Fusion360 adds a postfix ' (index)' to
+        #   original component name, to derive the default name for the new
+        #   component.
+        # . Sketches, bodies and planes in a component can be accessed via
+        #   component.sketches, .bRepBodies and .contructionPlanes.
+        interface360.print_text(ui, 'List of all component names in design.allComponents:')
+        for item in range(design.allComponents.count):
+            component = design.allComponents.item(item)
+            interface360.print_text(ui, '    %s' % component.name)
+        interface360.print_text(ui, '')
+
+        # Print all occurrence names
+        # . Occurrence names are unique in the design.
+        # . Occurrence is created using copy paste of the component or by
+        #   copy paste of an occurence of that component.
+        # . The component of an occurrence is known via occurrence.component
+        # . The new occurrence can be placed in any other component in the
+        #   design, provided that the destination component does not include
+        #   the occurrence, so no recursion (off course).
+        # . An occurrence can be moved to another component using
+        #   occurrence.moveToComponent()
+        # . For copy paste component Fusion360 increments the index in postfix
+        #   ':index' of the new occurrence.
+        # . The occurrence.bRepBodies gives access to the bodies in the
+        #   component.parentCOmponent of the occurrence.
+        # . An occurrence can not be modified, but it can be transformed using
+        #   occurrence.transform2 = matrix3D. The transform has to be a
+        #   translation or an rotation, so no scaling because that would result
+        #   in an modification.
+        # . An occurrence can have its own additional sketches and components,
+        #   but it seams only from the GUI, because there is no
+        #   occurrence.sketches. If a sketch from the original component is
+        #   modified via an occurrence in the GUI, then it affects the sketch
+        #   in the original component, to keep the sketch the same in all
+        #   occurrences of that component.
+        interface360.print_text(ui, 'List of all occurrence names in root component:')
+        for item in range(rootComponent.allOccurrences.count):
+            occurrence = rootComponent.allOccurrences.item(item)
+            interface360.print_text(ui, '    %s' % occurrence.name)
+        interface360.print_text(ui, '')
+
+        # Traverse design from root component for all occurrence names
+        resultString = 'Hierarchy of all occurrence names in the root component:\n'
+        resultString = samples360.traverseAssembly(rootComponent.occurrences.asList, 1, resultString)
+        interface360.print_text(ui, resultString)
+        interface360.print_text(ui, '')
+
+        # Print occurrences in root component
+        interface360.print_text(ui, 'List of the occurrence names in the root component:')
+        for item in range(rootComponent.occurrences.count):
+            occurrence = rootComponent.occurrences.item(item)
+            interface360.print_text(ui, '    %s' % occurrence.name)
+        interface360.print_text(ui, '')
 
     except Exception:
         if ui:
