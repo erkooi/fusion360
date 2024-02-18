@@ -55,39 +55,6 @@ Schema sections in point txt file:
   Create assembly CSV files to define assemblies
   - interfacefiles.write_assembly_csv_file()
 
-In CSV directory tree:
-  The CSV file for an assembly defines the assembly folder. The assembly
-  folder can contain one or more assembly CSV files, that in series form a
-  seuence of timeline actions together form the entire timeline for that
-  assembly.
-  The CSV files for timeline actions that belong to the assembly and that
-  belong together are grouped in group folders. The group folder can be the
-  same folder as the assembly folder, or a sub folder within the assembly
-  folder.
-  For example:
-    assembly folder/group folder a
-                    group folder b
-                    group folder ...
-                    assembly csv file 0
-                    assembly csv file 1
-                    assembly csv file ...
-                    
-In Fusion360 hierarchy:
-  The assembly consist of an assemblyComponent and groupComponents. For an
-  assembly the assemblyComponent is placed under the activeComponent. If the
-  assemblyComponentName is not specified, then it defaults to the
-  activeComponent.
-  The assemblyComponent is used as hostComponent for the groupComponents.
-  The results of a timeline action are placed in the groupComponent. If the
-  groupComponent is used, then the groupComponentName must be the same as the
-  group folder name. If the groupComponentName is not specified, then the
-  group result objects will be placed in the hostComponent.
-  A groupComponent contains the result objects of one or more timeline actions
-  that belong together. If a timeline action depends on other objects, then it
-  looks anywhere in the assemblyComponent to find objects that it has to
-  operate on. In this way it can also find objects that are placed in other
-  groupComponents.
-
 Usage of CSV files in Fusion360:
 1) Manually: Select active component in Fusion360 GUI and then use script from
    Utilities/Add-Ins/Scripts to generate the objects, either for all CSV files
