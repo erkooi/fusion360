@@ -115,10 +115,13 @@ def parse_csv_loft_file(ui, title, filename):
 def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewComponent=False):
     """Create loft from CSV file, in Fusion360
 
-    Dependent on the groupComponentName the loft will be put in the
+    Dependent on the groupComponentName the loft object will be put in the
     hostComponent or in the hostComponent/groupComponent.
     Dependent on loftNewComponent the loft will be put in the Bodies
     folder or in the Bodies folder of a new loft component.
+
+    The sketches for the profiles and rails are searched for anywhere in the
+    hostComponent.
 
     Input:
     . filename: full path and name of CSV file

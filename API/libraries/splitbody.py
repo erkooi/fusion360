@@ -31,11 +31,13 @@ Split body CSV file format:
 . remove_bodies
   - names of bodies to remove
 
-The splitting tool is a plane or a body.
-The bodyToSplit is kept, this is achieved by first copying the bodyToSplit and
-renaming it into the first split name. The other split results get the other
-split names. The number of split names must match the number of split results.
-Split results that are not needed can be removed.
+The split body and split tool are searched for anywhere in the host component.
+The split tool is a plane or a body.
+The split body is kept, this is achieved by first copying it to bodyToSplit and
+renaming it into the first splitted_bodies name. The other split results get
+the other splitted_bodies names. The number of splitted_bodies names must match
+the number of split results. Splitted bodies results that are not needed can be
+removed via remove_bodies.
 """
 
 import interfacefiles
