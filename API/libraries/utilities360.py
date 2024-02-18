@@ -24,38 +24,49 @@ import interface360
 
 
 ################################################################################
-# Find object
+# Get object based on component, indices, operation
 
-def find_sketch_anywhere(hostComponent, sketchName):
-    """Find (first) sketch with sketchName anywhere in hostComponent.
+def get_root_component(component):
+    """Get rootComponent of component in design hierarchy.
+
+    If the component itself is the root component, then also return the root
+    component.
 
     Input:
-    . hostComponent: component object to search through.
-    . sketchName: sketch name to search for
+    . component: component object
     Return:
-    . sketch: sketch object when found, else None
+    . rootComponent: root component in design hierarchy
     """
-    # First look in hostComponent sketches
-    sketches = hostComponent.sketches
-    for s in range(0, sketches.count):
-        sketch = sketches.item(s)
-        if sketch.name == sketchName:
-            return sketch  # Found sketch
-    # Then search further in all occurrences
-    occurrenceList = hostComponent.allOccurrences
-    for i in range(0, occurrenceList.count):
-        occurrence = occurrenceList.item(i)
-        sketches = occurrence.component.sketches
-        for s in range(0, sketches.count):
-            sketch = sketches.item(s)
-            if sketch.name == sketchName:
-                return sketch  # Found sketch
-    # Sketch not found
-    return None
+    rootComponent = component.parentDesign.rootComponent
+    return rootComponent
 
 
-def find_profiles_collection(ui, sketch, profileIndices):
-    """Find collection profiles with profileIndices in sketch
+def get_occurrence_anywhere(component, hostComponent=None, index=0):
+    """Get occurrence of component anywhere.
+
+    If hostComponent is None then search from rootComponent anywhere in design
+    hierarchy, else only search anywhere in hostComponent.
+
+    The last occurrence is the newest occurrence (with index = -1) or the only
+    occurrence (then it has index = 0). Default assume there is only one
+    occurrence, so use index = 0 or -1.
+
+    Input:
+    . component: component object
+    . hostComponent: host component to search in for the component. If
+      hostComponent is None, then search in the rootComponent.
+    Return:
+    . occurrence: occurrence of component in design hierarchy
+    """
+    if hostComponent is None:
+        hostComponent = get_root_component(component)
+    componentOccurrences = find_occurrences_anywhere(hostComponent, component.name)
+    occurrence = componentOccurrences[index]
+    return occurrence
+
+
+def get_sketch_profiles_collection(ui, sketch, profileIndices):
+    """Get objectCollection of sketch profiles with profileIndices in sketch
 
     Input:
     . sketch: sketch object
@@ -77,8 +88,8 @@ def find_profiles_collection(ui, sketch, profileIndices):
     return profiles
 
 
-def find_faces_collection(ui, body, faceIndices):
-    """Find collection faces with faceIndices in body
+def get_body_faces_collection(ui, body, faceIndices):
+    """Get objectCollection of body faces with faceIndices in body
 
     Input:
     . body: body object
@@ -97,6 +108,58 @@ def find_faces_collection(ui, body, faceIndices):
             interface360.error_text(ui, 'Body %s has no face index %d' % (body.name, faceIndex))
             return None
     return faces
+
+
+def get_feature_operation_enum(operation):
+    """Get adsk enum value for feature operation name.
+
+    Input:
+    . operation: feature operation name
+    Return:
+    . adsk enum for operation name else None when operation name is unknown
+    """
+    if operation == 'join':
+        return adsk.fusion.FeatureOperations.JoinFeatureOperation
+    if operation == 'cut':
+        return adsk.fusion.FeatureOperations.CutFeatureOperation
+    if operation == 'intersect':
+        return adsk.fusion.FeatureOperations.IntersectFeatureOperation
+    if operation == 'new_body':
+        return adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+    if operation == 'new_component':
+        return adsk.fusion.FeatureOperations.NewComponentFeatureOperation
+    return None
+
+
+################################################################################
+# Find object based on object name
+
+def find_sketch_anywhere(hostComponent, sketchName):
+    """Find (first) sketch with sketchName anywhere in hostComponent.
+
+    Input:
+    . hostComponent: component object to search through.
+    . sketchName: sketch name to search for
+    Return:
+    . sketch: sketch object when found, else None
+    """
+    # First look in hostComponent sketches
+    sketches = hostComponent.sketches
+    for s in range(0, sketches.count):
+        sketch = sketches.item(s)
+        if sketch.name == sketchName:
+            return sketch  # Found sketch
+    # Then search further in the components of all occurrences
+    occurrenceList = hostComponent.allOccurrences
+    for i in range(0, occurrenceList.count):
+        occurrence = occurrenceList.item(i)
+        sketches = occurrence.component.sketches
+        for s in range(0, sketches.count):
+            sketch = sketches.item(s)
+            if sketch.name == sketchName:
+                return sketch  # Found sketch
+    # Sketch not found
+    return None
 
 
 def find_plane_anywhere(hostComponent, planeName):
@@ -146,7 +209,8 @@ def find_plane_anywhere(hostComponent, planeName):
         if plane.name == planeName:
             return plane  # Found plane
 
-    # Then search further in constructionPlanes of all occurrences
+    # Then search further in constructionPlanes in the components of all
+    # occurrences
     occurrenceList = hostComponent.allOccurrences
     for i in range(0, occurrenceList.count):
         occurrence = occurrenceList.item(i)
@@ -157,18 +221,6 @@ def find_plane_anywhere(hostComponent, planeName):
                 return plane  # Found plane
     # Plane not found
     return None
-
-
-def find_body(hostComponent, bodyName):
-    """Find body with bodyName in this hostComponent.
-
-    Input:
-    . hostComponent: component object to search through.
-    . bodyName: body name to look for
-    Return:
-    . body: body object when found, else None
-    """
-    return hostComponent.bRepBodies.itemByName(bodyName)
 
 
 def find_body_anywhere(hostComponent, bodyName):
@@ -182,10 +234,10 @@ def find_body_anywhere(hostComponent, bodyName):
     . body: body object when found, else None
     """
     # First look in hostComponent bodies
-    body = find_body(hostComponent, bodyName)
+    body = hostComponent.bRepBodies.itemByName(bodyName)
     if body:
         return body
-    # Then search further in all occurrences
+    # Then search further in the components of all occurrences
     occurrenceList = hostComponent.allOccurrences
     for i in range(0, occurrenceList.count):
         occurrence = occurrenceList.item(i)
@@ -199,7 +251,7 @@ def find_body_anywhere(hostComponent, bodyName):
 
 
 def find_bodies_collection_anywhere(ui, hostComponent, bodyNames):
-    """Find collection of bodies that match the bodyNames, anywhere in
+    """Find objectCollection of bodies with bodyNames, anywhere in
     hostComponent.
 
     Input:
@@ -224,11 +276,11 @@ def find_bodies_collection_anywhere(ui, hostComponent, bodyNames):
 
 
 def find_occurrences_anywhere(hostComponent, componentName):
-    """Find occurrence(s) with componentName anywhere in hostComponent.
+    """Find list of occurrence(s) with componentName anywhere in hostComponent.
 
     . If the hostComponent itself has componentName, then
       - if hostComponent is the rootComponent return the rootComponent as
-         single occurrence
+        single occurrence
       - else return occurrences of hostComponent anywhere in rootComponent.
     . else return occurrences of componentName anywhere in hostComponent.
 
@@ -251,8 +303,9 @@ def find_occurrences_anywhere(hostComponent, componentName):
     else:
         searchComponent = hostComponent
 
-    # If hostComponent has componentName, then search in rootComponent for
-    # occurrences of the componentName, else search in hostComponent
+    # If hostComponent has componentName, then search in rootComponent (=
+    # searchComponent) for occurrences of the componentName, else search in
+    # hostComponent (= searchComponent).
     occurrenceList = searchComponent.allOccurrences
     for i in range(0, occurrenceList.count):
         occurrence = occurrenceList.item(i)
@@ -260,30 +313,6 @@ def find_occurrences_anywhere(hostComponent, componentName):
             # Found occurrence with componentName
             occurrences.append(occurrence)
     return occurrences
-
-
-def get_occurrence_anywhere(component, hostComponent=None, index=0):
-    """Get occurrence of component anywhere.
-
-    If hostComponent is None then search from rootComponent anywhere in design
-    hierarchy, else only search anywhere in hostComponent.
-
-    The last occurrence is the newest occurrence (with index = -1) or the only
-    occurrence (then it has index = 0). Default assume there is only one
-    occurrence, so use index = 0 or -1.
-
-    Input:
-    . component: component object
-    . hostComponent: host component to search in for the component. If
-      hostComponent is None, then search in the rootComponent.
-    Return:
-    . occurrence: occurrence of component in design hierarchy
-    """
-    if hostComponent is None:
-        hostComponent = get_root_component(component)
-    componentOccurrences = find_occurrences_anywhere(hostComponent, component.name)
-    occurrence = componentOccurrences[index]
-    return occurrence
 
 
 def find_component_anywhere(hostComponent, componentName):
@@ -299,7 +328,7 @@ def find_component_anywhere(hostComponent, componentName):
     Return:
     . None if the component with componentName is not found, else
       component object of the component with componentName in hostComponent,
-      or the hostComponent itself if it has componentName.
+      or the hostComponent itself, if it has componentName.
     """
     # Look for componentName in hostComponent
     occurrences = find_occurrences_anywhere(hostComponent, componentName)
@@ -314,7 +343,7 @@ def find_component_anywhere(hostComponent, componentName):
 
 
 def find_components_collection_anywhere(ui, hostComponent, componentNames):
-    """Find collection of components that match the componentNames, anywhere in
+    """Find objectCollection of components with componentNames, anywhere in
     hostComponent.
 
     Input:
@@ -339,7 +368,7 @@ def find_components_collection_anywhere(ui, hostComponent, componentNames):
 
 
 def find_occurrences_collection_anywhere(ui, hostComponent, componentNames):
-    """Find collection of occurrences that match the componentNames, anywhere
+    """Find objectCollection of occurrences with componentNames, anywhere
     in hostComponent.
 
     Input:
@@ -362,39 +391,6 @@ def find_occurrences_collection_anywhere(ui, hostComponent, componentNames):
             interface360.error_text(ui, 'Occurrence %s not found in component %s' % (componentName, hostComponent.name))
             result = False
     return (result, occurrences)
-
-
-def get_root_component(component):
-    """Get rootComponent of component in design hierarchy
-
-    Input:
-    . component: component object
-    Return:
-    . rootComponent: root component in design hierarchy
-    """
-    rootComponent = component.parentDesign.rootComponent
-    return rootComponent
-
-
-def get_feature_operation_enum(operation):
-    """Get adsk enum value for feature operation name.
-
-    Input:
-    . operation: feature operation name
-    Return:
-    . adsk enum for operation name else None when operation name is unknown
-    """
-    if operation == 'join':
-        return adsk.fusion.FeatureOperations.JoinFeatureOperation
-    if operation == 'cut':
-        return adsk.fusion.FeatureOperations.CutFeatureOperation
-    if operation == 'intersect':
-        return adsk.fusion.FeatureOperations.IntersectFeatureOperation
-    if operation == 'new_body':
-        return adsk.fusion.FeatureOperations.NewBodyFeatureOperation
-    if operation == 'new_component':
-        return adsk.fusion.FeatureOperations.NewComponentFeatureOperation
-    return None
 
 
 ################################################################################
@@ -495,8 +491,8 @@ def find_or_create_component(hostComponent, componentName):
 ################################################################################
 # Copy, move object in design hierarchy
 
-def move_occurrence_to_occurrence(occurrence, targetOccurrence):
-    """Move occurrence to targetOccurrence.
+def move_occurrence_into_occurrence(occurrence, targetOccurrence):
+    """Move occurrence into targetOccurrence.
 
     Moves this occurrence from it's current component into the component owned
     by the targetOccurrence.
@@ -511,7 +507,7 @@ def move_occurrence_to_occurrence(occurrence, targetOccurrence):
     return movedOccurrence
 
 
-def copy_component_to_occurrence(component, targetOccurrence):
+def copy_component_as_new_into_occurrence(component, targetOccurrence):
     """Copy component as new to targetOccurrence.
 
     First copy in rootComponent, because RuntimeError for addNewComponentCopy
@@ -531,7 +527,7 @@ def copy_component_to_occurrence(component, targetOccurrence):
     newCopyOccurrence = rootComponent.occurrences.addNewComponentCopy(component, transform)
     # Then move occurrence of new component to targetOccurrence
     if targetOccurrence != rootComponent:
-        newCopyOccurrence = move_occurrence_to_occurrence(newCopyOccurrence, targetOccurrence)
+        newCopyOccurrence = move_occurrence_into_occurrence(newCopyOccurrence, targetOccurrence)
     return newCopyOccurrence
 
 
@@ -602,7 +598,7 @@ def transform_occurrence(ui, occurrence, transformTuple):
       intermediate transforms are not captured.
     c)The rootComponent.transformOccurrences() is for faster transform of list
       of occurrences in a design.
-    Mechanisms b) and c ) appear equivalent.
+    Mechanisms b) and c) appear equivalent.
 
     TODO: Using design.snapshots.add() does capture the position in timeline,
           but next transform still does not continue from there.

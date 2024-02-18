@@ -164,7 +164,7 @@ def combine_bodies_into_new_component(groupComponent, targetBody, toolBodies, op
     # Move new occurrence to groupOccurrence. The groupComponent is anywhere in
     # rootComponent.
     groupOccurrence = utilities360.get_occurrence_anywhere(groupComponent)
-    utilities360.move_occurrence_to_occurrence(combineOccurrence, groupOccurrence)
+    utilities360.move_occurrence_into_occurrence(combineOccurrence, groupOccurrence)
 
 
 def combine_bodies_into_new_body(groupComponent, targetBody, toolBodies, operation, combineResultName):
