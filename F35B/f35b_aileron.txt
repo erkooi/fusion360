@@ -180,6 +180,7 @@ profiles
 
 # Gap end between wing and aileron
 extrude, csv/F35B-CSV/aileron, gap_aileron_end, aileron
+search_component, host
 profile, y_490_aileron_end, 0
 offset, 0
 taper_angle, 0
@@ -228,6 +229,7 @@ circle
 
 # Extrude axle
 extrude, csv/F35B-CSV/aileron, aileron_axle, aileron
+search_component, host
 profile, y_0_aileron_axle, 0
 offset, -$axleOffset
 taper_angle, 0
@@ -269,6 +271,7 @@ circle
 
 # Extrude hinge
 extrude, csv/F35B-CSV/aileron, hinge, aileron
+search_component, host
 profile, y_0_hinge, 0  # 0 = hinge, 1 = axle circle
 offset, 0
 taper_angle, 0
@@ -313,6 +316,7 @@ line
 
 # Extrude hinge_space
 extrude, csv/F35B-CSV/aileron, hinge_space, aileron
+search_component, host
 profile, y_0_hinge_space, 0
 offset, 0
 taper_angle, 0

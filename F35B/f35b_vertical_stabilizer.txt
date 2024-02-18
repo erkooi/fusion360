@@ -129,6 +129,7 @@ operation, translate, $xBaseFront, -$yBase, $zBase
 
 # Extrude pedestal from fin to fuselage
 extrude, csv/F35B-CSV/vertical_stabilizer, extrude_fin_pedestal, vertical_stabilizer
+search_component, host
 face, loft_fin, 1
 offset, 0
 taper_angle, 20
