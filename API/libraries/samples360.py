@@ -27,7 +27,7 @@ def create_example_objects(component):
     Purpose is to show how these objects can be created and to get access to
     their properties.
 
-    Based on code in Mirror Feature API Sample at:
+    Based on code in 'Mirror Feature API Sample' at:
       https://help.autodesk.com/view/fusion360/ENU/?guid=GUID-81e2da74-eee7-11e4-86e4-f8b156d7cd97
 
     Input:
@@ -93,3 +93,28 @@ def create_example_objects(component):
 
     objectsTuple = (sketchTuple, extrudeTuple, planeTuple, mirrorTuple)
     return objectsTuple
+
+
+def traverseAssembly(occurrences, currentLevel, inputString):
+    """Assembly traversal using recursion to print names of all occurrences.
+
+    Recursive function that traverses the entire hierarchy of the currently
+    open assembly to find and print all occurrences.
+
+    Based on code in 'Assembly traversal using recursion API Sample' at:
+        https://help.autodesk.com/view/fusion360/ENU/?guid=GUID-5a4fa3a6-fa21-11e4-b610-f8b156d7cd97
+
+    Input:
+    . occurrences: start with rootComp.occurrences.asList
+    . currentLevel: start at currentLevel = 1
+    . inputString: input string with found occurrences till currentLevel
+    Return:
+    . inputString: updated string with found occurrences till currentLevel
+    """
+    indent = ' ' * 4
+    for i in range(0, occurrences.count):
+        occ = occurrences.item(i)
+        inputString += indent * currentLevel + occ.name + '\n'
+        if occ.childOccurrences:
+            inputString = traverseAssembly(occ.childOccurrences, currentLevel + 1, inputString)
+    return inputString
