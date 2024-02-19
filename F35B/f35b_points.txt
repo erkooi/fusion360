@@ -2139,10 +2139,17 @@ spline, cross_rails, bottom
 -123.0,-30.0, 180
 -138.0,-28.4
 -154.0,-14.5, 122
--170.64,19.8, 113
+-170.64,19.7, 113
 line
    0.0, 95.8
    0.0,-70.6
+# Use short vertical line of 0.1 mm, to guide loft handle towards the profile
+# corner, because it is not possible to place the loft input handles via the
+# API, see:
+# https://forums.autodesk.com/t5/fusion-api-and-scripts/is-it-possible-control-loft-inputs-via-api/m-p/12539561/thread-id/20820/highlight/false#M20836
+line
+-170.64,19.8
+-170.64,19.7
 
 sketch, csv/F35B-CSV/sketches_cut_fuselage_x, x_1230_cut_fuselage_exhaust, sketches_cut_fuselage_x
 offset_plane, x, 1230
@@ -4120,5 +4127,4 @@ assembly, csv/F35B-CSV, F35B-points, F35B-CSV
 
 echo, --------------------------------------------------------------------------
 echo, Created F35B-CSV fuselage and wing !
-echo, Do not forget to correct loft handle for loft_solid_fuselage_outlet !!!
 echo, --------------------------------------------------------------------------
