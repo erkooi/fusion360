@@ -151,7 +151,7 @@ def mirror_from_csv_file(ui, title, filename, hostComponent):
 
     # Find mirror plane in hostComponent Construction folder or in any sub
     # component
-    mirrorPlane = utilities360.find_plane_anywhere(hostComponent, planeName)
+    mirrorPlane = utilities360.find_plane_anywhere(ui, hostComponent, planeName)
     if not mirrorPlane:
         interface360.error_text(ui, 'Mirror plane %s not found in %s' % (mirrorPlane, hostComponent.name))
         return False
@@ -252,8 +252,8 @@ def mirror_bodies(ui, hostComponent, operation, mirrorPlane, mirrorObjects, mirr
     if operation == 'join':
         copyBodies = adsk.core.ObjectCollection.create()
         for body in mirrorObjects:
-            # The body is anywhere in hostComponent.
-            parentOccurrence = utilities360.get_occurrence_anywhere(body.parentComponent, hostComponent)
+            # The body.parentComponent is unique in rootComponent.
+            parentOccurrence = utilities360.get_occurrence_anywhere(body.parentComponent)
             copyBody = utilities360.copy_body_to_occurrence(body, parentOccurrence)
             copyBodies.add(copyBody)
         mirrorObjects = copyBodies

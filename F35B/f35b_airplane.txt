@@ -20,14 +20,14 @@
 # complete with wings and fins.
 
 # Join fin and pedestal with fuselage
-combine, csv/F35B-CSV/airplane, shell_plane_all, F35B-CSV
+combine, csv/F35B-CSV/airplane, shell_plane_all
 operation, join
 combine_bodies
   shell_plane_with_pedestal
-  loft_fin  
+  loft_fin
   loft_solid_wing
 
-mirror, csv/F35B-CSV/airplane, mirror_plane_all, F35B-CSV
+mirror, csv/F35B-CSV/airplane, mirror_plane_all
 operation, join
 mirror_plane, xZConstructionPlane
 mirror_objects

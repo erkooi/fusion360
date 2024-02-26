@@ -29,13 +29,16 @@ Combine bodies CSV file format:
 . remove_bodies
   - names of bodies to remove
 
-The tool_bodies are kept.
-The target_body is kept. This is default when the combined object is a new
-component, else this is achieved by first copying the target body to the
-combine body if the object is a new body.
-The new body gets the combine name. If the object is a new component, then the
-new component also gets the combine name.
+  targetBodyName:
+  . The target_body is kept. This is default when the combined object is a new
+    component, else this is achieved by first copying the target body to the
+    combine body if the object is a new body.
 
+  toolBodyNames:
+  . The tool_bodies are kept.
+
+  The new body gets the combine name. If the object is a new component, then
+  the new component also gets the combine name.
 """
 
 import interfacefiles
@@ -59,6 +62,7 @@ def parse_csv_combine_bodies_file(ui, title, filename):
       - operation: 'join', 'cut', or 'intersect'
       - targetBodyName: target body name
       - toolBodyNames: list of tool body names
+      - removeBodiesNames: optional list of body names to remove
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
@@ -76,9 +80,9 @@ def parse_csv_combine_bodies_file(ui, title, filename):
     readToolBodies = False
     readRemoveBodies = False
     for li, lineArr in enumerate(lineLists):
-        lineWord0 = lineArr[0]
+        lineWord = lineArr[0]
         if li == 0:
-            if lineWord0 != 'combine':
+            if lineWord != 'combine':
                 return resultFalse
             combineResultName = lineArr[1]
             groupComponentName = ''
@@ -86,8 +90,8 @@ def parse_csv_combine_bodies_file(ui, title, filename):
                 groupComponentName = lineArr[2]
         elif li == 1:
             # Read combine operation
-            if lineWord0 != 'operation':
-                ui.messageBox('Expected combine operation instead of %s in %s' % (lineWord0, filename), title)
+            if lineWord != 'operation':
+                ui.messageBox('Expected combine operation instead of %s in %s' % (lineWord, filename), title)
                 return resultFalse
             operation = lineArr[1]
             if operation not in interfacefiles.validCombineOperations:
@@ -97,23 +101,23 @@ def parse_csv_combine_bodies_file(ui, title, filename):
             # Read lists for:
             # . combine_bodies
             # . remove_bodies
-            if lineWord0 == 'combine_bodies':
+            if lineWord == 'combine_bodies':
                 readTargetBody = True
                 readToolBodies = False
                 readRemoveBodies = False
-            elif lineWord0 == 'remove_bodies':
+            elif lineWord == 'remove_bodies':
                 readTargetBody = False
                 readToolBodies = False
                 readRemoveBodies = True
             else:
                 if readTargetBody:
-                    targetBodyName = lineWord0
+                    targetBodyName = lineWord
                     readTargetBody = False
                     readToolBodies = True
                 elif readToolBodies:
-                    toolBodyNames.append(lineWord0)
+                    toolBodyNames.append(lineWord)
                 elif readRemoveBodies:
-                    removeBodiesNames.append(lineWord0)
+                    removeBodiesNames.append(lineWord)
 
     if targetBodyName == '' or len(toolBodyNames) == 0:
         ui.messageBox('Not enough bodies in %s' % filename, title)
@@ -219,13 +223,13 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     result, combineBodiesTuple = parse_csv_combine_bodies_file(ui, title, filename)
     if not result:
         return False
-    combineResultName, groupComponentName, operation, targetBodyName, \
-        toolBodyNames, removeBodiesNames = combineBodiesTuple
+    combineResultName, groupComponentName, operation, \
+        targetBodyName, toolBodyNames, removeBodiesNames = combineBodiesTuple
 
     # Find target body object and tool body objects anywhere in hostComponent
-    targetBody = utilities360.find_body_anywhere(hostComponent, targetBodyName)
+    targetBody = utilities360.find_body_anywhere(ui, hostComponent, targetBodyName)
     if not targetBody:
-        interface360.error_text(ui, 'Target body %s not found in host component %s' %
+        interface360.error_text(ui, 'Target body not found in path of body name %s and not in %s' %
                                 (targetBodyName, hostComponent.name))
         return False
 

@@ -134,55 +134,175 @@ def get_feature_operation_enum(operation):
 ################################################################################
 # Find object based on object name
 
-def find_sketch_anywhere(hostComponent, sketchName):
-    """Find (first) sketch with sketchName anywhere in hostComponent.
+def extract_name_parts(objectName):
+    """Extract the hierarchical parts from objectName.
+
+    - The objectName can contain a components hierarchy, or a components
+      hierarchy with a local object name or only a local object name
+    - Use '/' as hierarchy separator.
+
+    For example:
+    . /a/b/c -> ['a', 'b', 'c']
+    . a/b/c -> ['a', 'b', 'c']
+    . c -> ['c']
+    . '' -> []
 
     Input:
-    . hostComponent: component object to search through.
-    . sketchName: sketch name to search for
+    . objectName: hierarchical name for a component or local object
+    Return:
+    . objectNameParts: list of name parts in objectName
+    """
+    objectNameParts = objectName.split('/')
+    while '' in objectNameParts:
+        # remove any empty string parts, that arise due to preceding, trailing
+        # and double separatore in objectName string
+        objectNameParts.remove('')
+    return objectNameParts
+
+
+def extract_last_part(objectName):
+    """Extract last name part from objectName.
+
+    - The objectName can contain a components hierarchy, or a components
+      hierarchy with a local object name or only a local object name
+    - Use '/' as hierarchy separator.
+
+    For example:
+    . /a/b/c -> c
+    . a/b/c -> c
+    . c -> c
+    . '' -> None
+
+    Input:
+    . objectName: hierarchical name for an object.
+    Return:
+    . last name part in objectName, or None
+    """
+    objectNameParts = extract_name_parts(objectName)
+    if len(objectNameParts) > 0:
+        return objectNameParts[-1]
+    else:
+        return None
+
+
+def find_search_component(ui, hostComponent, objectType, objectName):
+    """Find search component for object with objectName
+
+    If an optional specific object search component name is given in
+    objectName, then use the search component with that name as
+    searchComponent, else default use the hostComponent as searchComponent.
+
+    Input:
+    . hostComponent: default component object to search through
+    . objectType: object type is 'component' or a local object from
+      interfacefiles.validLocalObjectTypes.
+    . objectName: object name to search for, with optional specific object
+      search component name, separated by a slash
+    Return:
+    . searchComponent: search component when found, else None
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    verbosity = False
+
+    # Default assume object with objectName is anywhere in hostComponent
+    searchComponent = hostComponent
+
+    # Check whether the objectName also specifies the search component of the
+    # object
+    searchComponentName = ''
+    componentNameParts = extract_name_parts(objectName)
+
+    # For objectType is 'component' objectName contains hierarchy of component
+    # names, else for local objects in interfacefile.validLocalObjectTypes the
+    # objectName contains hierarchy of component names and the local object
+    # name.
+    if objectType != 'component':
+        # remove local object name from component names list
+        componentNameParts.pop()
+    interface360.print_text(ui, 'componentNameParts = ' + str(componentNameParts), verbosity)
+
+    if len(componentNameParts) > 0:
+        # Search for the component with searchComponentName anywhere in the
+        # rootComponent. Searching from the rootComponent is suitable, because
+        # component names are unique in the entire design.
+        rootComponent = get_root_component(hostComponent)
+        searchComponentName = componentNameParts[-1]
+        searchComponent = find_component_anywhere(rootComponent, searchComponentName)
+        if not searchComponent:
+            # Specified search component of object not found
+            return None
+    interface360.print_text(ui, 'searchComponent.name = ' + searchComponent.name, verbosity)
+
+    # Found the searchComponent
+    return searchComponent
+
+
+def find_sketch_anywhere(ui, hostComponent, sketchName):
+    """Find (first) sketch with sketchName anywhere in hostComponent, or in the
+    sketch search component name specified in sketchName.
+
+    Input:
+    . hostComponent: default component object to search through.
+    . sketchName: sketch name to search for, with optional specific sketch
+      search component name, separated by a slash
     Return:
     . sketch: sketch object when found, else None
+
+    Uses ui to report faults via Fusion360 GUI.
     """
-    # First look in hostComponent sketches
-    sketches = hostComponent.sketches
-    for s in range(0, sketches.count):
-        sketch = sketches.item(s)
-        if sketch.name == sketchName:
-            return sketch  # Found sketch
+    # Find search component for sketch with sketchName
+    searchComponent = find_search_component(ui, hostComponent, 'sketch', sketchName)
+    if not searchComponent:
+        # specified search component of sketch with sketchName not found
+        return None
+
+    # Extract name of the sketch
+    sketchNamePart = extract_last_part(sketchName)
+
+    # First look in searchComponent sketches
+    sketches = searchComponent.sketches
+    sketch = sketches.itemByName(sketchNamePart)
+    if sketch:
+        return sketch  # Found sketch
+
     # Then search further in the components of all occurrences
-    occurrenceList = hostComponent.allOccurrences
-    for i in range(0, occurrenceList.count):
-        occurrence = occurrenceList.item(i)
+    occurrencesList = searchComponent.allOccurrences
+    for i in range(0, occurrencesList.count):
+        occurrence = occurrencesList.item(i)
         sketches = occurrence.component.sketches
-        for s in range(0, sketches.count):
-            sketch = sketches.item(s)
-            if sketch.name == sketchName:
-                return sketch  # Found sketch
+        sketch = sketches.itemByName(sketchNamePart)
+        if sketch:
+            return sketch  # Found sketch
     # Sketch not found
     return None
 
 
-def find_plane_anywhere(hostComponent, planeName):
-    """Find (first) plane with planeName anywhere in hostComponent.
+def find_plane_anywhere(ui, hostComponent, planeName):
+    """Find (first) plane with planeName anywhere in hostComponent, or in the
+    plane search component name specified in planeName.
 
-    The planeName can be of a custom plane, or the name of one of the three
-    construction planes through the origin of the rootComponent:
-
-    . rootXyConstructionPlane
-    . rootXzConstructionPlane
-    . rootYzConstructionPlane
-
-    or an origin plane through the origin of the hostComponent:
-
-    . xYConstructionPlane
-    . xZConstructionPlane
-    . yZConstructionPlane
+    The planeName can be the name of:
+    . a custom plane
+    . one of the three construction planes through the origin of the
+      rootComponent:
+      - rootXyConstructionPlane
+      - rootXzConstructionPlane
+      - rootYzConstructionPlane
+    . one of the three construction planes through the origin of the
+      hostComponent:
+      - xYConstructionPlane
+      - xZConstructionPlane
+      - yZConstructionPlane
 
     Input:
-    . hostComponent: component object to search through.
-    . planeName: plane name to search for
+    . hostComponent: defaut component object to search through.
+    . planeName: plane name to search for, with optional specific plane
+      search component name, separated by a slash
     Return:
     . plane: plane object when found, else None
+
+    Uses ui to report faults via Fusion360 GUI.
     """
     # First check whether planeName is an origin construction plane in the
     # rootComponent, return if found plane
@@ -202,61 +322,81 @@ def find_plane_anywhere(hostComponent, planeName):
     if planeName == 'yZConstructionPlane':
         return hostComponent.yZConstructionPlane
 
-    # Then look in hostComponent constructionPlanes
-    constructionPlanes = hostComponent.constructionPlanes
-    for s in range(0, constructionPlanes.count):
-        plane = constructionPlanes.item(s)
-        if plane.name == planeName:
-            return plane  # Found plane
+    # Find search component for plane with planeName
+    searchComponent = find_search_component(ui, hostComponent, 'plane', planeName)
+    if not searchComponent:
+        # specified search component of plane with planeName not found
+        return None
+
+    # Extract name of the plane
+    planeNamePart = extract_last_part(planeName)
+
+    # First look in searchComponent constructionPlanes
+    constructionPlanes = searchComponent.constructionPlanes
+    plane = constructionPlanes.itemByName(planeNamePart)
+    if plane:
+        return plane  # Found plane
 
     # Then search further in constructionPlanes in the components of all
     # occurrences
-    occurrenceList = hostComponent.allOccurrences
-    for i in range(0, occurrenceList.count):
-        occurrence = occurrenceList.item(i)
+    occurrencesList = searchComponent.allOccurrences
+    for i in range(0, occurrencesList.count):
+        occurrence = occurrencesList.item(i)
         constructionPlanes = occurrence.component.constructionPlanes
-        for s in range(0, constructionPlanes.count):
-            plane = constructionPlanes.item(s)
-            if plane.name == planeName:
-                return plane  # Found plane
+        plane = constructionPlanes.itemByName(planeNamePart)
+        if plane:
+            return plane  # Found plane
     # Plane not found
     return None
 
 
-def find_body_anywhere(hostComponent, bodyName):
-    """Find (first) body with bodyName anywhere in hostComponent.
+def find_body_anywhere(ui, hostComponent, bodyName):
+    """Find (first) body with bodyName anywhere in hostComponent, or in the
+    body search component name specified in bodyName.
 
     Input:
-    . hostComponent: component object to search through, first look in bodies,
-      then search in all occurrences.
-    . bodyName: body name to search for
+    . hostComponent: default component object to search through
+    . bodyName: body name to search for, with optional specific body search
+      component name, separated by a slash
     Return:
     . body: body object when found, else None
+
+    Uses ui to report faults via Fusion360 GUI.
     """
-    # First look in hostComponent bodies
-    body = hostComponent.bRepBodies.itemByName(bodyName)
+    # Find search component for body with bodyName
+    searchComponent = find_search_component(ui, hostComponent, 'body', bodyName)
+    if not searchComponent:
+        # specified search component of body with bodyName not found
+        return None
+
+    # Extract name of the body
+    bodyNamePart = extract_last_part(bodyName)
+
+    # First look in searchComponent bodies
+    body = searchComponent.bRepBodies.itemByName(bodyNamePart)
     if body:
         return body
-    # Then search further in the components of all occurrences
-    occurrenceList = hostComponent.allOccurrences
-    for i in range(0, occurrenceList.count):
-        occurrence = occurrenceList.item(i)
-        bRepBodies = occurrence.component.bRepBodies
-        for s in range(0, bRepBodies.count):
-            body = bRepBodies.item(s)
-            if body.name == bodyName:
-                return body  # Found body
+
+    # Then search further in the component bRepBodies of all occurrences in the
+    # searchComponent
+    occurrencesList = searchComponent.allOccurrences
+    for i in range(0, occurrencesList.count):
+        occurrence = occurrencesList.item(i)
+        body = occurrence.component.bRepBodies.itemByName(bodyNamePart)
+        if body:
+            return body  # Found body
     # Body not found
     return None
 
 
 def find_bodies_collection_anywhere(ui, hostComponent, bodyNames):
     """Find objectCollection of bodies with bodyNames, anywhere in
-    hostComponent.
+    hostComponent, or in the component specified per bodyName in bodyNames.
 
     Input:
     . hostComponent: host component to search in for the bodies.
-    . bodyNames: body names to look for
+    . bodyNames: body names to look for, with optional specific search
+      component name per bodyName in bodyNames
     Return:
     . result: True when all bodyNames were found, else False
     . bodies: ObjectCollection with found bodies
@@ -266,11 +406,12 @@ def find_bodies_collection_anywhere(ui, hostComponent, bodyNames):
     result = True
     bodies = adsk.core.ObjectCollection.create()
     for bodyName in bodyNames:
-        body = find_body_anywhere(hostComponent, bodyName)
+        body = find_body_anywhere(ui, hostComponent, bodyName)
         if body:
             bodies.add(body)
         else:
-            interface360.error_text(ui, 'Body %s not found in component %s' % (bodyName, hostComponent.name))
+            interface360.error_text(ui, 'Body not found in path of body name %s and not in host component %s' %
+                                    (bodyName, hostComponent.name))
             result = False
     return (result, bodies)
 
@@ -290,26 +431,33 @@ def find_occurrences_anywhere(hostComponent, componentName):
     Return:
     . occurrences: list of found occurrence objects or the rootComponent
     """
+    # Extract name of the component
+    componentNamePart = extract_last_part(componentName)
+
+    # Check whether rootComponent is the occurrence, or else determine the
+    # searchComponent for the occurrences
     occurrences = []
     rootComponent = get_root_component(hostComponent)
-    if hostComponent.name == componentName:
+    if hostComponent.name == componentNamePart:
         if hostComponent == rootComponent:
             # If the rootComponent is the hostComponent and has componentName,
             # then return rootComponent as single occurrence
             occurrences.append(rootComponent)
             return occurrences
         else:
+            # search in rootComponent for occurrences of the hostComponent
+            # with componentName
             searchComponent = rootComponent
     else:
+        # search in hostComponent for occurrences of the component with
+        # componentName
         searchComponent = hostComponent
 
-    # If hostComponent has componentName, then search in rootComponent (=
-    # searchComponent) for occurrences of the componentName, else search in
-    # hostComponent (= searchComponent).
-    occurrenceList = searchComponent.allOccurrences
-    for i in range(0, occurrenceList.count):
-        occurrence = occurrenceList.item(i)
-        if componentName == occurrence.component.name:
+    # Search in searchComponent for all occurrences of the componentName
+    occurrencesList = searchComponent.allOccurrences
+    for i in range(0, occurrencesList.count):
+        occurrence = occurrencesList.item(i)
+        if componentNamePart == occurrence.component.name:
             # Found occurrence with componentName
             occurrences.append(occurrence)
     return occurrences
@@ -362,7 +510,9 @@ def find_components_collection_anywhere(ui, hostComponent, componentNames):
         if component:
             components.add(component)
         else:
-            interface360.error_text(ui, 'Component %s not found in component %s' % (componentName, hostComponent.name))
+            interface360.error_text(ui,
+                                    'Component not found in path of component name %s and not in host component %s' %
+                                    (componentName, hostComponent.name))
             result = False
     return (result, components)
 
@@ -384,11 +534,13 @@ def find_occurrences_collection_anywhere(ui, hostComponent, componentNames):
     occurrences = adsk.core.ObjectCollection.create()
     for componentName in componentNames:
         component = find_component_anywhere(hostComponent, componentName)
-        occurrence = get_occurrence_anywhere(component, hostComponent)
-        if occurrence:
+        if component:
+            occurrence = get_occurrence_anywhere(component)
             occurrences.add(occurrence)
         else:
-            interface360.error_text(ui, 'Occurrence %s not found in component %s' % (componentName, hostComponent.name))
+            interface360.error_text(ui,
+                                    'Occurrence not found in path of component name %s and not in host component %s' %
+                                    (componentName, hostComponent.name))
             result = False
     return (result, occurrences)
 
@@ -454,6 +606,35 @@ def create_component(hostComponent, componentName):
     return occurrence.component
 
 
+def create_component_tree(hostComponent, componentName):
+    """Create new component tree for componentName in hostComponent.
+
+    Default put isLightBulbOn of new component occurrence on.
+
+    Input:
+    . hostComponent: host component for the new component tree
+    . componentName: name for new component tree
+    Return:
+    . component object of the last new component in the component tree
+    """
+    # Extract name of the component
+    componentNameParts = extract_name_parts(componentName)
+
+    # Trace hierarchical path in componentName and create components if
+    # necessary
+    referenceComponent = hostComponent
+    for componentNamePart in componentNameParts:
+        component = find_component_anywhere(referenceComponent, componentNamePart)
+        if component:
+            # Continue with component
+            referenceComponent = component
+        else:
+            # Create component for componentNamePart
+            referenceComponent = create_component(referenceComponent, componentNamePart)
+    # Return last component in componentName
+    return referenceComponent
+
+
 def find_or_create_component(hostComponent, componentName):
     """Find component with componentName in hostComponent or else create
        component with componentName in hostComponent.
@@ -461,30 +642,38 @@ def find_or_create_component(hostComponent, componentName):
     If componentName is empty string or is name of hostComponent then return
     hostComponent.
 
+    If componentName is a hierarchy of components, then
+
     Default put isLightBulbOn of new component occurrence on in
     create_component().
 
     Input:
     . hostComponent: host component to search for the component
-    . componentName: name for the component
+    . componentName: name or hierarchical name for the component
     Return:
     . component object of the component with componentName in hostComponent,
       or the hostComponent itself if it has componentName.
     """
-    # If componentName is empty string or is hostComponent name, then return
-    # hostComponent as component
-    if not componentName:
+    # Extract name of the component
+    componentNamePart = extract_last_part(componentName)
+
+    # If componentName is empty string, then return hostComponent as component
+    if not componentNamePart:
         return hostComponent
 
-    if hostComponent.name == componentName:
+    # If componentName is hostComponent name, then return hostComponent as
+    # component
+    if hostComponent.name == componentNamePart:
         return hostComponent
 
-    # Look for componentName in hostComponent
-    component = find_component_anywhere(hostComponent, componentName)
-    if component is None:
+    # Look for componentName in rootComponent, because componentName must be
+    # unique in the entire design
+    rootComponent = get_root_component(hostComponent)
+    component = find_component_anywhere(rootComponent, componentName)
+    if not component:
         # Create new component in hostComponent
-        component = create_component(hostComponent, componentName)
-    # else: Found occurrence of componentName in hostComponent
+        component = create_component_tree(hostComponent, componentName)
+    # else: Found occurrence of componentName in rootComponent
     return component
 
 
@@ -531,6 +720,15 @@ def copy_component_as_new_into_occurrence(component, targetOccurrence):
     return newCopyOccurrence
 
 
+def remove_occurrence(occurrence):
+    """Remove component occurrence from design."""
+    component = occurrence.component
+    rootComponent = get_root_component(component)
+    removeFeatures = rootComponent.features.removeFeatures
+    removeFeatures.add(occurrence)
+    return True
+
+
 def copy_body_to_occurrence(body, targetOccurrence):
     """Copy body to targetOccurrence.
 
@@ -559,6 +757,13 @@ def move_body_to_occurrence(body, targetOccurrence):
     return movedBody
 
 
+def remove_body(body):
+    """Remove body from design."""
+    removeFeatures = body.parentComponent.features.removeFeatures
+    removeFeatures.add(body)
+    return True
+
+
 def remove_bodies_anywhere(ui, hostComponent, bodyNames):
     """Remove bodies from anywhere in hostComponent.
 
@@ -571,7 +776,7 @@ def remove_bodies_anywhere(ui, hostComponent, bodyNames):
     """
     if len(bodyNames) > 0:
         for bodyName in bodyNames:
-            body = find_body_anywhere(hostComponent, bodyName)
+            body = find_body_anywhere(ui, hostComponent, bodyName)
             if body:
                 # Must use removeFeatures from parentComponent of body, this
                 # can be hostComponent, but may also be a sub component within
@@ -579,7 +784,9 @@ def remove_bodies_anywhere(ui, hostComponent, bodyNames):
                 removeFeatures = body.parentComponent.features.removeFeatures
                 removeFeatures.add(body)
             else:
-                interface360.error_text(ui, 'Remove body %s not found in %s' % (bodyName, hostComponent.name))
+                interface360.error_text(ui,
+                                        'Remove body not found in path of body name %s and not in host component %s' %
+                                        (bodyName, hostComponent.name))
                 return False
     return True
 

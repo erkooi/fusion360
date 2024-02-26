@@ -186,7 +186,7 @@ def split_body_from_csv_file(ui, title, filename, hostComponent):
         splittedBodiesNames, removeBodiesNames = splitBodyTuple
 
     # Find split body anywhere in hostComponent
-    splitBody = utilities360.find_body_anywhere(hostComponent, splitBodyName)
+    splitBody = utilities360.find_body_anywhere(ui, hostComponent, splitBodyName)
     if not splitBody:
         interface360.error_text(ui, 'Split body %s not found in host component %s' %
                                 (splitBodyName, hostComponent.name))
@@ -194,13 +194,13 @@ def split_body_from_csv_file(ui, title, filename, hostComponent):
 
     # Find split tool anywhere in hostComponent component
     if splitToolType == 'plane':
-        splitTool = utilities360.find_plane_anywhere(hostComponent, splitToolName)
+        splitTool = utilities360.find_plane_anywhere(ui, hostComponent, splitToolName)
         if not splitTool:
             interface360.error_text(ui, 'Split tool plane %s not found in host component %s' %
                                     (splitToolName, hostComponent.name))
             return False
     elif splitToolType == 'body':
-        splitTool = utilities360.find_body_anywhere(hostComponent, splitToolName)
+        splitTool = utilities360.find_body_anywhere(ui, hostComponent, splitToolName)
         if not splitTool:
             interface360.error_text(ui, 'Split tool body %s not found in host component %s' %
                                     (splitToolName, hostComponent.name))

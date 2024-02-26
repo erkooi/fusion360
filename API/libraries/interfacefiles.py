@@ -29,8 +29,9 @@ validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
 validRailTypes = ['co_rail', 'cross_rails']
 validCombineOperations = ['join', 'cut', 'intersect']
 validSplitToolTypes = ['plane', 'body']
-validMoveObjects = ['component', 'body']
-validMoveOperations = ['move', 'copy', 'remove', 'translate', 'rotate']
+validLocalObjectTypes = ['sketch', 'plane', 'body']
+validMovecopyObjects = ['component', 'body']
+validMovecopyOperations = ['move', 'copy', 'remove', 'translate', 'rotate']
 validMirrorOperations = ['new_component', 'new_body', 'join']
 # For assembly create actions the order is dont care, for assembly run actions
 # the order can matter.
@@ -178,23 +179,55 @@ def extract_sub_folder_name(filename):
     . c.txt -> subFolderName = ''
 
     Input:
-    . filename: filename or directory name
+    . filename: filename or directory name for file system pathnames
     Return:
-    . subFolderName: extracted name or empty string when filename contains
-      no directory
+    . dirname: remaining path to sub folder, or empty string when filename
+      contains no more directory path
+    . basename: extracted sub folder name, or empty string when filename
+      contains no directory
     """
     # Directory name is last last part in filename, without the file name
-    basename = os.path.basename(filename)
+    # . default assume last part (= basename) is the sub folder
+    # . also keep remaining first part (= dirname)
+    basename = os.path.basename(filename)  # last part
+    dirname = os.path.dirname(filename)  # first part
     if '.' in basename:
-        dirname = os.path.dirname(filename)
-        basename = os.path.basename(dirname)
-    return basename
+        # . else if last part is a filename indicated by a dot, then get sub
+        #   folder from last part (= basename) of first part (= dirname)
+        basename = os.path.basename(dirname)  # last part of first part
+        dirname = os.path.dirname(dirname)  # first part of first part
+    return dirname, basename
+
+
+def extract_sub_folder_names(filename):
+    """Extract sub folder names from sub directories path in filename.
+
+    For example:
+    . /a/b/c.csv -> subFolderNames = ['a', 'b']
+    . /a/b/c -> subFolderNames = ['a', 'b', 'c']
+    . c -> subFolderNames = ['c']
+    . c.txt -> subFolderNames = []
+
+    Input:
+    . filename: filename or directory name for file system pathnames
+    Return:
+    . subFolderNames: list of extracted sub folder names or empty string when
+      filename contains no directory
+    """
+    subFolderNames = []
+    dirname, basename = extract_sub_folder_name(filename)
+    while basename:
+        subFolderNames.append(basename)
+        dirname, basename = extract_sub_folder_name(dirname)
+    subFolderNames.reverse()
+    return subFolderNames
 
 
 def verify_component_folder_name(li, componentName, folderName):
-    """Verify whether component name equals folder name in timeline file
+    """Verify whether component name equals folder name in a timeline file
 
-    Print ERROR message when names are not equal.
+    Print ERROR message when last name in folderName and first name in
+    componentName are not equal.
 
     Input:
     . li: line index in timeline file
@@ -203,10 +236,11 @@ def verify_component_folder_name(li, componentName, folderName):
 
     Return: True when names are equal, else False
     """
-    subFolderName = extract_sub_folder_name(folderName)
-    if componentName != subFolderName:
-        print('ERROR line %d: component name %s != %s sub folder name' %
-              (li, componentName, subFolderName))
+    subFolderNames = extract_sub_folder_names(folderName)
+    subComponentNames = extract_sub_folder_names(componentName)
+    if subFolderNames[-1] != subComponentNames[-1]:
+        print('ERROR line %d: last part in component name %s != %s last part in folder name' %
+              (li, componentName, folderName))
         return False
     return True
 
@@ -1103,7 +1137,7 @@ def _read_timeline_multi_objects_from_file_lines(fileLines, sectionType):
         if lineWord == sectionType:
             # Use sub folder relative to assembly CSV file
             folderName = entries[1]
-            subFolderName = extract_sub_folder_name(folderName)
+            _, subFolderName = extract_sub_folder_name(folderName)
             # Name of action type
             if sectionType in validCsvFileTypes:
                 # Define multiple actions for sectionType
@@ -1143,7 +1177,7 @@ def _read_timeline_single_objects_from_file_lines(fileLines):
         elif lineWord in ['extrude', 'combine', 'split', 'movecopy', 'mirror', 'echo']:
             # Use sub folder relative to assembly CSV file
             folderName = entries[1]
-            subFolderName = extract_sub_folder_name(folderName)
+            _, subFolderName = extract_sub_folder_name(folderName)
             # Name of action file
             filename = entries[2] + '.csv'
             filename = os.path.join(subFolderName, filename)

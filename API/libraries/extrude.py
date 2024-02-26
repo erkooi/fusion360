@@ -29,24 +29,23 @@ Extrude CSV file format:
 . first line: 'extrude' as filetype, name of the extrude file, name of the
   group component for the extrude results.
 . second line: resolution 'mm' or 'cm'
-. 3-rd line: search_component, <'root', 'host', or 'group'>
-. 4-th line:
+. 3-rd line:
   - 'profile', sketch name, profile indices, or
   - 'face', body name, face indices,
     default index 0, when no index is given. The profiles or faces must be
     coplanar.
-. 5-th line: 'offset', offset value
-. 6-th line: 'taper_angle', taper angle value in degrees for one side or two
+. 4-th line: 'offset', offset value
+. 5-th line: 'taper_angle', taper angle value in degrees for one side or two
     sided extent
-. 7-th line: extent_type:
+. 6-th line: extent_type:
   - 'distance', distanceValues for one side or two sides extent
   - 'to_object', toBodyName
-. 8-th line: operation:
+. 7-th line: operation:
   - 'join', participantBodyNames
   - 'cut', participantBodyNames
   - 'intersect', participantBodyNames
   - 'new_body'
-. 9-th line: 'extrude_results', resultBodyNames
+. 8-th line: 'extrude_results', resultBodyNames
 
   distanceValues:
   . one distance value for single side extent, or two distance values for both
@@ -97,8 +96,6 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
       - locationtuple:
         . extrudeFilename: name of extrude CSV file, not used
         . groupComponentName: group component for the extrude result
-        . searchComponentType: search in root, host or group component for
-          input objects (sketch profile, body face, to object) of extrude
       - planarTuple:
         . sketch name: name of sketch, for profile to extrude
         . from body name: name of body, for face to extrude
@@ -150,12 +147,6 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             if not result:
                 return resultFalse
         elif li == 2:
-            if lineWord == 'search_component':
-                searchComponentType = lineArr[1]
-            else:
-                interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
-                return resultFalse
-        elif li == 3:
             if lineWord in ['profile', 'face']:
                 if lineWord == 'profile':
                     sketchName = lineArr[1]
@@ -166,13 +157,13 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             else:
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
-        elif li == 4:
+        elif li == 3:
             if lineWord == 'offset':
                 offset = float(lineArr[1]) * scale
             else:
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
-        elif li == 5:
+        elif li == 4:
             if lineWord == 'taper_angle':
                 taperAngles.append(math.radians(float(lineArr[1])))  # one side
                 if len(lineArr) > 2:
@@ -180,7 +171,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             else:
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
-        elif li == 6:
+        elif li == 5:
             result, extentTuple = _parse_extent_type(ui, li, lineArr, scale)
             if result:
                 extentType, distanceValues, toBodyName = extentTuple
@@ -188,13 +179,13 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
                     taperAngles.append(0)  # default use no taper on second side
             else:
                 return resultFalse
-        elif li == 7:
+        elif li == 6:
             result, operationTuple = _parse_operation(ui, li, lineArr)
             if result:
                 operation, participantBodyNames = operationTuple
             else:
                 return resultFalse
-        elif li == 8:
+        elif li == 7:
             if lineWord == 'extrude_results':
                 if len(lineArr) > 1:
                     resultBodyNames = lineArr[1:]
@@ -205,7 +196,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             return resultFalse
 
     # Successfully reached end of file
-    locationTuple = (extrudeFilename, groupComponentName, searchComponentType)
+    locationTuple = (extrudeFilename, groupComponentName)
     planarTuple = (sketchName, fromBodyName, planarIndices)
     extentTuple = (offset, taperAngles, extentType, distanceValues, toBodyName)
     operationTuple = (operation, participantBodyNames, resultBodyNames)
@@ -340,7 +331,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
         return False
     # Extract tuples, extrudeFilename is not used
     locationTuple, planarTuple, extentTuple, operationTuple = extrudeTuple
-    _, groupComponentName, searchComponentType = locationTuple
+    _, groupComponentName = locationTuple
     sketchName, fromBodyName, planarIndices = planarTuple
     offset, taperAngles, extentType, distanceVales, toBodyName = extentTuple
     operation, participantBodyNames, resultBodyNames = operationTuple
@@ -350,19 +341,11 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     # is empty string or is the hostComponent.
     groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
 
-    # Get searchComponent for extrude input objects
-    if searchComponentType == 'root':
-        searchComponent = utilities360.get_root_component(hostComponent)
-    elif searchComponentType == 'host':
-        searchComponent = hostComponent
-    else:
-        searchComponent = groupComponent
-
     # Find object planar to extrude anywhere in hostComponent
     objectTuple = None
     if sketchName:
         # Get profiles in sketch to determine profileTuple
-        sketch = utilities360.find_sketch_anywhere(searchComponent, sketchName)
+        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, sketchName)
         if not sketch:
             interface360.error_text(ui, 'Sketch %s not found' % sketchName)
             return False
@@ -372,7 +355,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
         objectTuple = (sketch, profiles)
     elif fromBodyName:
         # Get faces in body to determine faceTuple
-        fromBody = utilities360.find_body_anywhere(searchComponent, fromBodyName)
+        fromBody = utilities360.find_body_anywhere(ui, hostComponent, fromBodyName)
         if not fromBody:
             interface360.error_text(ui, 'From body %s not found' % fromBodyName)
             return False
@@ -381,21 +364,21 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
             return False
         objectTuple = (fromBody, faces)
 
-    # Find participant bodies in searchComponent and update operationTuple
+    # Find participant bodies in hostComponent and update operationTuple
     participantBodies = []
     if operation in ['join', 'cut', 'intersect']:
         for bodyName in participantBodyNames:
-            body = utilities360.find_body_anywhere(searchComponent, bodyName)
+            body = utilities360.find_body_anywhere(ui, hostComponent, bodyName)
             if not body:
                 interface360.error_text(ui, 'Participant body %s not found' % bodyName)
                 return False
             participantBodies.append(body)
     operationTuple = (operation, participantBodies, resultBodyNames)
 
-    # Find to_object body in searchComponent and update extentTuple
+    # Find to_object body in hostComponent and update extentTuple
     toBody = None
     if toBodyName:
-        toBody = utilities360.find_body_anywhere(searchComponent, toBodyName)
+        toBody = utilities360.find_body_anywhere(ui, hostComponent, toBodyName)
         if not toBody:
             interface360.error_text(ui, 'To object body %s not found' % toBodyName)
             return False

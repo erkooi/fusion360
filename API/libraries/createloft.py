@@ -148,7 +148,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     for pt in profileTuples:
         name = pt[0]
         index = pt[1]
-        sketch = utilities360.find_sketch_anywhere(hostComponent, name)
+        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, name)
         if sketch:
             if index < sketch.profiles.count:
                 # Loft profile is a sketch profile
