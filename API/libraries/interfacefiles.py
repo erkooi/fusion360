@@ -22,7 +22,9 @@ import os.path
 import math
 
 # Lists of valid key words in CSV files for generating objects in Fusion360
-validCsvFileTypes = ['sketch', 'plane', 'loft', 'extrude', 'combine', 'split', 'movecopy', 'mirror', 'assembly']
+validCsvFileTypes = ['sketch', 'plane',
+                     'loft', 'extrude', 'combine', 'split', 'movecopy', 'mirror',
+                     'assembly', 'assemblies']
 validUnits = ['mm', 'cm', 'm']
 validPlaneNormals = ['x', 'y', 'z']
 validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
@@ -928,6 +930,41 @@ def write_cross_rail_sketch_csv_files(fileLines, units):
     return nofFiles
 
 
+def _parse_first_fline(li, entries):
+    """Extract folder/filename and first line for CSV file from fLine entries
+    in fileLines.
+
+    Input:
+    . li, line number in fileLines
+    . entries: Entries in first line of a CSV file section in fileLines, with:
+      - fileType: CSV file type,
+      - csvFolderName: folder name for fileType CSV file (not written in
+        csvLines),
+      - fileTypeFilename: filename for fileType CSV file,
+      - groupComponentName: optional name of group component.
+    Return:
+    . csvFilename: csvFolderName/fileTypeFilename.csv for the CSV file
+    . fileTypeLine: first line for in CSV file, without csvFolderName, and
+      with:
+      - fileType,
+      - fileTypeFilename,
+      - groupComponentName.
+    """
+    fileType = entries[0]
+    csvFolderName = create_folder(entries[1])
+    fileTypeFilename = entries[2]
+    csvFilename = fileTypeFilename + '.csv'
+    csvFilename = os.path.join(csvFolderName, csvFilename)
+    csvFilename = os.path.normpath(csvFilename)
+    groupComponentName = ''
+    if len(entries) > 3:
+        groupComponentName = entries[3]
+        verify_component_folder_name(li, groupComponentName, csvFolderName)
+    fileTypeLine = fileType + ', ' + fileTypeFilename
+    fileTypeLine = append_string_to_csv_line(fileTypeLine, groupComponentName)
+    return csvFilename, fileTypeLine
+
+
 def write_csv_files(fileLines, csvFileType, units=''):
     """Write csvFileType sections in fileLines into seperate CSV files.
 
@@ -943,26 +980,12 @@ def write_csv_files(fileLines, csvFileType, units=''):
     # Find CSV file sections in fileLines, seperated by one empty line
     for fLine in fileLines:
         if li == 0:
-            # First line of a CSV file section in fileLines contains:
-            # . CSV file type,
-            # . folder name for fileType CSV file,
-            # . filename for fileType CSV file,
-            # . optional name of group component
+            # Parse first line of a CSV file section in fileLines.
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == csvFileType:
-                csvFolderName = create_folder(entries[1])
-                fileTypeFilename = entries[2]
-                csvFilename = fileTypeFilename + '.csv'
-                csvFilename = os.path.join(csvFolderName, csvFilename)
-                csvFilename = os.path.normpath(csvFilename)
-                groupComponentName = ''
-                if len(entries) > 3:
-                    groupComponentName = entries[3]
-                    verify_component_folder_name(li, groupComponentName, csvFolderName)
-                fileTypeLine = fileType + ', ' + fileTypeFilename
-                fileTypeLine = append_string_to_csv_line(fileTypeLine, groupComponentName)
+                csvFilename, fileTypeLine = _parse_first_fline(li, entries)
                 csvLines = []
                 csvLines.append(fileTypeLine)  # write fileType line
                 if units:
@@ -991,9 +1014,10 @@ def write_assembly_csv_file(fileLines):
     There can be maximum one assembly per filelines.
 
     Write assembly CSV file with:
-    - First line: assembly, componentName
-    - Next lines: timeline actions from fileLines, one line per folder or per
-      file
+    - First line: fileType, fileName, componentName
+    - Next lines:
+      . timeline actions from fileLines, one line per folder or per file
+      . echo statements from fileLines in order of appearance
 
     Input:
     . fileLines: lines from timeline file that define CSV file sections
@@ -1005,26 +1029,12 @@ def write_assembly_csv_file(fileLines):
     # Find CSV file sections in fileLines, seperated by one empty line
     for fLine in fileLines:
         if li == 0:
-            # First line of a CSV file section in fileLines contains:
-            # . CSV file type,
-            # . folder name for assembly CSV file,
-            # . filename for assembly CSV file,
-            # . optional name of assembly component
+            # Parse first line of a CSV file section in fileLines.
             # Skip lines for other file types.
             entries = get_file_line_entries(fLine)
             fileType = entries[0]
             if fileType == 'assembly':
-                assemblyFolderName = create_folder(entries[1])
-                assemblyFilename = entries[2]
-                csvFilename = assemblyFilename + '.csv'
-                csvFilename = os.path.join(assemblyFolderName, csvFilename)
-                csvFilename = os.path.normpath(csvFilename)
-                assemblyComponentName = ''
-                if len(entries) > 3:
-                    assemblyComponentName = entries[3]
-                    verify_component_folder_name(li, assemblyComponentName, assemblyFolderName)
-                assemblyLine = fileType + ', ' + assemblyFilename
-                assemblyLine = append_string_to_csv_line(assemblyLine, assemblyComponentName)
+                csvFilename, assemblyLine = _parse_first_fline(li, entries)
                 csvLines = []
                 csvLines.append(assemblyLine)  # write assembly line
                 li += 1
@@ -1033,7 +1043,7 @@ def write_assembly_csv_file(fileLines):
             pass
         else:
             # Empty line marks end of section in fileLines
-            # . Add timeline actions for the assembly
+            # . Add timeline actions and echo lines for the assembly
             csvLines += read_timeline_from_file_lines(fileLines)
             # . Write CSV file
             with open(csvFilename, 'w') as fp:
@@ -1044,6 +1054,57 @@ def write_assembly_csv_file(fileLines):
             break
     if nofFiles > 0:
         print('write_assembly_csv_file: Wrote %d CSV files' % nofFiles)
+    return nofFiles
+
+
+def write_assemblies_csv_file(fileLines):
+    """Write assemblies section in fileLines into a CSV file.
+
+    There can be maximum one assemblies section per filelines.
+
+    Write assemblies CSV file with:
+    - First line: fileType, fileName, componentName
+    - Next lines:
+      . assembly filenames, one line per per file
+    - At end append all echo lines from fileLines
+
+    Input:
+    . fileLines: lines from timeline file that define CSV file sections
+    Return: number of CSV files written
+    """
+    li = 0
+    nofFiles = 0
+
+    # Find CSV file sections in fileLines, seperated by one empty line
+    for fLine in fileLines:
+        if li == 0:
+            # Parse first line of a CSV file section in fileLines.
+            # Skip lines for other file types.
+            entries = get_file_line_entries(fLine)
+            fileType = entries[0]
+            if fileType == 'assemblies':
+                csvFilename, fileTypeLine = _parse_first_fline(li, entries)
+                csvLines = []
+                csvLines.append(fileTypeLine)  # write assemblies line
+                li += 1
+        elif fLine.strip():
+            # Pass on next fileLines until empty line in fileLines
+            csvLines.append(fLine)
+        else:
+            # Empty line marks end of section in fileLines
+            # . Append echo lines from fileLines
+            echoLines = _read_echo_lines_from_file_lines(fileLines)
+            for echoLine in echoLines:
+                csvLines.append(echoLine)
+            # . Write CSV file
+            with open(csvFilename, 'w') as fp:
+                fp.writelines(csvLines)
+                nofFiles += 1
+            print('write_assemblies_csv_file: %s' % csvFilename)
+            # . Only support one assemblies section per timeline fileLines
+            break
+    if nofFiles > 0:
+        print('write_assemblies_csv_file: Wrote %d CSV files' % nofFiles)
     return nofFiles
 
 
@@ -1186,3 +1247,22 @@ def _read_timeline_single_objects_from_file_lines(fileLines):
             if assemblyLine not in timelineList:
                 timelineList.append(assemblyLine)
     return timelineList
+
+
+def _read_echo_lines_from_file_lines(fileLines):
+    """Read echo lines from fileLines of file.
+
+    Input:
+    . fileLines: read lines from comma separate values file
+    Return:
+    . echoLines: list of echo statements in fileLines
+    """
+    # Find components with sectionType
+    echoLines = []
+    for li, fLine in enumerate(fileLines):
+        entries = get_file_line_entries(fLine)
+        lineWord = entries[0]
+        if lineWord == 'echo':
+            assemblyLine = 'echo, ' + convert_entries_to_single_string(entries[1:]) + '\n'
+            echoLines.append(assemblyLine)
+    return echoLines

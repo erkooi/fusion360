@@ -52,7 +52,7 @@ Schema sections in point txt file:
   - interfacefikles.write_co_rail_sketch_csv_files()
 
 . Object keyword: assembly
-  Create assembly CSV files to define assemblies
+  Create assembly CSV files to define an assembly
   - interfacefiles.write_assembly_csv_file()
 
 Usage of CSV files in Fusion360:
@@ -67,6 +67,9 @@ Usage of CSV files in Fusion360:
 
 Usage on command line:
 > python csv_timeline360.py -f f35b_points.txt
+> python csv_timeline360.py -f ^
+f35b_points.txt,f35b_aileron.txt,f35b_pin_holes.txt,f35b_vertical_stabilizer.txt,f35b_airplane.txt,^
+f35b_csv.txt
 """
 
 import argparse
@@ -74,13 +77,17 @@ import interfacefiles
 import userparameters
 
 
-if __name__ == '__main__':
-    # Parse arguments
-    _parser = argparse.ArgumentParser('csv_timeline360')
-    _parser.add_argument('-f', default='f35b_points.txt', type=str, help='Timeline file name')
-    args = _parser.parse_args()
-    timelineFilename = args.f
+def write_csv_files_for_timeline_file(timelineFilename):
+    """Parse timeline file into separate timeline actions CSV files
 
+    Report CSV file names, number of CSV files, and parameter values.
+
+    Input:
+    . timelineFilename: Filename of the timeline file
+    Return:
+    . nofFiles: Number of timeline actions CSV files that have been written
+    """
+    ############################################################################
     # Read timeline file
     fileLines = interfacefiles.read_data_lines_from_file(timelineFilename)
 
@@ -91,6 +98,7 @@ if __name__ == '__main__':
     parametersDict = userparameters.read_parameters_from_file_lines(fileLines)
     fileLines = userparameters.replace_parameters_in_file_lines(fileLines, parametersDict)
 
+    ############################################################################
     # Write CSV files
     nofFiles = 0
 
@@ -124,10 +132,36 @@ if __name__ == '__main__':
     # Write mirror CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'mirror')
 
+    ############################################################################
     # Write assembly CSV file
     nofFiles += interfacefiles.write_assembly_csv_file(fileLines)
 
+    # Write assemblies CSV file
+    nofFiles += interfacefiles.write_assemblies_csv_file(fileLines)
+
+    ############################################################################
     # Report
     print('Wrote total %d CSV files for %s' % (nofFiles, timelineFilename))
-
     userparameters.print_parameters_dict(parametersDict)
+    return nofFiles
+
+
+if __name__ == '__main__':
+    # Parse arguments
+    _parser = argparse.ArgumentParser('csv_timeline360')
+    _parser.add_argument('-f', default='f35b_points.txt', type=str,
+                         help='One or more timeline file names, separated by commas and no spaces.')
+    _parser.add_argument('-d', default='', type=str,
+                         help='Directory path for the CSV files')
+    args = _parser.parse_args()
+    timelineFilenamesStr = args.f
+    timelineFilenamesList = timelineFilenamesStr.split(',')
+    nofFiles = 0
+
+    for timelineFilename in timelineFilenamesList:
+        print('')
+        print('Write CSV files for timeline file %s' % timelineFilename)
+        nofFiles += write_csv_files_for_timeline_file(timelineFilename)
+
+    print('')
+    print('Wrote total %d CSV files for all' % nofFiles)
