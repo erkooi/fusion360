@@ -75,7 +75,8 @@ def read_segment_type(ui, title, filename, lineWord):
 
 
 def get_segment_spline_point(ui, title, filename, planeNormal, unitScale, dataArr):
-    """Get 2D point in offset plane with optional tangent angle and length.
+    """Get 2D spline point in offset plane with optional tangent angle and
+    length.
 
     Map yz, zx, xy 2D point in dataArr to xy point in offset plane with z = 0.
 
@@ -96,10 +97,10 @@ def get_segment_spline_point(ui, title, filename, planeNormal, unitScale, dataAr
 
     Uses ui, title, filename to report faults via Fusion360 GUI.
     """
+    result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                planeNormal, unitScale, dataArr)
     try:
         # Get point3D in offset plane
-        result, point3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
-                                                                    planeNormal, unitScale, dataArr)
         if not result:
             raise Exception
         # Get optional point tangent angle and length
@@ -115,7 +116,7 @@ def get_segment_spline_point(ui, title, filename, planeNormal, unitScale, dataAr
         pointTuple = (point3D, tangent)
         result = (True, pointTuple)
     except Exception:
-        ui.messageBox('No valid 2D point in %s of %s' % (dataArr, filename), title)
+        ui.messageBox('No valid 2D spline point in %s of %s' % (dataArr, filename), title)
         result = (False, None)
     return result
 
@@ -731,7 +732,7 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
                     # Create point
                     points.add(point3D)
     else:
-        ui.messageBox('No valid points in %s' % filename, title)
+        ui.messageBox('No valid sketch segments in %s' % filename, title)
         return False
     interface360.print_text(ui, 'Created sketch for ' + filename)
     return True
