@@ -170,7 +170,7 @@ def create_loft_from_csv_file(ui, title, filename, hostComponent, loftNewCompone
     for rt in railTuples:
         name = rt[0]
         index = rt[1]
-        sketch = utilities360.find_sketch_anywhere(hostComponent, name)
+        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, name)
         if sketch:
             interface360.print_text(ui, sketch.name + ': %d curves' % sketch.sketchCurves.count, verbosity)
             if index < sketch.sketchCurves.count:
