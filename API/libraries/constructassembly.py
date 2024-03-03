@@ -38,7 +38,8 @@ Remarks:
   action = sketch, plane.
 - Object names have to be unique in whole design, so they can be referred
   to from anywhere in the rootComponent without having to specify where they
-  are located exactly.
+  are located exactly. Otherwise the specific parent component of the object
+  has to be specified.
 """
 
 import os.path
@@ -102,13 +103,13 @@ def parse_csv_assembly_file(ui, title, filename):
             if lineWord not in interfacefiles.validAssemblyActions:
                 ui.messageBox('Not a valid action %s in %s' % (lineWord, filename), title)
                 return resultFalse
-            echoString, actionFilename = ('', '')
+            echoLine, actionFilename = ('', '')
             action = lineWord
             if action == 'echo':
-                echoString = interfacefiles.convert_entries_to_single_string(lineArr[1:])
+                echoLine = interfacefiles.convert_entries_to_single_string(lineArr[1:])
             else:
                 actionFilename = lineArr[1]
-            actionTuple = (action, echoString, actionFilename)
+            actionTuple = (action, echoLine, actionFilename)
             actions.append(actionTuple)
     if len(actions) == 0:
         ui.messageBox('No actions in %s' % filename, title)
@@ -169,6 +170,7 @@ def perform_action(ui, title, actionFilename, assemblyComponent, action):
     elif action == 'multiple_run_mirror':
         mirror.mirror_from_csv_files(ui, title, actionFilename, assemblyComponent)
     else:
+        interface360.error_text(ui, 'Unknown action: ' + action)
         return False
     return True
 
@@ -189,9 +191,6 @@ def construct_assembly_from_csv_file(ui, title, filename, hostComponent):
     if not result:
         return False
     assemblyComponentName, actions = assemblyTuple
-    if len(actions) == 0:
-        ui.messageBox('No valid actions in %s' % filename, title)
-        return False
     assemblyFolderName = os.path.dirname(filename)
 
     # Create assembly component in hostComponent, if it does not already exist,
@@ -201,10 +200,10 @@ def construct_assembly_from_csv_file(ui, title, filename, hostComponent):
 
     # Construct assembly by processing the actions
     for actionTuple in actions:
-        action, echoString, actionFilename = actionTuple
-        # Log echoString
+        action, echoLine, actionFilename = actionTuple
+        # Log echoLine
         if action == 'echo':
-            interface360.print_text(ui, 'Echo: ' + echoString)
+            interface360.echo_text(ui, echoLine)
             continue
 
         # Derive full location name of action CSV files folder or of single

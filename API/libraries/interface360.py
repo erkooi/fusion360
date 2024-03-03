@@ -47,6 +47,11 @@ def error_text(ui, message):
     return False
 
 
+def echo_text(ui, message):
+    """Print echo message in Text Commands window of the Fusion360 GUI."""
+    print_text(ui, 'Echo: ' + message, verbosity=True)
+
+
 def get_folder_name(ui, title):
     """Get folder name via Fusion360 GUI.
 
