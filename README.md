@@ -6,7 +6,7 @@ For more information please also check my channel "Eric Kooistra - Hobby" on You
 The CSV files define actions and hierarchy for a design in Fusion360. There are three levels of CSV files:
 1. action CSV files: define single 'create' and 'modify actions, as in the SOLID menu in the Fusion360 GUI.
 2. assembly CSV files: define an assembly component and a series of action CSV files
-3. assemblies CSV file: define a sequency of assembly CSV files to build a design toplevel assembly with multiple sub assemblies.
+3. design CSV file: define a sequency of assembly CSV files to build a design toplevel assembly with multiple sub assemblies.
 
 The CSV files can be accessed in the Fusion360 GUI using the API/Scripts. There are API/scripts for each CSV file level. The API/Scripts can be ran via the UTILITIES/ADD-INS/Scripts and Add-Ins menu in the Fusion360 GUI. The scripts are in Python. The Python code consiste of:
 * API/libraries that contains library files that are used in the other scripts for handling CSV files and Fusion360 objects.
@@ -18,13 +18,13 @@ The CSV files define (a part of) the timeline in Fusion360. The API/Scripts oper
 
 Typically there is one txt file per:
 * assembly CSV file, to define an assembly and the action CSV files for that assembly
-* assemblies CSV file, to define the list of assembly CSV files for the design toplevel assembly
+* design CSV file, to define the list of assembly CSV files for the design toplevel assembly
 
 Another advantage of design entry via the txt files is that the txt file can use parameters and equations to define values for e.g. coordinates, angles, lengths, distances. The csv_timeline360.py evaluates these parameters and equations, and then writes their numerical result into the CSV files.
 
 The simplest object to create with a CSV file is a single sketch, using API/Scripts/ImportSketchCSV. The snail_points.txt provides an example of defining a sketch.
 
-The most elaborate object to create with a CSV file is a complete design toplevel assembly, that consists of sub assemblies, using API/Scripts/AssembliesCSV. The f35b_csv.txt provides an example of a design for an F35B airplane toplevel assembly, that consists of several sub assemblies and is defined by in total about 300 CSV files.
+The most elaborate object to create with a CSV file is a complete design toplevel assembly, that consists of sub assemblies, using API/Scripts/DesignCSV. The f35b_csv.txt provides an example of a design for an F35B airplane toplevel assembly, that consists of several sub assemblies and is defined by in total about 300 CSV files.
 
 During design development in the txt file and in Fusion360 it is convenient to use the other API/Scripts to be able to apply individual CSV files in Fusion360. The scripts interact with the user via message boxes and dialog boxes and report results via the TEXT COMMANDS window in the Fusion360 GUI.
 
@@ -50,14 +50,14 @@ Functions to parse and excecute action CSV files in Fusion360:
 * movecopy.py - move, copy, remove, or transform operation defined in a CSV file.
 * mirror.py - mirror body or component defined in a CSV file.
 * constructassembly.py - construct assembly defined in a CSV file, using sketches, planes, bodies
-* buildassemblies.py - build multiple assemblies into an toplevel assemblies component defined in a CSV file
+* buildassemblies.py - build multiple assemblies into an toplevel design component defined in a CSV file
 
 ## 3. API/Scripts
 The path to the API/Scripts directory needs to be set in Fusion360 via menu Preferences/General/API in the Fusion360 GUI.
 
 ### 3.1 Design scripts
 * AssemblyCSV - Generic script to construct an assembly in Fusion360 as defined in an assembly CSV file.
-* AssembliesCSV - Generic script to build a design in Fusion360 with one or more assemblies as defined in an assemblies CSV file.
+* DesignCSV - Generic script to build a design in Fusion360 with one or more assemblies as defined in an design CSV file.
 
 ### 3.2 General scripts for processing one action CSV file, or a directory with multiple action CSV files
 * ImportSketchCSV, ImportSketchesCSV - Import sketch as defined in CSV file.

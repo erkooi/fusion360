@@ -55,6 +55,10 @@ Schema sections in point txt file:
   Create assembly CSV files to define an assembly
   - interfacefiles.write_assembly_csv_file()
 
+. Object keyword: design
+  Create design CSV file to define a design
+  - interfacefiles.write_design_csv_file()
+
 Usage of CSV files in Fusion360:
 1) Manually: Select active component in Fusion360 GUI and then use script from
    Utilities/Add-Ins/Scripts to generate the objects, either for all CSV files
@@ -66,8 +70,8 @@ Usage of CSV files in Fusion360:
    groupComponents.
 
 Usage on command line:
-> python csv_timeline360.py -f f35b_points.txt
-> python csv_timeline360.py -f ^
+> python ..\\csv_timeline360.py -f f35b_points.txt
+> python ..\\csv_timeline360.py -f ^
 f35b_points.txt,f35b_aileron.txt,f35b_pin_holes.txt,f35b_vertical_stabilizer.txt,f35b_airplane.txt,^
 f35b_csv.txt
 """
@@ -136,8 +140,8 @@ def write_csv_files_for_timeline_file(timelineFilename):
     # Write assembly CSV file
     nofFiles += interfacefiles.write_assembly_csv_file(fileLines)
 
-    # Write assemblies CSV file
-    nofFiles += interfacefiles.write_assemblies_csv_file(fileLines)
+    # Write design CSV file
+    nofFiles += interfacefiles.write_design_csv_file(fileLines)
 
     ############################################################################
     # Report

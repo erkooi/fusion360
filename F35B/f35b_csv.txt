@@ -16,29 +16,28 @@
 # Author: Eric Kooistra.
 # Date: 2 Mar 2024
 #
-# Build assemblies component for the different parts of the F35B plane defined
+# Build design component for the different parts of the F35B plane defined
 # by a list of assembly CSV files. Each assembly CSV file defines a part of
 # the timeline actions in Fusion360. In order the assembly CSV files construct
 # the timeline for the entire F35B-CSV design.
 #
-# First line: 'assemblies' as filetype,
-#             foldername of the assemblies CSV file,
-#             filename of the assemblies CSV file,
-#             name of the assemblies component.
+# First line: 'design' as filetype,
+#             foldername of the design CSV file,
+#             filename of the design CSV file,
+#             name of the design component.
 #
-# The assemblies CSV file is written in foldername/filename.csv. The
-# 'assemblies', filename, and assemblies component name are passed on in the
-# assemblies CSV file. The foldename is not passed on in the assemblies CSV
-# file.
+# The design CSV file is written in foldername/filename.csv. The 'design',
+# filename, and design component name are passed on in the design CSV file.
+# The foldername is not passed on in the design CSV file.
 
-assemblies, csv/F35B-CSV, F35B-CSV, F35B-CSV
+design, csv/F35B-CSV, F35B-CSV, F35B-CSV
 assembly_filenames
-  F35B-points.csv
-  F35B-aileron.csv
-  F35B-pin-holes.csv
-  F35B-vertical-stabilizer.csv
-  F35B-airplane.csv
+  F35B-points.assembly.csv
+  F35B-aileron.assembly.csv
+  F35B-pin-holes.assembly.csv
+  F35B-vertical-stabilizer.assembly.csv
+  F35B-airplane.assembly.csv
   
 echo, --------------------------------------------------------------------------
-echo, Built all sub assemblies for F35B-CSV !
+echo, Built all sub assemblies for design F35B-CSV !
 echo, --------------------------------------------------------------------------

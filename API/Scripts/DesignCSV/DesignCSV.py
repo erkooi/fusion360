@@ -15,10 +15,10 @@
 ################################################################################
 # Author: Eric Kooistra.
 # Date: 2 Mar 2024
-"""Build assembly CSV files from assemblies CSV file into a toplevel assembly
+"""Build assembly CSV files from a design CSV file, into a toplevel design
 component in Fusion360.
 
-See API/libraries/buildassemblies.py
+See API/libraries/builddesign.py
 """
 
 # Fusion360
@@ -42,7 +42,7 @@ import extrude
 import movecopy
 import mirror
 import constructassembly
-import buildassemblies
+import builddesign
 importlib.reload(interfacefiles)
 importlib.reload(interface360)
 importlib.reload(utilities360)
@@ -56,7 +56,7 @@ importlib.reload(extrude)
 importlib.reload(movecopy)
 importlib.reload(mirror)
 importlib.reload(constructassembly)
-importlib.reload(buildassemblies)
+importlib.reload(builddesign)
 
 
 def run(context):
@@ -82,8 +82,8 @@ def run(context):
         if filename is None:
             return
 
-        # Build assemblies from CSV file in activeComponent
-        buildassemblies.build_assemblies_from_csv_file(ui, title, filename, activeComponent)
+        # Build design component from CSV file in activeComponent
+        builddesign.build_design_from_csv_file(ui, title, filename, activeComponent)
 
     except Exception:
         if ui:

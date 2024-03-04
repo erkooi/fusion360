@@ -122,7 +122,7 @@ profiles
 
 # Move fin to position on F35B fuselage.
 # Align aileron_axle with aileron gap
-movecopy, csv/F35B-CSV/vertical_stabilizer, movecopy_fin_left
+movecopy, csv/F35B-CSV/vertical_stabilizer, fin_left
 rotate,    body, loft_fin, 1, 0, 0, 90 - $tiltAngle
 translate, body, loft_fin, $xBaseFront, -$yBase, $zBase
 

@@ -236,7 +236,7 @@ operation, new_body
 extrude_results, aileron_axle
 
 # Align aileron_axle with aileron gap
-movecopy, csv/F35B-CSV/aileron, movecopy_aileron_axle
+movecopy, csv/F35B-CSV/aileron, aileron_axle
 rotate,    body, aileron_axle, 0, 0, 1, $alphaX
 rotate,    body, aileron_axle, 1, 0, 0, $alphaZ
 translate, body, aileron_axle, $xBase, $yBase, $zBase
@@ -276,21 +276,21 @@ operation, new_body
 extrude_results, hinge
 
 # Make copies of hinge in wing
-movecopy, csv/F35B-CSV/aileron, movecopy_hinge_tip
+movecopy, csv/F35B-CSV/aileron, hinge_tip
 copy, body, hinge, hinge_tip, aileron
 translate, body, hinge_tip, 0, $yHingeBase, 0
 rotate,    body, hinge_tip, 0, 0, 1, $alphaX
 rotate,    body, hinge_tip, 1, 0, 0, $alphaZ
 translate, body, hinge_tip, $xBase, $yBase, $zBase
 
-movecopy, csv/F35B-CSV/aileron, movecopy_hinge_mid
+movecopy, csv/F35B-CSV/aileron, hinge_mid
 copy, body, hinge, hinge_mid, aileron
 translate, body, hinge_mid, 0, $yHingeMid, 0
 rotate,    body, hinge_mid, 0, 0, 1, $alphaX
 rotate,    body, hinge_mid, 1, 0, 0, $alphaZ
 translate, body, hinge_mid, $xBase, $yBase, $zBase
 
-movecopy, csv/F35B-CSV/aileron, movecopy_hinge_base
+movecopy, csv/F35B-CSV/aileron, hinge_base
 copy, body, hinge, hinge_base, aileron
 translate, body, hinge_base, 0, $yHingeTip, 0
 rotate,    body, hinge_base, 0, 0, 1, $alphaX
@@ -317,21 +317,21 @@ operation, new_body
 extrude_results, hinge_space
 
 # Make copies of hinge_space in aileron
-movecopy, csv/F35B-CSV/aileron, movecopy_hinge_space_tip
+movecopy, csv/F35B-CSV/aileron, hinge_space_tip
 copy, body, hinge_space, hinge_space_tip, aileron
 translate, body, hinge_space_tip, 0, $yHingeBase, 0
 rotate,    body, hinge_space_tip, 0, 0, 1, $alphaX
 rotate,    body, hinge_space_tip, 1, 0, 0, $alphaZ
 translate, body, hinge_space_tip, $xBase, $yBase, $zBase
 
-movecopy, csv/F35B-CSV/aileron, movecopy_hinge_space_mid
+movecopy, csv/F35B-CSV/aileron, hinge_space_mid
 copy, body, hinge_space, hinge_space_mid, aileron
 translate, body, hinge_space_mid, 0, $yHingeMid, 0
 rotate,    body, hinge_space_mid, 0, 0, 1, $alphaX
 rotate,    body, hinge_space_mid, 1, 0, 0, $alphaZ
 translate, body, hinge_space_mid, $xBase, $yBase, $zBase
 
-movecopy, csv/F35B-CSV/aileron, movecopy_hinge_space_base
+movecopy, csv/F35B-CSV/aileron, hinge_space_base
 copy, body, hinge_space, hinge_space_base, aileron
 translate, body, hinge_space_base, 0, $yHingeTip, 0
 rotate,    body, hinge_space_base, 0, 0, 1, $alphaX
