@@ -130,3 +130,12 @@ To have more hierarchical freedom than the two level scope of assemblyComponent/
 Input objects, like sketch, plane, body, for timeline actions can be found by their 'object name' or by combination of 'parent component name/object name':
 * If a timeline action depends on other objects, then it looks anywhere in the assemblyComponent to find objects that it has to operate on. In this way it can also find objects that are placed in other groupComponents within the assemblyComponent. The objects then must have a object name that is unique in the hostComponent and in all its child components.
 * Alternatively input and target object names can be identified uniquely in the entire design by using their parent component name as well, because all component names are unique in a Fusion360 design. The object name 'd/object name' then uniquely identifies the object with that object name in component 'd'.
+
+
+## 7 Tool scripts
+
+### 7.1 naca_four_digit.py
+Calculate NACA 4 digit airfoil profile from formulas in https://en.wikipedia.org/wiki/NACA_airfoil .
+
+### 7.2 airfoils.py
+Scale and redefine the airfoil coordinates (in mm) in the zx-plane, for a NACA 4 digit profile. Used to calculated sepecific profile coordinates, adjust the rear edge width, apply a wing twist.
