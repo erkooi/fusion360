@@ -36,6 +36,7 @@ import adsk.core
 import math
 
 import interfacefiles
+import interface360
 
 
 def read_units(ui, title, filename, lineWord):
@@ -131,11 +132,21 @@ def get_3d_vector(ui, title, filename, scale, dataArr):
     is not allowed.
     """
     if [float(dataArr[0]), float(dataArr[1]), float(dataArr[2])] == [0, 0, 0]:
-        ui.messageBox('Not supported translate zero vector in %s' % filename, title)
+        interface360.warning_text(ui, 'Skip transform with zero vector in %s' % filename)
         return (False, None)
-
     result, point3D = get_3d_point(ui, title, filename, scale, dataArr)
     return (result, point3D.asVector())
+
+
+def get_rotation_angle(ui, title, filename, dataAngle):
+    """Get rotation angle in radians from dataAngle in degrees.
+
+    Zero rotation angle is not allowed in Fusion360 transform
+    """
+    if float(dataAngle) == 0:
+        interface360.warning_text(ui, 'Skip rotation with zero angle in %s' % filename)
+        return (False, None)
+    return (True, math.radians(float(dataAngle)))
 
 
 def get_3d_point_in_offset_plane(ui, title, filename, planeNormal, scale, dataArr):

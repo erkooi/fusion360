@@ -218,7 +218,7 @@ def create_three_point_plane(ui, groupComponent, planeName, threePoint3Ds):
     # Hide auxiliary Sketches folder
     groupComponent.isSketchFolderLightBulbOn = False
     # Show Construction folder with planes
-    groupComponent.isConstructionFolderLightBulbOn = True
+    groupComponent.isConstructionFolderLightBulbOn = False
     return plane
 
 

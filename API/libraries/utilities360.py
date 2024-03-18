@@ -220,7 +220,7 @@ def find_search_component(ui, hostComponent, objectType, objectName):
     if objectType != 'component':
         # remove local object name from component names list
         componentNameParts.pop()
-    interface360.print_text(ui, 'componentNameParts = ' + str(componentNameParts), verbosity)
+    interface360.print_text(ui, 'find_search_component(): componentNameParts = ' + str(componentNameParts), verbosity)
 
     if len(componentNameParts) > 0:
         # Search for the component with searchComponentName anywhere in the
@@ -232,7 +232,7 @@ def find_search_component(ui, hostComponent, objectType, objectName):
         if not searchComponent:
             # Specified search component of object not found
             return None
-    interface360.print_text(ui, 'searchComponent.name = ' + searchComponent.name, verbosity)
+    interface360.print_text(ui, 'find_search_component(): searchComponent.name = ' + searchComponent.name, verbosity)
 
     # Found the searchComponent
     return searchComponent
@@ -251,6 +251,8 @@ def find_sketch_anywhere(ui, hostComponent, sketchName):
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    verbosity = False
+
     # Find search component for sketch with sketchName
     searchComponent = find_search_component(ui, hostComponent, 'sketch', sketchName)
     if not searchComponent:
@@ -261,6 +263,9 @@ def find_sketch_anywhere(ui, hostComponent, sketchName):
     sketchNamePart = extract_last_part(sketchName)
 
     # First look in searchComponent sketches
+    interface360.print_text(ui, 'find_sketch_anywhere: searchComponent.name %s' % searchComponent.name, verbosity)
+    interface360.print_text(ui, 'find_sketch_anywhere: sketchName %s' % sketchName, verbosity)
+    interface360.print_text(ui, 'find_sketch_anywhere: sketchNamePart %s' % sketchNamePart, verbosity)
     sketches = searchComponent.sketches
     sketch = sketches.itemByName(sketchNamePart)
     if sketch:
@@ -363,6 +368,8 @@ def find_body_anywhere(ui, hostComponent, bodyName):
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    verbosity = False
+
     # Find search component for body with bodyName
     searchComponent = find_search_component(ui, hostComponent, 'body', bodyName)
     if not searchComponent:
@@ -373,8 +380,12 @@ def find_body_anywhere(ui, hostComponent, bodyName):
     bodyNamePart = extract_last_part(bodyName)
 
     # First look in searchComponent bodies
+    interface360.print_text(ui, 'find_body_anywhere: searchComponent.name %s' % searchComponent.name, verbosity)
+    interface360.print_text(ui, 'find_body_anywhere: bodyName %s' % bodyName, verbosity)
+    interface360.print_text(ui, 'find_body_anywhere: bodyNamePart %s' % bodyNamePart, verbosity)
     body = searchComponent.bRepBodies.itemByName(bodyNamePart)
     if body:
+        interface360.print_text(ui, 'find_body_anywhere: body.name %s' % body.name, verbosity)
         return body
 
     # Then search further in the component bRepBodies of all occurrences in the
@@ -677,6 +688,28 @@ def find_or_create_component(hostComponent, componentName):
     return component
 
 
+def find_or_create_occurrence(ui, hostComponent, occurrenceName):
+    """Find or create occcurrence with occurrenceName.
+
+    Search anywhere in:
+    . optional component with specified in occurrenceName, or
+    . anywhere in the hostComponent, or
+    . create component and occurrence with occurrenceName in hostComponent.
+
+    Input:
+    - hostComponent: search for occurrenceName anywhere in hostComponent
+    - occurrenceName: name of component, with occurrenceName
+    Return:
+    - occurrence when occurrenceName is found, else False:
+
+    Uses ui to interact with user and report faults via Fusion360 GUI.
+    """
+    # Find or create component with occurrenceName
+    component = find_or_create_component(hostComponent, occurrenceName)
+    occurrence = get_occurrence_anywhere(component)
+    return occurrence
+
+
 ################################################################################
 # Copy, move object in design hierarchy
 
@@ -764,6 +797,11 @@ def remove_body(body):
     return True
 
 
+def remove_body_anywhere(ui, hostComponent, bodyName):
+    """Remove body from anywhere in hostComponent."""
+    return remove_bodies_anywhere(ui, hostComponent, [bodyName])
+
+
 def remove_bodies_anywhere(ui, hostComponent, bodyNames):
     """Remove bodies from anywhere in hostComponent.
 
@@ -821,9 +859,11 @@ def transform_occurrence(ui, occurrence, transformTuple):
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    verbosity = True
+
     transformOperation, vector3D, angle = transformTuple
     interface360.print_text(ui, '%s, vector %f, %f, %f, angle %f' %
-                            (transformOperation, vector3D.x, vector3D.y, vector3D.z, angle))
+                            (transformOperation, vector3D.x, vector3D.y, vector3D.z, angle), verbosity)
     # Create a transform
     transform = create_transform_matrix3D(ui, transformOperation, vector3D, angle)
     # Do the transform, both mechanisms are equivalent

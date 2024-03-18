@@ -30,6 +30,10 @@ Outside the parameters sections parameter names can be used with a preceding $.
 The $parameter names will be replaced by their value and if they are part of
 an expression, then the expression is evaluated to set the value.
 
+Inside the parameters sections only preceeding parameter names can be used,
+outside the parameter sections parameters can be used anywhere in the file,
+so also before they are defined.
+
 The start of one parameter name must not be identical to another parameter
 name, to avoid partial parameter name substitution.
 
@@ -90,6 +94,7 @@ def read_parameters_from_file_lines(fileLines):
             # Parse parameter expression for existing parameters
             expressionMath = _parse_parameter_expression(expressionStr, parametersDict)
             # Evaluate parameter expression
+            # print('expressionMath = %s' % str(expressionMath))
             value = _eval_expression(expressionMath)
             # Add parameter
             parametersDict[name] = value

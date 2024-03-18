@@ -41,6 +41,18 @@ def print_text(ui, message, verbosity=True):
         textPalette.writeText(message)
 
 
+def note_text(ui, message):
+    """Print note message in Text Commands window of the Fusion360 GUI."""
+    print_text(ui, 'NOTE: ' + message, verbosity=True)
+    return False
+
+
+def warning_text(ui, message):
+    """Print warning message in Text Commands window of the Fusion360 GUI."""
+    print_text(ui, 'WARNING: ' + message, verbosity=True)
+    return False
+
+
 def error_text(ui, message):
     """Print error message in Text Commands window of the Fusion360 GUI."""
     print_text(ui, 'ERROR: ' + message, verbosity=True)

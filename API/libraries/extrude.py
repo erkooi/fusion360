@@ -253,10 +253,13 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    verbosity = True
+
     # Extract tuples
     object, planars = objectTuple
     operation, participantBodies, resultBodyNames = operationTuple
     offset, taperAngles, extentType, distanceValues, toBody = extentTuple
+    copiedToBody = None
 
     # Create extrude feature input
     # . The extrudeFeatures has to be obtained from the same component that
@@ -265,6 +268,9 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
     operationEnum = utilities360.get_feature_operation_enum(operation)
     extrudeFeatures = object.parentComponent.features.extrudeFeatures
     extrudeFeatureInput = extrudeFeatures.createInput(planars, operationEnum)
+    creationOccurrence = extrudeFeatureInput.creationOccurrence
+    if creationOccurrence:
+        interface360.print_text(ui, 'extrudeFeatureInput.creationOccurrence.name ' + creationOccurrence.name, verbosity)
 
     # Select extent type
     taperAngleInputOne = adsk.core.ValueInput.createByReal(taperAngles[0])
@@ -287,10 +293,37 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
                                                   taperAngleInputTwo, taperAngleInputOne)
     else:  # 'to_object'
         # Create a to-entity extent definition
+        interface360.print_text(ui, 'object.parentComponent.name ' + object.parentComponent.name, verbosity)
+        interface360.print_text(ui, 'toBody.parentComponent.name ' + toBody.parentComponent.name, verbosity)
+        interface360.print_text(ui, 'object.name ' + object.name, verbosity)
+        interface360.print_text(ui, 'toBody.name ' + toBody.name, verbosity)
+        # TODO:
+        # If the object and toBody are not in the same component, and the
+        # object is not in the upstream component of the toBody (i.e. the
+        # hostComponent), then the extrudeFeatureInput with
+        # toEntityExtentDefinition is not accepted by extrudeFeatures.add().
+        # I do not know how to use extrudeFeatureInput.creationOccurrence to
+        # handle this, because all these parentOccurrence settings fail:
+        # . parentOccurrence = utilities360.get_root_component(object.parentComponent)
+        # . parentOccurrence = utilities360.get_occurrence_anywhere(object.parentComponent)
+        # . parentOccurrence = utilities360.get_occurrence_anywhere(toBody.parentComponent)
+        # . parentOccurrence = utilities360.get_occurrence_anywhere(toBody.parentComponent.parentDesign.activeComponent)
+        #   extrudeFeatureInput.creationOccurrence = parentOccurrence
+        # Workaround:
+        # Copy the toBody to the object.parentComponent, do the extrude and
+        # then remove the copied toBody
         isChained = True
-        toEntityExtent = adsk.fusion.ToEntityExtentDefinition.create(toBody, isChained)
+        if toBody.parentComponent == object.parentComponent:
+            # Use the toBody
+            toEntityExtentDefinition = adsk.fusion.ToEntityExtentDefinition.create(toBody, isChained)
+        else:
+            # Use a copy of the toBody
+            parentOccurrence = utilities360.get_occurrence_anywhere(object.parentComponent)
+            copiedToBody = utilities360.copy_body_to_occurrence(toBody, parentOccurrence)
+            toEntityExtentDefinition = adsk.fusion.ToEntityExtentDefinition.create(copiedToBody, isChained)
+
         # Set the one side extent with the to-entity-extent-definition, and with a taper angle
-        extrudeFeatureInput.setOneSideExtent(toEntityExtent,
+        extrudeFeatureInput.setOneSideExtent(toEntityExtentDefinition,
                                              adsk.fusion.ExtentDirections.PositiveExtentDirection,
                                              taperAngleInputOne)
 
@@ -308,8 +341,14 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
 
     # Perform the extrude
     extrudeResult = extrudeFeatures.add(extrudeFeatureInput)
-    # TODO: Find out why join = 0 yields same as new_body = 3, while intersect
-    #       = 2 and cut = 1 yield expected result
+
+    # Remove the copiedToBody
+    if copiedToBody:
+        utilities360.remove_body(copiedToBody)
+
+    # TODO:
+    # Find out why join = 0 yields same as new_body = 3, while intersect = 2
+    # and cut = 1 yield expected result
     # interface360.error_text(ui, 'operation = ' + str(extrudeFeatureInput.operation))
     return extrudeResult
 

@@ -131,7 +131,6 @@ extrude, csv/F35B-CSV/vertical_stabilizer, extrude_fin_pedestal, vertical_stabil
 face, loft_fin, 1
 offset, 0
 taper_angle, 20
-#extent_type, distance, 22
 extent_type, to_object, shell_plane_0_1403
 operation, new_body
 #operation, join

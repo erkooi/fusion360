@@ -36,6 +36,7 @@ assembly_filenames
   F35B-aileron.assembly.csv
   F35B-pin-holes.assembly.csv
   F35B-vertical-stabilizer.assembly.csv
+  F35B-elevator.assembly.csv
   F35B-airplane.assembly.csv
   
 echo, --------------------------------------------------------------------------

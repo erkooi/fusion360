@@ -254,8 +254,8 @@ def verify_component_folder_name(li, componentName, folderName):
     """
     subFolderNames = extract_sub_folder_names(folderName)
     subComponentNames = extract_sub_folder_names(componentName)
-    if subFolderNames[-1] != subComponentNames[-1]:
-        print('ERROR line %d: last part in component name %s != %s last part in folder name' %
+    if subFolderNames[-1] != subComponentNames[0]:
+        print('ERROR line %d: first part in component name %s != %s last part in folder name' %
               (li, componentName, folderName))
         return False
     return True
@@ -1168,6 +1168,13 @@ def read_timeline_from_file_lines(fileLines):
     timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'cross_rails')
     timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'loft')
     timelineList += _read_timeline_multi_objects_from_file_lines(fileLines, 'plane')
+    # Remove duplicate multiple_create_sketch assembly lines from list, that
+    # can occur when cross_rails use same folder as other sketches. Do not use
+    # list(set()), because set() does not preserve order.
+    result = []
+    [result.append(aLine) for aLine in timelineList if aLine not in result]
+    timelineList = result
+
     # Process per single CSV file
     timelineList += _read_timeline_single_objects_from_file_lines(fileLines)
     return timelineList

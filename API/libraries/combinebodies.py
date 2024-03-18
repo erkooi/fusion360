@@ -138,7 +138,8 @@ def combine_bodies_into_new_component(groupComponent, targetBody, toolBodies, op
       * combineBody = result of targetBody operation toolBodies
       * Keep targetBody and keep toolBodies.
     . operation: combine operation from validCombineOperations
-    . combineResultName : name for combineComponent and for combineBody in combineComponent
+    . combineResultName : name for combineComponent and for combineBody in
+      combineComponent.
     Return: None
     """
     # Prepare combineFeatureInput for result in new component.
@@ -237,13 +238,13 @@ def combine_bodies_from_csv_file(ui, title, filename, hostComponent, combineNewC
     if not result:
         return False
 
-    # Create groupComponent in hostComponent for split body object, if it does
+    # Create groupComponent in hostComponent for combined body, if it does
     # not already exist, else use hostComponent if groupComponentName is empty
     # string or is the hostComponent.
     groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
 
-    # Create combined object and put result in groupComponent
-    # Create combined object
+    # Create combined body and put result in new component in groupComponent
+    # or in bodies of groupComponent.
     if combineNewComponent:
         combine_bodies_into_new_component(hostComponent, targetBody, toolBodies, operation, combineResultName)
     else:

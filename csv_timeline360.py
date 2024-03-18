@@ -72,8 +72,8 @@ Usage of CSV files in Fusion360:
 Usage on command line:
 > python ..\\csv_timeline360.py -f f35b_points.txt
 > python ..\\csv_timeline360.py -f ^
-f35b_points.txt,f35b_aileron.txt,f35b_pin_holes.txt,f35b_vertical_stabilizer.txt,f35b_airplane.txt,^
-f35b_csv.txt
+f35b_points.txt,f35b_aileron.txt,f35b_pin_holes.txt,f35b_vertical_stabilizer.txt,f35b_elevator.txt,^
+f35b_airplane.txt,f35b_csv.txt
 """
 
 import argparse
