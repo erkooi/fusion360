@@ -30,6 +30,13 @@ circle
 1001, 19, 4
 1095, 23, 3
 
+sketch, csv/F35B-CSV/pin_holes, y_0_wing_cable_holes, pin_holes
+offset_plane, y, 0
+ellipse
+ 900, 26,  910, 26,  900, 31  # major radius 10, minor radius 5
+ 960, 25,  975, 25,  960, 31  # major radius 15, minor radius 6
+1060, 22, 1070, 22, 1060, 27  # major radius 10, minor radius 5
+  
 echo, --------------------------------------------------------------------------
 echo, Extrudes to make pin bodies
 echo, --------------------------------------------------------------------------
@@ -58,11 +65,39 @@ extent_type, distance, -155
 operation, new_body
 extrude_results, extrude_wing_rear_pin
 
+echo, --------------------------------------------------------------------------
+echo, Extrudes to make cable tube bodies
+echo, --------------------------------------------------------------------------
+
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_front_cable_tube, pin_holes
+profile, y_0_wing_cable_holes, 0
+offset, -220
+taper_angle, 0
+extent_type, distance, -50
+operation, new_body
+extrude_results, extrude_wing_front_cable_tube
+
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_center_cable_tube, pin_holes
+profile, y_0_wing_cable_holes, 1
+offset, -220
+taper_angle, 0
+extent_type, distance, -50
+operation, new_body
+extrude_results, extrude_wing_center_cable_tube
+
+extrude, csv/F35B-CSV/pin_holes, extrude_wing_rear_cable_tube, pin_holes
+profile, y_0_wing_cable_holes, 2
+offset, -220
+taper_angle, 0
+extent_type, distance, -50
+operation, new_body
+extrude_results, extrude_wing_rear_cable_tube
 
 echo, --------------------------------------------------------------------------
-echo, Combines to cut pin holes
+echo, Combines to cut pin and tube holes
 echo, --------------------------------------------------------------------------
 
+# cut in wing
 combine, csv/F35B-CSV/pin_holes, wing_with_pin_holes
 operation, cut
 combine_bodies
@@ -71,6 +106,7 @@ combine_bodies
   extrude_wing_center_pin
   extrude_wing_rear_pin
 
+# cut in whole fuselage
 combine, csv/F35B-CSV/pin_holes, fuselage_with_pin_holes
 operation, cut
 combine_bodies
@@ -78,6 +114,36 @@ combine_bodies
   extrude_wing_front_pin
   extrude_wing_center_pin
   extrude_wing_rear_pin
+  extrude_wing_front_cable_tube
+  extrude_wing_center_cable_tube
+  extrude_wing_rear_cable_tube
+  
+# apply cut also in printing_parts
+# . first create the bodies with pin holes in bodies of pin_holes component
+combine, csv/F35B-CSV/pin_holes, shell_fuselage_inlet_430_875
+operation, cut
+combine_bodies
+  shell_fuselage_inlet_430_875/shell_fuselage_inlet_430_875
+  extrude_wing_front_pin
+
+combine, csv/F35B-CSV/pin_holes, shell_fuselage_outlet_875_1230
+operation, cut
+combine_bodies
+  shell_fuselage_outlet_875_1230/shell_fuselage_outlet_875_1230
+  extrude_wing_center_pin
+  extrude_wing_rear_pin
+  extrude_wing_front_cable_tube
+  extrude_wing_center_cable_tube
+  extrude_wing_rear_cable_tube
+
+# . then remove original body in corresponding printing_parts component and
+#   replace it by body from pin_holes
+movecopy, csv/F35B-CSV/pin_holes, printing_pin_holes
+remove, body, shell_fuselage_inlet_430_875/shell_fuselage_inlet_430_875
+move, body, shell_fuselage_inlet_430_875, shell_fuselage_inlet_430_875
+remove, body, shell_fuselage_outlet_875_1230/shell_fuselage_outlet_875_1230
+move, body, shell_fuselage_outlet_875_1230, shell_fuselage_outlet_875_1230
+
 
 ################################################################################
 # Assembly
