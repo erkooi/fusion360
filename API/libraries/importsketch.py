@@ -43,6 +43,8 @@ Sketch CSV file format:
       clockwise direction.
     . 'circle': list of one or more circles, defined by center point (x, y)
       and radius.
+    . 'ellipse': list of one or more ellipses, defined by center point (x, y),
+      major axis point (mx, my) and a point (ex, ey) anywhere on the ellipse.
     . 'offset_curve': defines an offset curve for the previous segments, by
       direction point (x, y) for offset direction and offset distance.
     . 'point': list of two or more 2D point coordinates in sketch plane
@@ -185,6 +187,48 @@ def get_segment_circle(ui, title, filename, planeNormal, unitScale, dataArr):
         result = (True, circleTuple)
     except Exception:
         ui.messageBox('No valid circle parameters in %s of %s' % (dataArr, filename), title)
+        result = (False, None)
+    return result
+
+
+def get_segment_ellipse(ui, title, filename, planeNormal, unitScale, dataArr):
+    """Get ellipse parameters for ellipse segment.
+
+    Input:
+    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+    . unitScale: scale factor between dataArr unit and API cm unit
+    . dataArr:
+        [0] = center x coordinate in plane
+        [1] = center y coordinate in plane
+        [2] = on major axis point x coordinate in plane
+        [3] = on major axis point y coordinate in plane
+        [4] = on ellipse point x coordinate in plane
+        [5] = on ellipse point y coordinate in plane
+    Return:
+    . result: True when valid ellipseTuple, else False with None
+    . ellipseTuple:
+      - centerPoint3D: center of ellipse coordinates in plane (x, y, 0)
+      - majorPoint3D: on major axis point of ellipse coordinates in plane
+        (x, y, 0)
+      - ellipsePoint3D: on ellipse point of ellipse coordinates in plane
+        (x, y, 0)
+
+    Uses ui, title, filename to report faults via Fusion360 GUI.
+    """
+    try:
+        # Get point3D points for ellipse in offset plane
+        result1, centerPoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                           planeNormal, unitScale, dataArr[0:2])
+        result2, majorPoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                          planeNormal, unitScale, dataArr[2:4])
+        result3, ellipsePoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                            planeNormal, unitScale, dataArr[4:6])
+        if not (result1 and result2 and result3):
+            raise Exception
+        ellipseTuple = (centerPoint3D, majorPoint3D, ellipsePoint3D)
+        result = (True, ellipseTuple)
+    except Exception:
+        ui.messageBox('No valid ellipse parameters in %s of %s' % (dataArr, filename), title)
         result = (False, None)
     return result
 
@@ -359,6 +403,9 @@ def parse_sketch_segment_sections(ui, title, filename, planeNormal, unitScale, l
         elif segmentType == 'circle':
             result, segmentTuple = parse_segment_circle(ui, title, filename, planeNormal, unitScale,
                                                         liStart, liLast, lineLists)
+        elif segmentType == 'ellipse':
+            result, segmentTuple = parse_segment_ellipse(ui, title, filename, planeNormal, unitScale,
+                                                         liStart, liLast, lineLists)
         elif segmentType == 'point':
             result, segmentTuple = parse_segment_point(ui, title, filename, planeNormal, unitScale,
                                                        liStart, liLast, lineLists)
@@ -604,6 +651,41 @@ def parse_segment_circle(ui, title, filename, planeNormal, unitScale, liStart, l
     return (True, segmentTuple)
 
 
+def parse_segment_ellipse(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
+    """Parse ellipse segment section from lines [liStart : liLast + 1] in
+       lineLists.
+
+    Same interface as parse_segment_spline(), but with ellipse parameters.
+
+    Return:
+    . result: True when valid segmentTuple, else False with None
+    . segmentTuple:
+      - segmentType: 'ellipse'
+      - segmentEllipses, list of ellipseTuples:
+        . centerPoint3D: scaled ellipse center coordinates in plane (x, y, 0)
+        . majorPoint3D: scaled ellipse major axis point coordinates in plane
+          (x, y, 0)
+        . ellipsePoint3D: scaled ellipse point coordinates in plane (x, y, 0)
+    """
+    resultFalse = (False, None)
+    lineNr = liStart + 1  # index starts at 0, nr starts at 1
+    segmentEllipses = []
+    # Check segment type
+    segmentType = lineLists[liStart][0]
+    if segmentType != 'ellipse':
+        ui.messageBox('No ellipse segment in %s at %d' % (filename, lineNr), title)
+        return resultFalse
+    # Read 2D center, major and ellipse points, in offset plane, one ellipse per file line
+    for li in range(liStart + 1, liLast + 1):
+        dataArr = lineLists[li]
+        result, ellipseTuple = get_segment_ellipse(ui, title, filename, planeNormal, unitScale, dataArr)
+        if not result:
+            return resultFalse
+        segmentEllipses.append(ellipseTuple)
+    segmentTuple = (segmentType, segmentEllipses)
+    return (True, segmentTuple)
+
+
 def parse_segment_point(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
     """Parse point segment section from lines [liStart : liLast + 1] in
        lineLists.
@@ -717,6 +799,16 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
                     radius = segmentCircle[1]
                     circle = circles.addByCenterRadius(centerPoint3D, radius)
                     curves.add(circle)
+            elif segmentType == 'ellipse':
+                segmentEllipses = segment[1]
+                ellipses = sketch.sketchCurves.sketchEllipses
+                for segmentEllipse in segmentEllipses:
+                    # Create ellipse
+                    centerPoint3D = segmentEllipse[0]
+                    majorPoint3D = segmentEllipse[1]
+                    ellipsePoint3D = segmentEllipse[2]
+                    ellipse = ellipses.add(centerPoint3D, majorPoint3D, ellipsePoint3D)
+                    curves.add(ellipse)
             elif segmentType == 'offset_curve':
                 directionPoint3D = segment[1]
                 offsetDistance = segment[2]

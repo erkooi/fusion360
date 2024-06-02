@@ -30,7 +30,7 @@ validRandomActions = ['sketch', 'plane', 'loft']
 validOrderedActions = ['extrude', 'combine', 'split', 'movecopy', 'mirror']
 validUnits = ['mm', 'cm', 'm']
 validPlaneNormals = ['x', 'y', 'z']
-validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'point']
+validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'ellipse', 'point']
 validRailTypes = ['co_rail', 'cross_rails']
 validCombineOperations = ['join', 'cut', 'intersect']
 validSplitToolTypes = ['plane', 'body']
@@ -242,8 +242,9 @@ def extract_sub_folder_names(filename):
 def verify_component_folder_name(li, componentName, folderName):
     """Verify whether component name equals folder name in a timeline file
 
-    Print ERROR message when last name in folderName and first name in
-    componentName are not equal.
+    Print WARNING message when last name in folderName and first name in
+    componentName are not equal, to indicate that the action affects another
+    group component than its own group component.
 
     Input:
     . li: line index in timeline file
@@ -255,7 +256,7 @@ def verify_component_folder_name(li, componentName, folderName):
     subFolderNames = extract_sub_folder_names(folderName)
     subComponentNames = extract_sub_folder_names(componentName)
     if subFolderNames[-1] != subComponentNames[0]:
-        print('ERROR line %d: first part in component name %s != %s last part in folder name' %
+        print('WARNING line %d: first part in component name %s != %s last part in folder name' %
               (li, componentName, folderName))
         return False
     return True
@@ -977,8 +978,7 @@ def _parse_first_fline(li, entries):
     groupComponentName = ''
     if len(entries) > 3:
         groupComponentName = entries[3]
-        if not verify_component_folder_name(li, groupComponentName, csvFolderName):
-            return None
+        verify_component_folder_name(li, groupComponentName, csvFolderName)
     fileTypeLine = fileType + ', ' + fileTypeFilename
     fileTypeLine = append_string_to_csv_line(fileTypeLine, groupComponentName)
     return csvFilename, fileTypeLine
