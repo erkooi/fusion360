@@ -6,9 +6,9 @@ For more information please also check my channel "Eric Kooistra - Hobby" on You
 The CSV files define actions and hierarchy for a design in Fusion360. There are three levels of CSV files:
 1. action CSV files: define single 'create' and 'modify actions, as in the SOLID menu in the Fusion360 GUI.
 2. assembly CSV files: define an assembly component and a series of action CSV files
-3. design CSV file: define a sequency of assembly CSV files to build a design toplevel assembly with multiple sub assemblies.
+3. design CSV file: define a sequence of assembly CSV files to build a design toplevel assembly with multiple sub assemblies.
 
-The CSV files can be accessed in the Fusion360 GUI using the API/Scripts. There are API/scripts for each CSV file level. The API/Scripts can be ran via the UTILITIES/ADD-INS/Scripts and Add-Ins menu in the Fusion360 GUI. The scripts are in Python. The Python code consiste of:
+The CSV files can be accessed in the Fusion360 GUI using the API/Scripts. There are API/scripts for each CSV file level. The API/Scripts can be ran via the UTILITIES/ADD-INS/Scripts and Add-Ins menu in the Fusion360 GUI. The scripts are in Python. The Python code consists of:
 * API/libraries that contains library files that are used in the other scripts for handling CSV files and Fusion360 objects.
 * API/Scripts that contains scripts that can run in Fusion360 to create objects like sketches, planes, lofts, bodies, components and assemblies from CSV files.
 
@@ -129,7 +129,7 @@ To have more hierarchical freedom than the two level scope of assemblyComponent/
 ### 6.3 Input object search
 Input objects, like sketch, plane, body, for timeline actions can be found by their 'object name' or by combination of 'parent component name/object name':
 * If a timeline action depends on other objects, then it looks anywhere in the assemblyComponent to find objects that it has to operate on. In this way it can also find objects that are placed in other groupComponents within the assemblyComponent. The objects then must have a object name that is unique in the hostComponent and in all its child components.
-* Alternatively input and target object names can be identified uniquely in the entire design by using their parent component name as well, because all component names are unique in a Fusion360 design. The object name 'd/object name' then uniquely identifies the object with that object name in component 'd'.
+* Alternatively input and target object names can be identified uniquely in the entire design by using their parent component name as well, because all component names are unique in a Fusion360 design. The object name 'd/object name' then uniquely identifies the object with that object name anywhere in component 'd'. For example if the object is d/e/f/object and its object name is unique in d/, then 'parent component name/object name' as 'd/object name', or 'e/object name' or 'f/object name' are all equivalent ways to identify it.
 
 
 ## 7 Tool scripts
