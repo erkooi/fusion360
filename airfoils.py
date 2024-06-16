@@ -67,7 +67,7 @@ zx-plane.
     and then almost fully applied for the remainder of the chord.
     Use exponent_width > 1 to have smallest change to the overall shape of the
     airfoil. Use exponent_width = 4 to effectively adapt the x**4 coefficient
-    in the airfoil formula [1]. Thereforedefault use exponent_width = 4.
+    in the airfoil formula [1]. Therefor default use exponent_width = 4.
 - wing_twist = defines rear edge z-offset in mm, that is used to determine the
     twistAngle. Using same rear edge offset along the wing causes that the
     wing profile gets rotated by the twistAngle around the front edge as
@@ -108,8 +108,8 @@ cd /d/git/<script dir>
 #   wing tip where it is arctan(wing_twist / chord_len) = arctan(4 / 152) =
 #   1.51 degrees.
 
-# Default wing profiles for fuselage, bin corners and wing tip at y = 175, 213,
-# 250, 526
+# Main wing profiles for fuselage,
+# with bin corners and wing tip at y = 175, 213, 250, 526
 python airfoils.py --chord_len 477 --tx 746 --ty -175 --tz 19 --xfit --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
                    --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 772,783,797,820,895,983,1100,1142,1204
 python airfoils.py --chord_len 441 --tx 772 --ty -213 --tz 19 --xfit --rear_width 0.8 --rear_arc 0.6 --wing_twist 0 ^
@@ -148,11 +148,32 @@ python airfoils.py -M 1 -P 4 -T 16 --exponent_width 1 --rear_width 18 ^
                    --chord_len 431 --tx 782 --ty -213 --tz 19 --xfit --wing_twist 0 ^
                    --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025,0.0125 --xa 797,820,895,983,1100,1142,1204
 
+# Vertical stabilizer fin
 # GOE-444 ~= NACA-0006
-python airfoils.py --profile GOE-444 --chord_len 477 --rear_width 0.8 --exponent_width 0.5
+python airfoils.py --profile GOE-444 --chord_len 477 --rear_width 0.8 --exponent_width 0.5 --csv_normal z
 python airfoils.py --profile GOE-444 --chord_len 216 --rear_width 0.8 --exponent_width 0.5 --csv_normal z
-python airfoils.py -M 0 -P 0 -T 6
+python airfoils.py -M 0 -P 0 -T 6 ^
                    --chord_len 216 --rear_width 0.8 --exponent_width 0.5 --tangent_length 16 --csv_normal z
+
+# Horizontal stabilizer elevator wing
+# . skip -xn 0.0125 to have more freedom for spline tangent
+python ..\airfoils.py -M 0 -P 0 -T 6 --chord_len 345 --tx 1197 --ty -80 --tz 23 ^
+                                  --rear_width 0.8 --exponent_width 0.5 ^
+                                  --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025 --xa 1381,1403
+python ..\airfoils.py -M 0 -P 0 -T 6 --chord_len 85 --tx 1387 --ty -358 --tz 23 ^
+                                  --rear_width 0.8 --exponent_width 0.5 ^
+                                  --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025 --xa 1403
+python ..\airfoils.py -M 0 -P 0 -T 2 --chord_len 345 --ty 80 ^
+                                     --rear_width 0.8 --exponent_width 0.5 ^
+                                     --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025 --xa 184,206
+python ..\airfoils.py -M 0 -P 0 -T 6 --chord_len 85 --ty -358 ^
+                                     --rear_width 0.8 --exponent_width 0.5 ^
+                                     --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025 --xa 16
+
+python ..\airfoils.py -M 0 -P 0 -T 6 --chord_len 100 ^
+                                     --rear_width 0.8 --exponent_width 0.5 ^
+                                     --xn 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025
+python ..\airfoils.py --profile GOE-444 --chord_len 100 --rear_width 0.8 --exponent_width 0.5
 
 # in iPython:
 import os
@@ -217,9 +238,9 @@ def calculate_twist_angle(args):
     return np.arctan2(args.wing_twist_z, args.chord_len)
 
 
-def calculate_thickness():
+def calculate_naca_thickness(args):
     """Calculate wing thickness from args."""
-    return args.chord_len * args.T / 100
+    return args.scale_z * args.chord_len * args.T / 100
 
 
 def calculate_wing_profile(profile_top_x,
@@ -302,7 +323,7 @@ def calculate_wing_naca(args):
     T = args.T
     profileBaseName = naca_four_digit.profile_name_string(M, P, T)
     # Derived parameters
-    thickness = args.chord_len * T / 100
+    thickness = calculate_naca_thickness(args)
     twistAngle = calculate_twist_angle(args)
     # Get normalized x coordinates for airfoil profile
     xnUp = xn
@@ -426,7 +447,7 @@ def calculate_wing_goe444(args):
     return (wingProfilesTuple, wingOffsetsTuple, wingParametersTuple)
 
 
-def save_csv_wing_profile(args, filepathname, wingProfilesTuple, wingParametersTuple):
+def save_csv_wing_profile(args, folderName, profileName, wingProfilesTuple, wingParametersTuple):
     """Save wing profile coordinates in CSV sketch file.
 
     - Write parameters from args and wingParametersTuple in CSV comment
@@ -464,9 +485,14 @@ def save_csv_wing_profile(args, filepathname, wingProfilesTuple, wingParametersT
     # Account for twistAngle in front tangent angle
     tangentAngle += np.rad2deg(twistAngle)
 
+    # Write profile sketch CSV file
+    filename = profileName + '.csv'
+    filepathname = os.path.join(folderName, filename)
     with open(filepathname, 'w') as fp:
         # Write comment
         fp.write('# Wing profile sketch created with airfoils.py:\n')
+        fp.write('# . folderName:    : %s\n' % folderName)
+        fp.write('# . profileName:   : %s\n' % profileName)
         fp.write('# . profileBaseName: %s\n' % profileBaseName)
         fp.write('# --chord_len      : %.*f\n' % (args.decimals, args.chord_len))
         fp.write('# . thickness      : %.*f\n' % (args.decimals, thickness))
@@ -485,11 +511,11 @@ def save_csv_wing_profile(args, filepathname, wingProfilesTuple, wingParametersT
         fp.write('# --xa             : %s\n' % args.xa)
         fp.write('# --xfit           : %s\n' % args.xfit)
         # Write file type
-        fp.write('sketch\n')
+        fp.write('sketch, ' + profileName + '\n')
         # Write units
         fp.write(unit + '\n')
         # Write plane normal (= y for XZ plane) and offset (= ty)
-        fp.write(csvNormal + ', ' + str(ty) + '\n')
+        fp.write('offset_plane, ' + csvNormal + ', ' + str(ty) + '\n')
         # Write wing top points with spline
         fp.write('spline\n')
         for i in range(N_top):
@@ -588,9 +614,12 @@ if __name__ == '__main__':
     tangentLength = args.tangent_length
     if int(tangentAngle) != 0:
         if int(tangentLength) == 0:
+            # Actual tangentLength need manual adjustment, because it depends
+            # on where the spline point locations and on args.T.
             if args.profile == 'NACA':
-                tangentLength = args.chord_len * args.scale_z / 6.0  # appropriate value for NACA-1408
+                tangentLength = args.chord_len * args.scale_z * args.T / 50
             elif args.profile == 'GOE-444':
+                # GOE-444 ~= NACA-0006
                 tangentLength = args.chord_len * args.scale_z / 13.0  # appropriate value for GOE-444
     twistAngle = calculate_twist_angle(args)
 
@@ -631,18 +660,25 @@ if __name__ == '__main__':
 
     # Prepare for sketch in XZ plane with profileNormal = y, but support saving
     # profile in the CSV file in another plane with csvNormal is y, x or z.
+    # With fuselage fron nose to tail in positive x direction and bottom to top
+    # in positive z direction:
+    # . csvNormal = 'y' : x chord for main wing (with aileron) and horizontal
+    #                     stabilizer (with elevator)
+    # . csvNormal = 'z' : x chord for veritical stabilizer (with rudder)
+    # . csvNormal = 'x' : not used
     profileName = profileBaseName
     csvNormal = args.csv_normal
-    csvPlane = 'zx'
-    if csvNormal == 'x':
-        csvPlane = 'yz'
+    if csvNormal == 'y':
+        csvPlane = 'zx'
     elif csvNormal == 'z':
         csvPlane = 'xy'
-    # . add zx-plane at y offset in profile file name
-    profileName += '_%s_%s%d' % (csvPlane, csvNormal, np.abs(args.ty))
-    # . add profile chord_len in profile file name
-    profileName += '_len%d' % args.chord_len
-    # . y is normal of zx-plane
+    else:
+        print('ERROR: Not supported --csv_normal = ' + csvNormal)
+    csvOffset = '%s%d' % (csvNormal, np.abs(args.ty))
+    csvChordLen = 'chord_len_x%d' % args.chord_len
+    profileName += '_%s_%s_%s' % (csvPlane, csvOffset, csvChordLen)
+
+    # Use y is normal of zx-plane for profile calculations
     profileNormal = 'y'
 
     ############################################################################
@@ -652,12 +688,10 @@ if __name__ == '__main__':
 
     ############################################################################
     # Save profile in csv (comma seperated values) format
-    filename = profileName + '.csv'
-    filepathname = os.path.join(folderName, filename)
     wingProfilesTuple = (wing_top_x, wing_top_z, wing_bottom_x, wing_bottom_z)
     wingParametersTuple = (unit, profileBaseName, profileNormal, thickness, tangentAngle, twistAngle)
 
-    save_csv_wing_profile(args, filepathname, wingProfilesTuple, wingParametersTuple)
+    save_csv_wing_profile(args, folderName, profileName, wingProfilesTuple, wingParametersTuple)
 
     ############################################################################
     # Plot
