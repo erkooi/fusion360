@@ -114,8 +114,8 @@ remove_bodies
   loft_aileron_box_inner
 
 # Split to cut out aileron from wing
-split, csv/F35B-CSV/aileron, split_loft_solid_wing_box, aileron
-split_body, loft_solid_wing
+split, csv/F35B-CSV/aileron, split_f35b_wing_box, aileron
+split_body, f35b_wing
 split_tool, body, aileron_box_cutter
 splitted_bodies
   split_cut_aileron_box
@@ -198,13 +198,13 @@ remove_bodies
   gap_aileron_end
 
 # Split to cut out aileron from wing
-split, csv/F35B-CSV/aileron, split_loft_solid_wing_arc, aileron
-split_body, loft_solid_wing
+split, csv/F35B-CSV/aileron, split_f35b_wing_arc, aileron
+split_body, f35b_wing
 split_tool, body, gap_aileron_cutter
 splitted_bodies
   split_cut_aileron_arc
-  split_wing_arc
-  split_aileron_arc
+  split_f35b_wing_arc
+  split_f35b_aileron_arc
 remove_bodies
 #  gap_aileron_cutter
   split_cut_aileron_arc
@@ -339,31 +339,46 @@ rotate,    body, hinge_space_base, 1, 0, 0, $alphaZ
 translate, body, hinge_space_base, $xBase, $yBase, $zBase
 
 # Cut hinges from wing
-combine, csv/F35B-CSV/aileron, wing_with_hinge_holes
+combine, csv/F35B-CSV/aileron, f35b_wing_with_hinge_holes, aileron
 operation, cut
 combine_bodies
-  split_wing_arc
+  split_f35b_wing_arc
   hinge_tip
   hinge_mid
   hinge_base
 remove_bodies
-  split_wing_arc
+  split_f35b_wing_arc
   hinge
 
 # Cut hinge spacers from aileron
-combine, csv/F35B-CSV/aileron, aileron_with_hinge_spaces
+combine, csv/F35B-CSV/aileron, f35b_aileron_with_hinge_spaces, aileron
 operation, cut
 combine_bodies
-  split_aileron_arc
+  split_f35b_aileron_arc
   hinge_space_tip
   hinge_space_mid
   hinge_space_base
 remove_bodies
-  split_aileron_arc
+  split_f35b_aileron_arc
   hinge_space
   hinge_space_tip
   hinge_space_mid
   hinge_space_base
+
+################################################################################
+# Update F35B-CSV/bodies
+
+echo, --------------------------------------------------------------------------
+echo, Update F35B-CSV/bodies with aileron
+echo, --------------------------------------------------------------------------
+
+movecopy, csv/F35B-CSV/aileron, update_f35b_with_aileron
+# Copy f35b_aileron_with_hinge_spaces to F35B-CSV/f35b_aileron
+copy, body, f35b_aileron_with_hinge_spaces, f35b_aileron, F35B-CSV
+# Replace F35B-CSV/f35b_wing by f35b_wing_with_hinge_holes
+remove, body, F35B-CSV/f35b_wing
+copy, body, f35b_wing_with_hinge_holes, f35b_wing, F35B-CSV
+
 
 ################################################################################
 # Assembly

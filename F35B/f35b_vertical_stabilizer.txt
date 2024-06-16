@@ -126,22 +126,39 @@ movecopy, csv/F35B-CSV/vertical_stabilizer, fin_left
 rotate,    body, loft_fin, 1, 0, 0, 90 - $tiltAngle
 translate, body, loft_fin, $xBaseFront, -$yBase, $zBase
 
+################################################################################
+# Create a left fin pedestal on f35b_fuselage
+
 # Extrude pedestal from fin to fuselage
 extrude, csv/F35B-CSV/vertical_stabilizer, extrude_fin_pedestal, vertical_stabilizer
 face, loft_fin, 1
 offset, 0
 taper_angle, 20
-extent_type, to_object, shell_plane_0_1403
+extent_type, to_object, f35b_fuselage
 operation, new_body
 #operation, join
 extrude_results, fin_pedestal, loft_fin
 
 # Join fin pedestal with fuselage
-combine, csv/F35B-CSV/vertical_stabilizer, shell_plane_with_pedestal
+combine, csv/F35B-CSV/vertical_stabilizer, f35b_fuselage_with_pedestal, vertical_stabilizer
 operation, join
 combine_bodies
-  shell_plane_0_1403
+  f35b_fuselage
   fin_pedestal
+
+################################################################################
+# Update F35B-CSV/bodies
+
+echo, --------------------------------------------------------------------------
+echo, Update F35B-CSV/bodies with vertical_stabilizer
+echo, --------------------------------------------------------------------------
+
+movecopy, csv/F35B-CSV/vertical_stabilizer, update_f35b_with_vertical_stabilizer
+# Copy loft_fin to F35B-CSV/f35b_fin
+copy, body, loft_fin, f35b_fin, F35B-CSV
+# Replace F35B-CSV/f35b_fuselage by f35b_fuselage_with_pedestal
+remove, body, F35B-CSV/f35b_fuselage
+copy, body, f35b_fuselage_with_pedestal, f35b_fuselage, F35B-CSV
 
 
 ################################################################################

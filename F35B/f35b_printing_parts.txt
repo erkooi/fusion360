@@ -20,157 +20,108 @@
 # 3D printing. The parts are components, because a component can be exported as
 # an f3d file. The F35B-CSV component was created with f35b_points.txt.
 
-echo, --------------------------------------------------------------------------
-echo, Combine and split bodies for shells for 3D-printing
-echo, --------------------------------------------------------------------------
-
 # YZ split planes for 3D-printing parts
-plane, csv/F35B-CSV/shell_parts, plane_x_140, shell_parts
+plane, csv/F35B-CSV/printing_parts, plane_x_140, printing_parts
 point, 140,   0,    0
 point, 140, 100,    0
 point, 140,   0,  100
 
-plane, csv/F35B-CSV/shell_parts, plane_x_430, shell_parts
+plane, csv/F35B-CSV/printing_parts, plane_x_430, printing_parts
 point, 430,   0,    0
 point, 430, 100,    0
 point, 430,   0,  100
 
-plane, csv/F35B-CSV/shell_parts, plane_x_875, shell_parts
+plane, csv/F35B-CSV/printing_parts, plane_x_875, printing_parts
 point, 875,   0,    0
 point, 875, 100,    0
 point, 875,   0,  100
 
-plane, csv/F35B-CSV/shell_parts, plane_x_1230, shell_parts
+plane, csv/F35B-CSV/printing_parts, plane_x_1230, printing_parts
 point, 1230,   0,    0
 point, 1230, 100,    0
 point, 1230,   0,  100
 
+echo, --------------------------------------------------------------------------
+echo, Split shells for 3D-printing
+echo, --------------------------------------------------------------------------
+
 # shell_nose_0_140
-split, csv/F35B-CSV/shell_parts, split_loft_solid_nose, shell_parts
-split_body, loft_solid_nose
+split, csv/F35B-CSV/printing_parts, split_shell_nose_0_140, printing_parts
+split_body, f35b_fuselage
 split_tool, plane, plane_x_140
 splitted_bodies
-  solid_nose_0_140
-  solid_nose_140_465
+  shell_nose_0_140
+  shell_fuselage_140_end
 
-combine, csv/F35B-CSV/shell_parts, shell_nose_0_140, shell_parts
-operation, cut
+# shell_fuselage_inlet_140_end = f35b_inlet + shell_fuselage_140_end
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_140_end, printing_parts
+operation, join
 combine_bodies
-  solid_nose_0_140
-  loft_cut_nose
+  f35b_inlet
+  shell_fuselage_140_end
 
 # shell_nose_140_430
-split, csv/F35B-CSV/shell_parts, split_solid_nose_140_465, shell_parts
-split_body, solid_nose_140_465
+split, csv/F35B-CSV/printing_parts, split_shell_nose_140_465, printing_parts
+split_body, shell_fuselage_inlet_140_end
 split_tool, plane, plane_x_430
 splitted_bodies
-  solid_nose_140_430
-  solid_nose_430_465
+  shell_nose_140_430
+  shell_inlet_418_430
+  shell_fuselage_430_end
 
-combine, csv/F35B-CSV/shell_parts, shell_nose_140_430, shell_parts
-operation, cut
-combine_bodies
-  solid_nose_140_430
-  loft_cut_nose
-
-# shell_fuselage_inlet_430_875
-combine, csv/F35B-CSV/shell_parts, solid_fuselage_430_1230, shell_parts
+# shell_fuselage_inlet_430_end = shell_inlet_418_430 + shell_fuselage_430_end
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_430_end, printing_parts
 operation, join
 combine_bodies
-  solid_nose_430_465
-  loft_solid_nose_collar  # 465 - 499
-  loft_solid_fuselage_inlet  # 499 - 697
-  loft_solid_fuselage  # 697 - 1142
-  loft_solid_fuselage_outlet  # 1142 - 1230
-  loft_solid_ybin_fuselage  # 697 - 1123
-  loft_solid_ybin_wing  # 772 - 1213
+  shell_inlet_418_430
+  shell_fuselage_430_end
 
-split, csv/F35B-CSV/shell_parts, split_solid_fuselage_430_1230, shell_parts
-split_body, solid_fuselage_430_1230
+# shell_fuselage_430_875
+split, csv/F35B-CSV/printing_parts, split_shell_fuselage_430_875, printing_parts
+split_body, shell_fuselage_inlet_430_end
 split_tool, plane, plane_x_875
 splitted_bodies
-  solid_fuselage_430_875
-  solid_fuselage_875_1230
+  shell_fuselage_430_875
+  shell_fuselage_875_end
 
-combine, csv/F35B-CSV/shell_parts, shell_fuselage_430_875, shell_parts
-operation, cut
-combine_bodies
-  solid_fuselage_430_875
-  loft_cut_nose  # 0 - 499
-  loft_cut_fuselage_inlet  # 499 - 697
-  loft_cut_fuselage_bin  # 697 - 772
-  loft_cut_fuselage_wing  # 772 - 797
-  loft_cut_fuselage_chord_bin  # 797 - 820
-  loft_cut_fuselage_chord  # 820 - 1100
-
-combine, csv/F35B-CSV/shell_parts, shell_fuselage_inlet_430_875, shell_parts
+# shell_fuselage_inlet_430_875
+combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_430_875, printing_parts
 operation, join
 combine_bodies
-  shell_inlet
+  f35b_inlet
   shell_fuselage_430_875
 
 # shell_fuselage_outlet_875_1230
-combine, csv/F35B-CSV/shell_parts, shell_fuselage_outlet_875_1230, shell_parts
-operation, cut
-combine_bodies
-  solid_fuselage_875_1230
-  loft_cut_fuselage_chord  # 820 - 1100
-  loft_cut_fuselage_bin_end  # 1100 - 1142
-  loft_cut_fuselage_outlet  # 1142 - 1230
-
-# shell_fuselage_tail_1230_1403
-combine, csv/F35B-CSV/shell_parts, solid_fuselage_tail_1230_1403, shell_parts
-operation, join
-combine_bodies
-  loft_solid_fuselage_exhaust  # 1230 - 1306
-  split_solid_tail_all  # 1306 - 1403
-
-combine, csv/F35B-CSV/shell_parts, shell_fuselage_tail_1230_1403, shell_parts
-operation, cut
-combine_bodies
-  solid_fuselage_tail_1230_1403
-  loft_cut_fuselage_exhaust  # 1230 - 1306
-  loft_cut_tail_all  # 1306 - 1403
-
-# shell_plane_0_1403
-combine, csv/F35B-CSV/shell_parts, shell_plane_0_1403, shell_parts
-operation, join
-combine_bodies
-  shell_nose_0_140
-  shell_nose_140_430
-  shell_fuselage_inlet_430_875
+split, csv/F35B-CSV/printing_parts, split_shell_fuselage_outlet_875_end, printing_parts
+split_body, shell_fuselage_875_end
+split_tool, plane, plane_x_1230
+splitted_bodies
   shell_fuselage_outlet_875_1230
   shell_fuselage_tail_1230_1403
 
-# Move bodies to separate components in printing_parts
-movecopy, csv/F35B-CSV/shell_parts, printing_parts
-copy, body, shell_nose_0_140,               shell_nose_0_140,               printing_parts/shell_nose_0_140
-copy, body, shell_nose_140_430,             shell_nose_140_430,             printing_parts/shell_nose_140_430
-copy, body, shell_fuselage_inlet_430_875,   shell_fuselage_inlet_430_875,   printing_parts/shell_fuselage_inlet_430_875
-copy, body, shell_fuselage_outlet_875_1230, shell_fuselage_outlet_875_1230, printing_parts/shell_fuselage_outlet_875_1230
-copy, body, shell_fuselage_tail_1230_1403,  shell_fuselage_tail_1230_1403,  printing_parts/shell_fuselage_tail_1230_1403
+echo, --------------------------------------------------------------------------
+echo, Copy 3D-printing parts into separate components
+echo, --------------------------------------------------------------------------
 
-# Remove shell_parts bodies that are no longer needed
-movecopy, csv/F35B-CSV/shell_parts, remove_shell_parts
-# Bodies can be removed, because they have been used for shells in shell_parts
-remove, body, solid_nose_0_140
-remove, body, solid_nose_140_465
-remove, body, solid_nose_140_430
-remove, body, solid_nose_430_465
-remove, body, solid_fuselage_430_875
+movecopy, csv/F35B-CSV/printing_parts, copy_printing_parts
+# Remove intermediate bodies
+remove, body, shell_inlet_418_430
+remove, body, shell_fuselage_140_end
+remove, body, shell_fuselage_430_end
+remove, body, shell_fuselage_inlet_140_end
+remove, body, shell_fuselage_inlet_430_end
+remove, body, shell_fuselage_875_end
 remove, body, shell_fuselage_430_875
-remove, body, solid_fuselage_875_1230
-remove, body, solid_fuselage_430_1230
-remove, body, solid_fuselage_tail_1230_1403
-# Bodies can be removed, because they have been copied to printing_parts
-remove, body, shell_parts/shell_nose_0_140
-remove, body, shell_parts/shell_nose_140_430
-remove, body, shell_parts/shell_fuselage_inlet_430_875
-remove, body, shell_parts/shell_fuselage_outlet_875_1230
-remove, body, shell_parts/shell_fuselage_tail_1230_1403
+# Move bodies to separate components in printing_parts
+move, body, shell_nose_0_140,               printing_parts/shell_nose_0_140
+move, body, shell_nose_140_430,             printing_parts/shell_nose_140_430
+move, body, shell_fuselage_inlet_430_875,   printing_parts/shell_fuselage_inlet_430_875
+move, body, shell_fuselage_outlet_875_1230, printing_parts/shell_fuselage_outlet_875_1230
+move, body, shell_fuselage_tail_1230_1403,  printing_parts/shell_fuselage_tail_1230_1403
 
-################################################################################
-# Assembly
+
+###############################################################################
+ Assembly
 
 assembly, csv/F35B-CSV, F35B-printing-parts, F35B-CSV
 
