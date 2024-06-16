@@ -214,8 +214,8 @@ def extract_sub_folder_name(filename):
     return dirname, basename
 
 
-def extract_sub_folder_names(filename):
-    """Extract sub folder names from sub directories path in filename.
+def list_sub_folder_names(filename):
+    """List sub folder names from sub directories path in filename.
 
     For example:
     . /a/b/c.csv -> subFolderNames = ['a', 'b']
@@ -253,8 +253,8 @@ def verify_component_folder_name(li, componentName, folderName):
 
     Return: True when names are equal, else False
     """
-    subFolderNames = extract_sub_folder_names(folderName)
-    subComponentNames = extract_sub_folder_names(componentName)
+    subFolderNames = list_sub_folder_names(folderName)
+    subComponentNames = list_sub_folder_names(componentName)
     if subFolderNames[-1] != subComponentNames[0]:
         print('WARNING line %d: first part in component name %s != %s last part in folder name' %
               (li, componentName, folderName))
@@ -746,7 +746,7 @@ def read_cross_rails_definitions(fileLines):
                 groupComponentName = ''
                 if len(entries) > 2:
                     groupComponentName = entries[2]
-                    verify_component_folder_name(li, groupComponentName, railFolderName)
+                    # verify_component_folder_name(li, groupComponentName, railFolderName)
                 li += 1
         elif li == 1:
             li += 1
@@ -978,7 +978,7 @@ def _parse_first_fline(li, entries):
     groupComponentName = ''
     if len(entries) > 3:
         groupComponentName = entries[3]
-        verify_component_folder_name(li, groupComponentName, csvFolderName)
+        # verify_component_folder_name(li, groupComponentName, csvFolderName)
     fileTypeLine = fileType + ', ' + fileTypeFilename
     fileTypeLine = append_string_to_csv_line(fileTypeLine, groupComponentName)
     return csvFilename, fileTypeLine
@@ -1193,11 +1193,11 @@ def _read_timeline_multi_co_rails_sketches_from_file_lines(fileLines):
     # Find sketches co_rails components from fileLines
     coRailsList = list_co_rail_sketch_csv_files(fileLines)
     for coRailTuple in coRailsList:
-        # Use groupComponentName as group folder name within the assembly
-        # folder
-        groupComponentName = coRailTuple[2]
+        # Use sub folder relative to assembly CSV file
+        _, subFolderName = extract_sub_folder_name(coRailTuple[1])
+        subFolderName = os.path.normpath(subFolderName)
         assemblyLine = 'multiple_create_sketch'
-        assemblyLine = append_string_to_csv_line(assemblyLine, groupComponentName)
+        assemblyLine = append_string_to_csv_line(assemblyLine, subFolderName)
         if assemblyLine not in timelineList:
             timelineList.append(assemblyLine)
     return timelineList
