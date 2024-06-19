@@ -45,7 +45,8 @@ echo, --------------------------------------------------------------------------
 echo, Split shells for 3D-printing
 echo, --------------------------------------------------------------------------
 
-# shell_nose_0_140
+################################################################################
+# - shell_nose_0_140
 split, csv/F35B-CSV/printing_parts, split_shell_nose_0_140, printing_parts
 split_body, f35b_fuselage
 split_tool, plane, plane_x_140
@@ -53,46 +54,37 @@ splitted_bodies
   shell_nose_0_140
   shell_fuselage_140_end
 
-# shell_fuselage_inlet_140_end = f35b_inlet + shell_fuselage_140_end
-combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_140_end, printing_parts
-operation, join
-combine_bodies
-  f35b_inlet
-  shell_fuselage_140_end
-
-# shell_nose_140_430
-split, csv/F35B-CSV/printing_parts, split_shell_nose_140_465, printing_parts
-split_body, shell_fuselage_inlet_140_end
+################################################################################
+# - shell_nose_140_430
+split, csv/F35B-CSV/printing_parts, split_shell_nose_140_430, printing_parts
+split_body, shell_fuselage_140_end
 split_tool, plane, plane_x_430
 splitted_bodies
   shell_nose_140_430
-  shell_inlet_418_430
   shell_fuselage_430_end
 
-# shell_fuselage_inlet_430_end = shell_inlet_418_430 + shell_fuselage_430_end
+  
+################################################################################
+# Join f35b_inlet (418 - 499) with shell_fuselage_430_end
 combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_430_end, printing_parts
 operation, join
 combine_bodies
-  shell_inlet_418_430
+  f35b_inlet
   shell_fuselage_430_end
 
-# shell_fuselage_430_875
-split, csv/F35B-CSV/printing_parts, split_shell_fuselage_430_875, printing_parts
+################################################################################
+# - shell_fuselage_inlet_430_875
+split, csv/F35B-CSV/printing_parts, split_fuselage_inlet_430_875, printing_parts
 split_body, shell_fuselage_inlet_430_end
 split_tool, plane, plane_x_875
 splitted_bodies
-  shell_fuselage_430_875
+  shell_fuselage_inlet_430_875
   shell_fuselage_875_end
 
-# shell_fuselage_inlet_430_875
-combine, csv/F35B-CSV/printing_parts, shell_fuselage_inlet_430_875, printing_parts
-operation, join
-combine_bodies
-  f35b_inlet
-  shell_fuselage_430_875
-
-# shell_fuselage_outlet_875_1230
-split, csv/F35B-CSV/printing_parts, split_shell_fuselage_outlet_875_end, printing_parts
+################################################################################
+# - shell_fuselage_outlet_875_1230
+# - shell_fuselage_tail_1230_1403
+split, csv/F35B-CSV/printing_parts, split_shell_fuselage_875_end, printing_parts
 split_body, shell_fuselage_875_end
 split_tool, plane, plane_x_1230
 splitted_bodies
@@ -105,13 +97,10 @@ echo, --------------------------------------------------------------------------
 
 movecopy, csv/F35B-CSV/printing_parts, copy_printing_parts
 # Remove intermediate bodies
-remove, body, shell_inlet_418_430
 remove, body, shell_fuselage_140_end
 remove, body, shell_fuselage_430_end
-remove, body, shell_fuselage_inlet_140_end
 remove, body, shell_fuselage_inlet_430_end
 remove, body, shell_fuselage_875_end
-remove, body, shell_fuselage_430_875
 # Move bodies to separate components in printing_parts
 move, body, shell_nose_0_140,               printing_parts/shell_nose_0_140
 move, body, shell_nose_140_430,             printing_parts/shell_nose_140_430
