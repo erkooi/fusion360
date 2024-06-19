@@ -19,7 +19,7 @@
 # Create F35B-airplane.csv assembly file.
 
 # Join fin with fuselage and inlet
-combine, csv/F35B-CSV/airplane, left_plane_all, airplane
+combine, csv/F35B-CSV/airplane, plane_left, airplane
 operation, join
 combine_bodies
   f35b_inlet
@@ -27,21 +27,38 @@ combine_bodies
   f35b_wing
   f35b_fin
 
-# Mirror left to right and join
-mirror, csv/F35B-CSV/airplane, mirror_plane_all, airplane
+# Mirror plane_left to right and join
+mirror, csv/F35B-CSV/airplane, mirror_plane_core, airplane
 operation, join
 mirror_plane, xZConstructionPlane
 mirror_objects
-  left_plane_all
+  plane_left
 mirror_results
-  airplane_all
+  plane_core
+  
+# Copy left extensions to airplane
+movecopy, csv/F35B-CSV/airplane, copy_plane_extensions
+copy, body, f35b_aileron, aileron_left, airplane
+copy, body, f35b_elevator, elevator_left, airplane
 
-################################################################################
-# F35B-CSV/bodies
+# Mirror left extensions to right
+mirror, csv/F35B-CSV/airplane, mirror_plane_extensions, airplane
+operation, new_body
+mirror_plane, xZConstructionPlane
+mirror_objects
+  aileron_left
+  elevator_left
+mirror_results
+  aileron_rigth
+  elevator_right
+  aileron_l
+  elevator_l
 
-# Copy airplane/airplane_all to F35B-CSV/f35b_airplane_all
-movecopy, csv/F35B-CSV/airplane, copy_f35b_airplane_all
-copy, body, airplane_all, f35b_airplane_all, F35B-CSV
+movecopy, csv/F35B-CSV/airplane, remove_plane
+# Remove intermediate bodies
+remove, body, plane_left
+remove, body, aileron_l
+remove, body, elevator_l
 
 
 ################################################################################
