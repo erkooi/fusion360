@@ -25,12 +25,15 @@ Mirror CSV file format:
 . second line: 'mirror_plane', name of mirror plane
 . third line: operation 'new_component', 'new_body', 'join'
   - For 'new_component' the object must be a component,
-  - for 'new_body' or 'join' the object must be a body.
+  - for 'new_body' or 'join' the object must be a body. Operation 'new_body'
+    is opposite of operation 'join', so keep mirror results separate.
 . mirror_objects
   - list of one or more object names, one per line.
   - The objects are all components or all bodies.
-  - The original bodies are kept. This is achieved by first copying the
-    original bodies in case the operation is 'join'.
+  - The original bodies are kept. For operation 'join' this is achieved by
+    first copying the original bodies. For operation 'new_body' the original
+    bodies are also copied and the list in mirror_results must contain
+    names for first the mirrored bodies and then the copied original bodies.
 . mirror_results
   - list of one or more result names, one per line.
   - The mirrored bodies get the names from resultObjectNames.
@@ -247,22 +250,30 @@ def mirror_bodies(ui, hostComponent, operation, mirrorPlane, mirrorObjects, mirr
 
     Uses ui to report faults via Fusion360 GUI.
     """
+    verbosity = False
     resultFalse = (False, None)
-    # Copy bodies to keep original bodies in case of join operation
-    if operation == 'join':
-        copyBodies = adsk.core.ObjectCollection.create()
-        for body in mirrorObjects:
-            # The body.parentComponent is unique in rootComponent.
-            parentOccurrence = utilities360.get_occurrence_anywhere(body.parentComponent)
-            copyBody = utilities360.copy_body_to_occurrence(body, parentOccurrence)
-            copyBodies.add(copyBody)
-        mirrorObjects = copyBodies
+    # Use copy bodies:
+    # . to keep original bodies in case of 'join' operation
+    # . as work around for that mirrorFeatures.createInput() fails on input
+    #   mirrorObjects ObjectCollection
+    copyBodies = adsk.core.ObjectCollection.create()
+    for body in mirrorObjects:
+        # The body.parentComponent is unique in rootComponent.
+        parentOccurrence = utilities360.get_occurrence_anywhere(body.parentComponent)
+        copyBody = utilities360.copy_body_to_occurrence(body, parentOccurrence)
+        copyBodies.add(copyBody)
+        interface360.print_text(ui, 'body.name = %s' % body.name, verbosity)
+        interface360.print_text(ui, 'body.parentComponent.name = %s' % body.parentComponent.name, verbosity)
+        interface360.print_text(ui, 'copyBody.name = %s' % copyBody.name, verbosity)
+    mirrorObjects = copyBodies
+    interface360.print_text(ui, 'hostComponent.name = %s' % hostComponent.name, verbosity)
 
     # Prepare mirrorFeaturesInput
     mirrorFeatures = hostComponent.features.mirrorFeatures
     mirrorFeaturesInput = mirrorFeatures.createInput(mirrorObjects, mirrorPlane)
     if operation == 'join':
         mirrorFeaturesInput.isCombine = True
+    interface360.print_text(ui, 'mirrorFeaturesInput.isCombine = %s' % str(mirrorFeaturesInput.isCombine))
 
     # Perform the mirror feature
     mirrorResult = mirrorFeatures.add(mirrorFeaturesInput)
