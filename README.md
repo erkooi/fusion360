@@ -3,6 +3,7 @@
 For more information please also check my channel "Eric Kooistra - Hobby" on YouTube: https://www.youtube.com/channel/UCnQhySYKmPyZsY2G8S3CUbA
 
 ## 1. Overview
+### 1.1. Design actions and hierarchy
 The CSV files define actions and hierarchy for a design in Fusion360. There are three levels of CSV files:
 1. action CSV files: define single 'create' and 'modify actions, as in the SOLID menu in the Fusion360 GUI.
 2. assembly CSV files: define an assembly component and a series of action CSV files
@@ -20,8 +21,10 @@ Typically there is one txt file per:
 * assembly CSV file, to define an assembly and the action CSV files for that assembly
 * design CSV file, to define the list of assembly CSV files for the design toplevel assembly
 
+### 1.2. Parameters and equations
 Another advantage of design entry via the txt files is that the txt file can use parameters and equations to define values for e.g. coordinates, angles, lengths, distances. The csv_timeline360.py evaluates these parameters and equations, and then writes their numerical result into the CSV files.
 
+### 1.3. Examples
 The simplest object to create with a CSV file is a single sketch, using API/Scripts/ImportSketchCSV. The snail_points.txt provides an example of defining a sketch.
 
 The most elaborate object to create with a CSV file is a complete design toplevel assembly, that consists of sub assemblies, using API/Scripts/DesignCSV. The f35b_csv.txt provides an example of a design for an F35B airplane toplevel assembly, that consists of several sub assemblies and is defined by in total about 300 CSV files.
@@ -85,7 +88,22 @@ The csv_timeline360.py creates CSV files from F35B/f35b_points.txt for a F35B pl
 
 ![F35B created from CSV files](doc/f35b_csv.jpg)
 
+#### 3.3.4 DesignCSV script with csv_timeline360.py
 Additional timeline actions for the F35B-CSV assembly component are defined in f35b-pin-holes.txt and f35b-aileron.txt. First create F35B-pin-holes.csv and F35B-aileron.csv using csv_timeline360.py on the command line in a terminal. After that the AssemblyCSV Script in Fusion360 can be used to perform the additional timeline actions defined in the assembly CSV files F35B-pin-holes.csv and in F35B-aileron.csv.
+
+The separate assembly timeline actions can also be performed automatically by using the DesignCSV script in Fusion360 with the F35B-CSV.design.csv file. This design CSV file is defined by f35b_csv.txt. First create all CSV files in a terminal, using on command line:
+
+> python ..\\csv_timeline360.py -f ^
+f35b_points.txt,^
+f35b_pin_holes.txt,^
+f35b_aileron.txt,^
+f35b_vertical_stabilizer.txt,^
+f35b_elevator.txt,^
+f35b_printing_parts.txt,^
+f35b_airplane.txt,^
+f35b_csv.txt
+
+Then run F35B-CSV.design.csv with DesignCSV script in the Fusion360 GUI. The script execution takes a few minutes, and when done it echos its steps in the TEXT COMMANDS window.
 
 ## 4 Directory (folder) tree of CSV files
 The CSV files are organised in two folder levels:
