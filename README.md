@@ -93,6 +93,7 @@ Additional timeline actions for the F35B-CSV assembly component are defined in f
 
 The separate assembly timeline actions can also be performed automatically by using the DesignCSV script in Fusion360 with the F35B-CSV.design.csv file. This design CSV file is defined by f35b_csv.txt. First create all CSV files in a terminal, using on command line:
 
+```
 > python ..\\csv_timeline360.py -f ^
 f35b_points.txt,^
 f35b_pin_holes.txt,^
@@ -102,6 +103,7 @@ f35b_elevator.txt,^
 f35b_printing_parts.txt,^
 f35b_airplane.txt,^
 f35b_csv.txt
+```
 
 Then run F35B-CSV.design.csv with DesignCSV script in the Fusion360 GUI. The script execution takes a few minutes, and when done it echos its steps in the TEXT COMMANDS window.
 
