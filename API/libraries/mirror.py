@@ -273,7 +273,7 @@ def mirror_bodies(ui, hostComponent, operation, mirrorPlane, mirrorObjects, mirr
     mirrorFeaturesInput = mirrorFeatures.createInput(mirrorObjects, mirrorPlane)
     if operation == 'join':
         mirrorFeaturesInput.isCombine = True
-    interface360.print_text(ui, 'mirrorFeaturesInput.isCombine = %s' % str(mirrorFeaturesInput.isCombine))
+    interface360.print_text(ui, 'mirrorFeaturesInput.isCombine = %s' % str(mirrorFeaturesInput.isCombine), verbosity)
 
     # Perform the mirror feature
     mirrorResult = mirrorFeatures.add(mirrorFeaturesInput)
