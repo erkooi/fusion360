@@ -217,8 +217,8 @@ parameters
   axleRadius, 1
   axleLength, 280
   axleOffset, -5
-  alphaX, -degrees(atan(fabs(xBase - xTip) / fabs(yBase - yTip)))
-  alphaZ, -degrees(atan(fabs(zBase - zTip) / fabs(yBase - yTip)))
+  alphaZ, -degrees(atan(fabs(xBase - xTip) / fabs(yBase - yTip)))
+  alphaX, -degrees(atan(fabs(zBase - zTip) / fabs(yBase - yTip)))
 
 # Axle center at origine
 sketch, csv/F35B-CSV/aileron, y_0_aileron_axle, aileron
@@ -237,8 +237,8 @@ extrude_results, aileron_axle
 
 # Align aileron_axle with aileron gap
 movecopy, csv/F35B-CSV/aileron, aileron_axle
-rotate,    body, aileron_axle, 0, 0, 1, $alphaX
-rotate,    body, aileron_axle, 1, 0, 0, $alphaZ
+rotate,    body, aileron_axle, 0, 0, 1, $alphaZ
+rotate,    body, aileron_axle, 1, 0, 0, $alphaX
 translate, body, aileron_axle, $xBase, $yBase, $zBase
 
 echo, --------------------------------------------------------------------------
@@ -279,22 +279,22 @@ extrude_results, hinge
 movecopy, csv/F35B-CSV/aileron, hinge_tip
 copy, body, hinge, hinge_tip, aileron
 translate, body, hinge_tip, 0, $yHingeBase, 0
-rotate,    body, hinge_tip, 0, 0, 1, $alphaX
-rotate,    body, hinge_tip, 1, 0, 0, $alphaZ
+rotate,    body, hinge_tip, 0, 0, 1, $alphaZ
+rotate,    body, hinge_tip, 1, 0, 0, $alphaX
 translate, body, hinge_tip, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, hinge_mid
 copy, body, hinge, hinge_mid, aileron
 translate, body, hinge_mid, 0, $yHingeMid, 0
-rotate,    body, hinge_mid, 0, 0, 1, $alphaX
-rotate,    body, hinge_mid, 1, 0, 0, $alphaZ
+rotate,    body, hinge_mid, 0, 0, 1, $alphaZ
+rotate,    body, hinge_mid, 1, 0, 0, $alphaX
 translate, body, hinge_mid, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, hinge_base
 copy, body, hinge, hinge_base, aileron
 translate, body, hinge_base, 0, $yHingeTip, 0
-rotate,    body, hinge_base, 0, 0, 1, $alphaX
-rotate,    body, hinge_base, 1, 0, 0, $alphaZ
+rotate,    body, hinge_base, 0, 0, 1, $alphaZ
+rotate,    body, hinge_base, 1, 0, 0, $alphaX
 translate, body, hinge_base, $xBase, $yBase, $zBase
 
 # Sketch hinge space
@@ -320,22 +320,22 @@ extrude_results, hinge_space
 movecopy, csv/F35B-CSV/aileron, hinge_space_tip
 copy, body, hinge_space, hinge_space_tip, aileron
 translate, body, hinge_space_tip, 0, $yHingeBase, 0
-rotate,    body, hinge_space_tip, 0, 0, 1, $alphaX
-rotate,    body, hinge_space_tip, 1, 0, 0, $alphaZ
+rotate,    body, hinge_space_tip, 0, 0, 1, $alphaZ
+rotate,    body, hinge_space_tip, 1, 0, 0, $alphaX
 translate, body, hinge_space_tip, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, hinge_space_mid
 copy, body, hinge_space, hinge_space_mid, aileron
 translate, body, hinge_space_mid, 0, $yHingeMid, 0
-rotate,    body, hinge_space_mid, 0, 0, 1, $alphaX
-rotate,    body, hinge_space_mid, 1, 0, 0, $alphaZ
+rotate,    body, hinge_space_mid, 0, 0, 1, $alphaZ
+rotate,    body, hinge_space_mid, 1, 0, 0, $alphaX
 translate, body, hinge_space_mid, $xBase, $yBase, $zBase
 
 movecopy, csv/F35B-CSV/aileron, hinge_space_base
 copy, body, hinge_space, hinge_space_base, aileron
 translate, body, hinge_space_base, 0, $yHingeTip, 0
-rotate,    body, hinge_space_base, 0, 0, 1, $alphaX
-rotate,    body, hinge_space_base, 1, 0, 0, $alphaZ
+rotate,    body, hinge_space_base, 0, 0, 1, $alphaZ
+rotate,    body, hinge_space_base, 1, 0, 0, $alphaX
 translate, body, hinge_space_base, $xBase, $yBase, $zBase
 
 # Cut hinges from wing
