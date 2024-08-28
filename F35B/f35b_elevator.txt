@@ -1,0 +1,526 @@
+################################################################################
+# Copyright 2024 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 10 Mar 2024
+#
+# Create F35B-elevator.csv assembly file that creates the elevator that is also
+# the horizontal stabilizer.
+# The F35B-CSV component was created with f35b_points.txt.
+
+################################################################################
+# Elevator bin
+
+# Tail
+parameters
+  txTailBase, 1403
+  txTailEnd, 1381
+  tyTailBase, -80.2
+  tyTailEnd, -166.6
+  tzTailBase, 23.7
+  tzTailEnd, 26.5
+  tailWidth, sqrt((txTailBase - txTailEnd)**2 + (tyTailBase - tyTailEnd)**2)
+  tailAngle, degrees(atan(fabs((txTailBase - txTailEnd) / (tyTailBase - tyTailEnd))))
+  tailVAngle, degrees(atan(fabs((tzTailEnd - tzTailBase) / tailWidth)))
+
+# Bin profiles
+sketch, csv/F35B-CSV/elevator, x_1381_elevator_bin, elevator/wing
+offset_plane, x, $txTailEnd
+spline, cross_rails, top
+ -76.4, 25.0
+ -90.0, 25.0
+ -98.0, 25.1
+-112.0, 25.2
+-123.0, 25.4
+-138.0, 25.7
+-154.0, 26.0
+$tyTailEnd, $tzTailEnd
+spline, cross_rails, bottom
+ -76.4, 25.0, -99, 58
+ -90.0,-10.8, 180, 12
+ -98.0,-10.8, 180
+-112.0,-10.8, 180
+-123.0,-10.8, 180
+-138.0,-10.3, 170, 20
+-154.0,  6.3, 121
+$tyTailEnd, $tzTailEnd, 121
+
+sketch, csv/F35B-CSV/elevator, x_1403_elevator_bin, elevator/wing
+offset_plane, x, $txTailBase
+spline, cross_rails, top
+$tyTailBase, 24.1
+ -90.0, 24.3
+ -98.0, 24.5
+-112.0, 24.7
+-123.0, 24.9
+-138.0, 25.2
+-154.0, 25.4
+$tyTailEnd, 25.6
+spline, cross_rails, bottom
+$tyTailBase, 24.1, -98, 58
+ -90.0, -8.6, 180,  9
+ -98.0, -8.6, 180
+-112.0, -8.6, 180
+-123.0, -8.6, 180
+-138.0, -8.0, 172, 20
+-154.0,  8.6, 122
+$tyTailEnd, 25.6, 122
+
+sketch, csv/F35B-CSV/elevator, x_1524_elevator_bin, elevator/wing
+offset_plane, x, 1524
+line, cross_rails, top
+ -98.0, 21.9
+-112.0, 22.25
+#-123.0, 22.5
+-138.0, 22.9
+-154.0, 23.3
+-162.0, 23.5
+spline, cross_rails, bottom
+ -98.0, 21.9
+-105.0, 21.3
+-112.0, 21.3
+#-123.0, 21.5
+-138.0, 21.9
+-154.0, 22.5
+-162.0, 23.5
+
+# Bin rails
+
+#cross_rails, csv/F35B-CSV/elevator, elevator/wing
+#rail_names, top, bottom
+#profile_plane_normal, x
+#rail_plane_normal, y
+#rail_plane_offsets, -98, -112, -138, -154
+#rail_segment_type, spline
+
+# Manually redefine generated cross_rails, to be able to specify the spline
+# tangent angles for the bottom rails
+
+sketch, csv/F35B-CSV/elevator, y_98_elevator_top, elevator/wing
+offset_plane, y, -98.0
+spline
+$txTailEnd, 25.10
+$txTailBase, 24.50
+1524.00, 21.90
+
+sketch, csv/F35B-CSV/elevator, y_112_elevator_top, elevator/wing
+offset_plane, y, -112.0
+spline
+$txTailEnd, 25.20
+$txTailBase, 24.70
+1524.00, 22.25
+
+sketch, csv/F35B-CSV/elevator, y_138_elevator_top, elevator/wing
+offset_plane, y, -138.0
+spline
+$txTailEnd, 25.70
+$txTailBase, 25.20
+1524.00, 22.90
+
+sketch, csv/F35B-CSV/elevator, y_154_elevator_top, elevator/wing
+offset_plane, y, -154.0
+spline
+$txTailEnd, 26.00
+$txTailBase, 25.40
+1524.00, 23.30
+
+sketch, csv/F35B-CSV/elevator, y_112_elevator_bottom, elevator/wing
+offset_plane, y, -112.0
+spline
+$txTailEnd, -10.80, 6
+$txTailBase, -8.60
+1524.00, 21.30, 8
+
+sketch, csv/F35B-CSV/elevator, y_138_elevator_bottom, elevator/wing
+offset_plane, y, -138.0
+spline
+$txTailEnd, -10.30, 6
+$txTailBase, -8.00
+1524.00, 21.90, 8
+
+# Bin loft
+loft, csv/F35B-CSV/elevator, loft_elevator_bin, elevator/wing
+profiles
+  x_1381_elevator_bin
+  x_1403_elevator_bin
+  x_1524_elevator_bin
+rails
+  #y_98_elevator_top  # loft cannot use rail at corner
+  y_112_elevator_top
+  y_138_elevator_top
+  y_154_elevator_top
+  y_112_elevator_bottom
+  y_138_elevator_bottom
+
+################################################################################
+# NACA_0006 wing
+
+# Wing profiles
+parameters
+  txWingChordLenBase, 345
+  txWingChordLenTip, 85
+  txWingBase, 1197
+  txWingTip, 1387
+  tyWingBase, -80
+  tyWingTip, -358
+  tzWingBase, 21
+  tzWingTip, 31
+
+# Wing profile sketch created with airfoils.py:
+# . folderName:    : csv\NACA_0006
+# . profileName:   : NACA_0006_zx_y80_chord_len_x345
+# . profileBaseName: NACA_0006
+# --chord_len      : 345.00
+# . thickness      : 20.70
+# --scale_z        : 1.00
+# . tangentAngle   : -90.00 [deg]
+# . tangentLength  : 41.40
+# --rear_arc_x     : 0.00
+# --rear_width_z   : 0.80
+# --exponent_width : 0.50
+# --wing_twist_z   : 0.00
+# . twistAngle     : 0.00 [deg]
+# --tx             : 0.00
+# --ty             : 80.00
+# --tz             : 0.00
+# --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025
+# --xa             : 184,206
+# --xfit           : False
+sketch, csv/F35B-CSV/elevator, NACA_0006_zx_y80_chord_len_x345, elevator/wing
+offset_plane, y, $tyWingBase
+spline
+# NACA-0006 for top
+# $txWingBase + 345.00, $tzWingBase +  0.80
+# $txWingBase + 327.75, $tzWingBase +  1.96
+# $txWingBase + 310.50, $tzWingBase +  3.05
+# $txWingBase + 276.00, $tzWingBase +  5.05
+# $txWingBase + 241.50, $tzWingBase +  6.81
+# $txWingBase + 206.00, $tzWingBase +  8.36
+# $txWingBase + 184.00, $tzWingBase +  9.17
+# $txWingBase + 138.00, $tzWingBase + 10.38
+# $txWingBase + 103.50, $tzWingBase + 10.67
+# $txWingBase +  86.25, $tzWingBase + 10.54
+# $txWingBase +  69.00, $tzWingBase + 10.16
+# $txWingBase +  51.75, $tzWingBase +  9.45
+# $txWingBase +  34.50, $tzWingBase +  8.26
+# $txWingBase +  25.88, $tzWingBase +  7.40
+# $txWingBase +  17.25, $tzWingBase +  6.26
+# $txWingBase +   8.62, $tzWingBase +  4.60
+# $txWingBase +   0.00, $tzWingBase +  0.00, -90.00, 41.40
+# NACA-0002 for top
+$txWingBase + 345.00, $tzWingBase + 0.80
+$txWingBase + 327.75, $tzWingBase + 1.17
+$txWingBase + 310.50, $tzWingBase + 1.52
+$txWingBase + 276.00, $tzWingBase + 2.16
+$txWingBase + 241.50, $tzWingBase + 2.72
+$txWingBase + 206.00, $tzWingBase + 3.20
+$txWingBase + 184.00, $tzWingBase + 3.45
+$txWingBase + 138.00, $tzWingBase + 3.80
+$txWingBase + 103.50, $tzWingBase + 3.85
+$txWingBase +  86.25, $tzWingBase + 3.78
+$txWingBase +  69.00, $tzWingBase + 3.62
+$txWingBase +  51.75, $tzWingBase + 3.36
+$txWingBase +  34.50, $tzWingBase + 2.92
+$txWingBase +  25.88, $tzWingBase + 2.61
+$txWingBase +  17.25, $tzWingBase + 2.21
+$txWingBase +   8.62, $tzWingBase + 1.62
+$txWingBase +   0.00, $tzWingBase + 0.00, -90.00, 13.8
+spline
+# NACA-0006 for bottom
+$txWingBase +   0.00, $tzWingBase +   0.00, -90.00, 41.40
+$txWingBase +   8.62, $tzWingBase +  -4.60
+$txWingBase +  17.25, $tzWingBase +  -6.26
+$txWingBase +  25.88, $tzWingBase +  -7.40
+$txWingBase +  34.50, $tzWingBase +  -8.26
+$txWingBase +  51.75, $tzWingBase +  -9.45
+$txWingBase +  69.00, $tzWingBase + -10.16
+$txWingBase +  86.25, $tzWingBase + -10.54
+$txWingBase + 103.50, $tzWingBase + -10.67
+$txWingBase + 138.00, $tzWingBase + -10.38
+$txWingBase + 184.00, $tzWingBase +  -9.17
+$txWingBase + 206.00, $tzWingBase +  -8.36
+$txWingBase + 241.50, $tzWingBase +  -6.81
+$txWingBase + 276.00, $tzWingBase +  -5.05
+$txWingBase + 310.50, $tzWingBase +  -3.05
+$txWingBase + 327.75, $tzWingBase +  -1.96
+$txWingBase + 345.00, $tzWingBase +  -0.80
+line
+$txWingBase + 345.00, $tzWingBase +  0.80
+$txWingBase + 345.00, $tzWingBase + -0.80
+
+# Wing profile sketch created with airfoils.py:
+# . folderName:    : csv\NACA_0006
+# . profileName:   : NACA_0006_zx_y358_chord_len_x85
+# . profileBaseName: NACA_0006
+# --chord_len      : 85.00
+# . thickness      : 5.10
+# --scale_z        : 1.00
+# . tangentAngle   : -90.00 [deg]
+# . tangentLength  : 10.20
+# --rear_arc_x     : 0.00
+# --rear_width_z   : 0.80
+# --exponent_width : 0.50
+# --wing_twist_z   : 0.00
+# . twistAngle     : 0.00 [deg]
+# --tx             : 0.00
+# --ty             : -358.00
+# --tz             : 0.00
+# --xn             : 0,1.1,0.1,0.95,0.25,0.15,0.075,0.05,0.025
+# --xa             : 16
+# --xfit           : False
+sketch, csv/F35B-CSV/elevator, NACA_0006_zx_y358_chord_len_x85, elevator/wing
+offset_plane, y, $tyWingTip
+spline
+# NACA-0006 for top
+# $txWingTip + 85.00, $tzWingBase + 0.80
+# $txWingTip + 80.75, $tzWingBase + 1.07
+# $txWingTip + 76.50, $tzWingBase + 1.32
+# $txWingTip + 68.00, $tzWingBase + 1.78
+# $txWingTip + 59.50, $tzWingBase + 2.18
+# $txWingTip + 51.00, $tzWingBase + 2.52
+# $txWingTip + 42.50, $tzWingBase + 2.78
+# $txWingTip + 34.00, $tzWingBase + 2.94
+# $txWingTip + 25.50, $tzWingBase + 2.96
+# $txWingTip + 21.25, $tzWingBase + 2.90
+# $txWingTip + 16.00, $tzWingBase + 2.73
+# $txWingTip + 12.75, $tzWingBase + 2.56
+# $txWingTip +  8.50, $tzWingBase + 2.23
+# $txWingTip +  6.38, $tzWingBase + 1.99
+# $txWingTip +  4.25, $tzWingBase + 1.68
+# $txWingTip +  2.12, $tzWingBase + 1.23
+# $txWingTip +  0.00, $tzWingBase + 0.00, -90.00, 10.20
+# NACA-0004 for top
+$txWingTip + 85.00, $tzWingBase + 0.80
+$txWingTip + 80.75, $tzWingBase + 0.97
+$txWingTip + 76.50, $tzWingBase + 1.14
+$txWingTip + 68.00, $tzWingBase + 1.43
+$txWingTip + 59.50, $tzWingBase + 1.68
+$txWingTip + 51.00, $tzWingBase + 1.88
+$txWingTip + 42.50, $tzWingBase + 2.04
+$txWingTip + 34.00, $tzWingBase + 2.13
+$txWingTip + 25.50, $tzWingBase + 2.12
+$txWingTip + 21.25, $tzWingBase + 2.07
+$txWingTip + 16.00, $tzWingBase + 1.94
+$txWingTip + 12.75, $tzWingBase + 1.81
+$txWingTip +  8.50, $tzWingBase + 1.57
+$txWingTip +  6.38, $tzWingBase + 1.40
+$txWingTip +  4.25, $tzWingBase + 1.18
+$txWingTip +  2.12, $tzWingBase + 0.86
+$txWingTip +  0.00, $tzWingBase + 0.00, -90.00, 6.80
+spline
+# NACA-0006 for bottom
+$txWingTip +  0.00, $tzWingBase +  0.00, -90.00, 10.20
+$txWingTip +  2.12, $tzWingBase + -1.23
+$txWingTip +  4.25, $tzWingBase + -1.68
+$txWingTip +  6.38, $tzWingBase + -1.99
+$txWingTip +  8.50, $tzWingBase + -2.23
+$txWingTip + 12.75, $tzWingBase + -2.56
+$txWingTip + 16.00, $tzWingBase + -2.73
+$txWingTip + 21.25, $tzWingBase + -2.90
+$txWingTip + 25.50, $tzWingBase + -2.96
+$txWingTip + 34.00, $tzWingBase + -2.94
+$txWingTip + 42.50, $tzWingBase + -2.78
+$txWingTip + 51.00, $tzWingBase + -2.52
+$txWingTip + 59.50, $tzWingBase + -2.18
+$txWingTip + 68.00, $tzWingBase + -1.78
+$txWingTip + 76.50, $tzWingBase + -1.32
+$txWingTip + 80.75, $tzWingBase + -1.07
+$txWingTip + 85.00, $tzWingBase + -0.80
+line
+$txWingTip + 85.00, $tzWingBase +  0.80
+$txWingTip + 85.00, $tzWingBase + -0.80
+
+# Wing loft
+loft, csv/F35B-CSV/elevator, loft_elevator_wing, elevator/wing
+profiles
+  NACA_0006_zx_y80_chord_len_x345
+  NACA_0006_zx_y358_chord_len_x85
+
+# Wing cutter
+parameters
+  yWingGap, 1.6
+  xWingGap, yWingGap * tan(radians(tailAngle))
+
+sketch, csv/F35B-CSV/elevator, wing_cutter, elevator/wing
+offset_plane, z, 0.0
+line
+1175.0,  -70.0
+1175.0, -180.0
+1230.0, -170.64 - $yWingGap
+$txTailEnd - $xWingGap, $tyTailEnd - $yWingGap
+$txTailBase, $tyTailBase
+1537.0,  -98.0
+1550.0, -150.0
+1550.0,  -70.0
+1175.0,  -70.0
+
+extrude, csv/F35B-CSV/elevator, wing_cutter_box, elevator/wing
+profile, wing_cutter, 0
+offset, 0
+taper_angle, 0
+extent_type, distance, 50
+operation, new_body
+extrude_results, wing_cutter_box
+
+combine, csv/F35B-CSV/elevator, elevator_wing, elevator/wing
+operation, cut
+combine_bodies
+  loft_elevator_wing
+  wing_cutter_box
+remove_bodies
+  loft_elevator_wing
+  wing_cutter_box
+
+################################################################################
+# Hinges
+
+parameters
+  fuselageThickness, 4
+  plateThickness, 2
+  hingeRadius, 4
+  axleRadius, 2
+  fuselagePlateYOffset, 3
+  fuselagePlateYWidth, 15
+  fuselagePlateXLength, 20
+  wingPlateYOffset, fuselagePlateYOffset + fuselagePlateYWidth
+  wingPlateYWidth, tailWidth - 2 * wingPlateYOffset
+  wingPlateXLength, 20
+
+# Hinge into wing
+sketch, csv/F35B-CSV/elevator, hinge_wing, elevator/hinge_wing
+offset_plane, y, 0
+circle
+0, -$hingeRadius, $hingeRadius
+circle
+0, -$hingeRadius, $axleRadius
+line
+                    0, -$fuselageThickness
+$fuselagePlateXLength, -$fuselageThickness
+$fuselagePlateXLength, -$fuselageThickness - $plateThickness
+                    0, -$fuselageThickness - $plateThickness
+                    0, -$fuselageThickness
+
+# Hinge into fuselage
+sketch, csv/F35B-CSV/elevator, hinge_fuselage, elevator/hinge_fuselage
+offset_plane, y, 0
+circle
+0, -$hingeRadius, $hingeRadius
+circle
+0, -$hingeRadius, $axleRadius
+line
+                 0, -$fuselageThickness
+-$wingPlateXLength, -$fuselageThickness
+-$wingPlateXLength, -$fuselageThickness - $plateThickness
+                 0, -$fuselageThickness - $plateThickness
+                 0, -$fuselageThickness
+
+# hinge_fuselage_base
+extrude, csv/F35B-CSV/elevator, hinge_fuselage_base, elevator/hinge_fuselage
+profile, hinge_fuselage, 1, 3, 4
+offset, -$fuselagePlateYOffset
+taper_angle, 0
+extent_type, distance, -$fuselagePlateYWidth
+operation, new_body
+extrude_results, hinge_fuselage_base
+
+# hinge_fuselage_end
+extrude, csv/F35B-CSV/elevator, hinge_fuselage_end, elevator/hinge_fuselage
+profile, hinge_fuselage, 1, 3, 4
+offset, -$wingPlateYOffset - $wingPlateYWidth
+taper_angle, 0
+extent_type, distance, -$fuselagePlateYWidth
+operation, new_body
+extrude_results, hinge_fuselage_end
+
+# hinge_wing
+extrude, csv/F35B-CSV/elevator, hinge_wing, elevator/hinge_wing
+profile, hinge_wing, 0, 3, 4
+offset, -$wingPlateYOffset
+taper_angle, 0
+extent_type, distance, -$wingPlateYWidth
+operation, new_body
+extrude_results, hinge_wing
+
+################################################################################
+# Combine elevator bin, hinges and wing
+
+# Wing angles
+parameters
+  wingVAngle, degrees(atan(fabs((tzWingTip - tzWingBase) / (tyWingTip - tyWingBase))))
+  wingAttackAngle, 0
+  elevatorRotationAngle, 45
+
+# Place hinges at tailAngle in XY plane and wingVAngle in YZ plane
+movecopy, csv/F35B-CSV/elevator, hinges
+rotate,    body, hinge_fuselage_base, 0, 0, 1, -$tailAngle
+rotate,    body, hinge_fuselage_end, 0, 0, 1, -$tailAngle
+rotate,    body, hinge_wing, 0, 0, 1, -$tailAngle
+rotate,    body, hinge_fuselage_base, 1, 0, 0, -$wingVAngle
+rotate,    body, hinge_fuselage_end, 1, 0, 0, -$wingVAngle
+rotate,    body, hinge_wing, 1, 0, 0, -$wingVAngle
+translate, body, hinge_fuselage_base, $txTailBase, $tyTailBase, $tzTailBase
+translate, body, hinge_fuselage_end, $txTailBase, $tyTailBase, $tzTailBase
+translate, body, hinge_wing, $txTailBase, $tyTailBase, $tzTailBase
+
+# Place wing at wingVAngle in YZ plane and at wingAttackAngle in ZX plane
+movecopy, csv/F35B-CSV/elevator, elevator_wing
+translate, body, elevator_wing, -$txTailEnd, -$tyTailBase, -$tzWingBase  # to origin
+rotate,    body, elevator_wing, 1, 0, 0, -$wingVAngle
+rotate,    body, elevator_wing, 0, 1, 0, $wingAttackAngle
+translate, body, elevator_wing, $txTailEnd, $tyTailBase, $tzWingBase  # back in position
+
+# Angled split plane for elevator bin
+plane, csv/F35B-CSV/elevator, plane_elevator_bin, elevator/wing
+point, $txTailEnd, $tyTailEnd, $tzTailEnd
+point, $txTailBase, $tyTailBase, $tzTailBase
+point, $txTailBase + sin(radians($elevatorRotationAngle)), $tyTailBase, $tzTailBase - cos(radians($elevatorRotationAngle))
+
+# Create space in elevator bin for elevator up / down movement
+split, csv/F35B-CSV/elevator, split_elevator_bin, elevator/wing
+split_body, loft_elevator_bin
+split_tool, plane, plane_elevator_bin
+splitted_bodies
+  elevator_bin
+  remove_elevator_bin
+remove_bodies
+  remove_elevator_bin
+
+# Join wing and bin
+combine, csv/F35B-CSV/elevator, elevator_all, elevator/wing
+operation, join
+combine_bodies
+  elevator_bin
+  elevator_wing
+
+################################################################################
+# Update F35B-CSV/bodies
+
+echo, --------------------------------------------------------------------------
+echo, Update F35B-CSV/bodies with elevator
+echo, --------------------------------------------------------------------------
+
+movecopy, csv/F35B-CSV/elevator, update_f35b_with_elevator
+# Copy elevator_all to F35B-CSV/f35b_elevator
+copy, body, elevator_all, f35b_elevator, F35B-CSV
+
+
+################################################################################
+# Assembly
+
+assembly, csv/F35B-CSV, F35B-elevator, F35B-CSV
+
+echo, --------------------------------------------------------------------------
+echo, Created elevator !
+echo, --------------------------------------------------------------------------
