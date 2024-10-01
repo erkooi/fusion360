@@ -49,6 +49,9 @@ Sketch CSV file format:
       direction point (x, y) for offset direction and offset distance.
     . 'point': list of two or more 2D point coordinates in sketch plane
       per 2D point x, y coordinates.
+    . 'textbox': list of texts, defined by corner 2D point (x, y), diagonal 2D
+      point (x, y), text string, text height in sketch units, horizontal flip,
+      vertical flip, horizontal alignment, vertical alignment.
 """
 
 import adsk.core
@@ -233,6 +236,68 @@ def get_segment_ellipse(ui, title, filename, planeNormal, unitScale, dataArr):
     return result
 
 
+def get_segment_textbox(ui, title, filename, planeNormal, unitScale, dataArr):
+    """Get textbox parameters for textbox segment.
+
+    Input:
+    . planeNormal: 'x' = yz-plane, 'y' = zx-plane, or 'z' = xy-plane
+    . unitScale: scale factor between dataArr unit and API cm unit
+    . dataArr:
+        [0] = textbox corner point x coordinate in plane
+        [1] = textbox corner point y coordinate in plane
+        [2] = textbox diagonal point x coordinate in plane
+        [3] = textbox diagonal point y coordinate in plane
+        [4] = text string
+        [5] = text height in sketch units
+        [6] = horizontalFlip: boolean
+        [7] = verticalFlip: boolean
+        [8] = horizontalAlignment: left, center, right
+        [9] = verticalAlignment: bottom, middle, top
+    Return:
+    . result: True when valid textboxTuple, else False with None
+    . textboxTuple:
+      - cornerPoint3D: corner point in plane (x, y, 0)
+      - diagonalPoint3D: diagonal point in plane (x, y, 0)
+      - textStr
+      - textHeight
+      - horizontalFlip
+      - verticalFlip
+      - horizontalAlignment
+      - verticalAlignment
+
+    Uses ui, title, filename to report faults via Fusion360 GUI.
+    """
+    try:
+        # Get point3D points for textbox in offset plane
+        result1, cornerPoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                           planeNormal, unitScale, dataArr[0:2])
+        result2, diagonalPoint3D = schemacsv360.get_3d_point_in_offset_plane(ui, title, filename,
+                                                                             planeNormal, unitScale, dataArr[2:4])
+        if not (result1 and result2):
+            raise Exception
+        textStr = dataArr[4]
+        textHeight = float(dataArr[5]) * unitScale
+        horizontalFlip = True if dataArr[6] == 'True' else False
+        verticalFlip = True if dataArr[7] == 'True' else False
+        horizontalAlignment = schemacsv360.get_horizontal_alignment_enum()  # default
+        verticalAlignment = schemacsv360.get_vertical_alignment_enum()  # default
+        if len(dataArr) > 8:
+            horizontalAlignment = schemacsv360.get_horizontal_alignment_enum(dataArr[6])
+            if not horizontalAlignment:
+                raise Exception
+        if len(dataArr) > 9:
+            verticalAlignment = schemacsv360.get_vertical_alignment_enum(dataArr[7])
+            if not verticalAlignment:
+                raise Exception
+        textboxTuple = (cornerPoint3D, diagonalPoint3D, textStr, textHeight,
+                        horizontalFlip, verticalFlip, horizontalAlignment, verticalAlignment)
+        result = (True, textboxTuple)
+    except Exception:
+        ui.messageBox('No valid textbox parameters in %s of %s' % (dataArr, filename), title)
+        result = (False, None)
+    return result
+
+
 def adjust_spline_tangents(ui, planeNormal, spline, segmentTangents):
     """Use segmentTangents to adjust the spline handles per spline point.
 
@@ -409,6 +474,9 @@ def parse_sketch_segment_sections(ui, title, filename, planeNormal, unitScale, l
         elif segmentType == 'point':
             result, segmentTuple = parse_segment_point(ui, title, filename, planeNormal, unitScale,
                                                        liStart, liLast, lineLists)
+        elif segmentType == 'textbox':
+            result, segmentTuple = parse_segment_textbox(ui, title, filename, planeNormal, unitScale,
+                                                         liStart, liLast, lineLists)
         if result:
             segments.append(segmentTuple)
         else:
@@ -718,6 +786,45 @@ def parse_segment_point(ui, title, filename, planeNormal, unitScale, liStart, li
     return (True, segmentTuple)
 
 
+def parse_segment_textbox(ui, title, filename, planeNormal, unitScale, liStart, liLast, lineLists):
+    """Parse textbox segment section from lines [liStart : liLast + 1] in
+       lineLists.
+
+    Same interface as parse_segment_spline(), but with textbox parameters.
+
+    Return:
+    . result: True when valid segmentTuple, else False with None
+    . segmentTuple:
+      - segmentType: 'textbox'
+      - segmentTextboxes, list of textboxTuples:
+        . cornerPoint3D: textbox corner point in plane (x, y, 0)
+        . diagonalPoint3D: textbox diagonal point in plane (x, y, 0)
+        . textStr: text string
+        . height: text height in sketch units
+        . horizontalFlip: boolean
+        . verticalFlip: boolean
+        . horizontalAlignment: left, center, right
+        . verticalAlignment: bottom, middle, top
+    """
+    resultFalse = (False, None)
+    lineNr = liStart + 1  # index starts at 0, nr starts at 1
+    segmentTextboxes = []
+    # Check segment type
+    segmentType = lineLists[liStart][0]
+    if segmentType != 'textbox':
+        ui.messageBox('No textbox segment in %s at %d' % (filename, lineNr), title)
+        return resultFalse
+    # Read textbox parameters, in offset plane, one textbox per file line
+    for li in range(liStart + 1, liLast + 1):
+        dataArr = lineLists[li]
+        result, textboxTuple = get_segment_textbox(ui, title, filename, planeNormal, unitScale, dataArr)
+        if not result:
+            return resultFalse
+        segmentTextboxes.append(textboxTuple)
+    segmentTuple = (segmentType, segmentTextboxes)
+    return (True, segmentTuple)
+
+
 def create_sketch_from_csv_file(ui, title, filename, hostComponent):
     """Create sketch from CSV file, in Fusion360
 
@@ -764,70 +871,123 @@ def create_sketch_from_csv_file(ui, title, filename, hostComponent):
             if segmentType == 'spline':
                 segmentPoints = segment[1]
                 segmentTangents = segment[2]
-                # Create spline
-                spline = sketch.sketchCurves.sketchFittedSplines.add(segmentPoints)
-                # Adjust tangents of spline
-                adjust_spline_tangents(ui, planeNormal, spline, segmentTangents)
-                curves.add(spline)
+                _sketch_add_spline(sketch, curves, segmentPoints, ui, planeNormal, segmentTangents)
             elif segmentType == 'line':
                 segmentPoints = segment[1]
-                lines = sketch.sketchCurves.sketchLines
-                # Create line pieces between subsequent points
-                for pointIndex in range(0, segmentPoints.count - 1):
-                    startPoint = segmentPoints.item(pointIndex)
-                    endPoint = segmentPoints.item(pointIndex + 1)
-                    if not startPoint.isEqualTo(endPoint):
-                        # Create the line between the two different points
-                        line = lines.addByTwoPoints(startPoint, endPoint)
-                        curves.add(line)
+                _sketch_add_lines(sketch, curves, segmentPoints)
             elif segmentType == 'arc':
                 segmentArcs = segment[1]
-                arcs = sketch.sketchCurves.sketchArcs
-                for segmentArc in segmentArcs:
-                    # Create arc
-                    startPoint3D = segmentArc.item(0)
-                    curvePoint3D = segmentArc.item(1)
-                    endPoint3D = segmentArc.item(2)
-                    arc = arcs.addByThreePoints(startPoint3D, curvePoint3D, endPoint3D)
-                    curves.add(arc)
+                _sketch_add_arcs(sketch, curves, segmentArcs)
             elif segmentType == 'circle':
                 segmentCircles = segment[1]
-                circles = sketch.sketchCurves.sketchCircles
-                for segmentCircle in segmentCircles:
-                    # Create circle
-                    centerPoint3D = segmentCircle[0]
-                    radius = segmentCircle[1]
-                    circle = circles.addByCenterRadius(centerPoint3D, radius)
-                    curves.add(circle)
+                _sketch_add_circles(sketch, curves, segmentCircles)
             elif segmentType == 'ellipse':
                 segmentEllipses = segment[1]
-                ellipses = sketch.sketchCurves.sketchEllipses
-                for segmentEllipse in segmentEllipses:
-                    # Create ellipse
-                    centerPoint3D = segmentEllipse[0]
-                    majorPoint3D = segmentEllipse[1]
-                    ellipsePoint3D = segmentEllipse[2]
-                    ellipse = ellipses.add(centerPoint3D, majorPoint3D, ellipsePoint3D)
-                    curves.add(ellipse)
+                _sketch_add_ellipses(sketch, curves, segmentEllipses)
             elif segmentType == 'offset_curve':
                 directionPoint3D = segment[1]
                 offsetDistance = segment[2]
-                # curves = sketch.findConnectedCurves(spline)
-                if curves.count > 0:
-                    sketch.offset(curves, directionPoint3D, offsetDistance)
-                    # Clear list for next offset_curve
-                    curves.clear()
+                _sketch_add_offset_curve(sketch, curves, directionPoint3D, offsetDistance)
             elif segmentType == 'point':
                 segmentPoints = segment[1]
-                points = sketch.sketchPoints
-                for point3D in segmentPoints:
-                    # Create point
-                    points.add(point3D)
+                _sketch_add_points(sketch, segmentPoints)
+            elif segmentType == 'textbox':
+                segmentTextboxes = segment[1]
+                _sketch_add_textboxes(sketch, segmentTextboxes)
     else:
         ui.messageBox('No valid sketch segments in %s' % filename, title)
         return False
     interface360.print_text(ui, 'Created sketch for ' + filename)
     return True
+
+
+def _sketch_add_spline(sketch, curves, segmentPoints, ui, planeNormal, segmentTangents):
+    # Create spline
+    spline = sketch.sketchCurves.sketchFittedSplines.add(segmentPoints)
+    # Adjust tangents of spline
+    adjust_spline_tangents(ui, planeNormal, spline, segmentTangents)
+    curves.add(spline)
+
+
+def _sketch_add_lines(sketch, curves, segmentPoints):
+    lines = sketch.sketchCurves.sketchLines
+    # Create line pieces between subsequent points
+    for pointIndex in range(0, segmentPoints.count - 1):
+        startPoint = segmentPoints.item(pointIndex)
+        endPoint = segmentPoints.item(pointIndex + 1)
+        if not startPoint.isEqualTo(endPoint):
+            # Create the line between the two different points
+            line = lines.addByTwoPoints(startPoint, endPoint)
+            curves.add(line)
+
+
+def _sketch_add_arcs(sketch, curves, segmentArcs):
+    arcs = sketch.sketchCurves.sketchArcs
+    for segmentArc in segmentArcs:
+        # Create arc
+        startPoint3D = segmentArc.item(0)
+        curvePoint3D = segmentArc.item(1)
+        endPoint3D = segmentArc.item(2)
+        arc = arcs.addByThreePoints(startPoint3D, curvePoint3D, endPoint3D)
+        curves.add(arc)
+
+
+def _sketch_add_circles(sketch, curves, segmentCircles):
+    circles = sketch.sketchCurves.sketchCircles
+    for segmentCircle in segmentCircles:
+        # Create circle
+        centerPoint3D = segmentCircle[0]
+        radius = segmentCircle[1]
+        circle = circles.addByCenterRadius(centerPoint3D, radius)
+        curves.add(circle)
+
+
+def _sketch_add_ellipses(sketch, curves, segmentEllipses):
+    ellipses = sketch.sketchCurves.sketchEllipses
+    for segmentEllipse in segmentEllipses:
+        # Create ellipse
+        centerPoint3D = segmentEllipse[0]
+        majorPoint3D = segmentEllipse[1]
+        ellipsePoint3D = segmentEllipse[2]
+        ellipse = ellipses.add(centerPoint3D, majorPoint3D, ellipsePoint3D)
+        curves.add(ellipse)
+
+
+def _sketch_add_offset_curve(sketch, curves, directionPoint3D, offsetDistance):
+    # curves = sketch.findConnectedCurves(spline)
+    if curves.count > 0:
+        sketch.offset(curves, directionPoint3D, offsetDistance)
+        # Clear list for next offset_curve
+        curves.clear()
+
+
+def _sketch_add_points(sketch, segmentPoints):
+    points = sketch.sketchPoints
+    for point3D in segmentPoints:
+        # Create point
+        points.add(point3D)
+
+
+def _sketch_add_textboxes(sketch, segmentTextboxes):
+    texts = sketch.sketchTexts
+    for segmentTextbox in segmentTextboxes:
+        # Create textbox
+        cornerPoint3D = segmentTextbox[0]
+        diagonalPoint3D = segmentTextbox[1]
+        textStr = segmentTextbox[2]
+        textHeight = segmentTextbox[3]
+        horizontalAlignment = segmentTextbox[6]
+        verticalAlignment = segmentTextbox[7]
+        characterSpacing = 0.0  # default
+        textInput = texts.createInput2(textStr, textHeight)
+        textInput.setAsMultiLine(cornerPoint3D,
+                                 diagonalPoint3D,
+                                 horizontalAlignment,
+                                 verticalAlignment,
+                                 characterSpacing)
+        textInput.isHorizontalFlip = segmentTextbox[4]
+        textInput.isVerticalFlip = segmentTextbox[5]
+        texts.add(textInput)
 
 
 def create_sketches_from_csv_files(ui, title, folderName, hostComponent):

@@ -257,3 +257,62 @@ def create_offset_normal_plane(component, planeName, planeNormal, planeOffset):
         # Hide Construction folder with planes
         component.isConstructionFolderLightBulbOn = False
     return offsetPlane
+
+
+def get_feature_operation_enum(operation):
+    """Get adsk enum value for feature operation name.
+
+    Input:
+    . operation: feature operation name
+    Return:
+    . adsk enum for operation name else None when operation name is unknown
+    """
+    if operation == 'join':
+        return adsk.fusion.FeatureOperations.JoinFeatureOperation
+    if operation == 'cut':
+        return adsk.fusion.FeatureOperations.CutFeatureOperation
+    if operation == 'intersect':
+        return adsk.fusion.FeatureOperations.IntersectFeatureOperation
+    if operation == 'new_body':
+        return adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+    if operation == 'new_component':
+        return adsk.fusion.FeatureOperations.NewComponentFeatureOperation
+    return None
+
+
+def get_horizontal_alignment_enum(alignment='center'):
+    """Get adsk enum value for horizontal text alignment.
+
+    Input:
+    . alignment: horizontal alignment type 'left', 'center', 'right'
+    Return:
+    . adsk enum for horizontal alignment else None when the text alignment is
+      unknown
+    """
+    # Horizontal alignment
+    if alignment == 'left':
+        return adsk.core.HorizontalAlignments.LeftHorizontalAlignment
+    if alignment == 'center':
+        return adsk.core.HorizontalAlignments.CenterHorizontalAlignment
+    if alignment == 'center':
+        return adsk.core.HorizontalAlignments.RightHorizontalAlignment
+    return None
+
+
+def get_vertical_alignment_enum(alignment='middle'):
+    """Get adsk enum value for vertical text alignment.
+
+    Input:
+    . alignment: vertical alignment type 'bottom', 'middle', 'top'
+    Return:
+    . adsk enum for vertical text alignment else None when text alignment is
+      unknown
+    """
+    # Vertical alignment
+    if alignment == 'bottom':
+        return adsk.core.VerticalAlignments.BottomVerticalAlignment
+    if alignment == 'middle':
+        return adsk.core.VerticalAlignments.MiddleVerticalAlignment
+    if alignment == 'top':
+        return adsk.core.VerticalAlignments.TopVerticalAlignment
+    return None

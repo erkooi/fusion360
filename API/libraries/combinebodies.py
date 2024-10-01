@@ -42,6 +42,7 @@ Combine bodies CSV file format:
 """
 
 import interfacefiles
+import schemacsv360
 import interface360
 import utilities360
 
@@ -146,7 +147,7 @@ def combine_bodies_into_new_component(groupComponent, targetBody, toolBodies, op
     # . Can use target_body, because it is kept when result is in new component
     combineFeatures = groupComponent.features.combineFeatures
     combineFeatureInput = combineFeatures.createInput(targetBody, toolBodies)
-    combineFeatureInput.operation = utilities360.get_feature_operation_enum(operation)
+    combineFeatureInput.operation = schemacsv360.get_feature_operation_enum(operation)
     combineFeatureInput.isKeepToolBodies = True
 
     # Create new component, it will appear in rootComponent
@@ -192,7 +193,7 @@ def combine_bodies_into_new_body(groupComponent, targetBody, toolBodies, operati
     # Prepare combineFeatureInput for result in new body.
     combineFeatures = groupComponent.features.combineFeatures
     combineFeatureInput = combineFeatures.createInput(combineBody, toolBodies)
-    combineFeatureInput.operation = utilities360.get_feature_operation_enum(operation)
+    combineFeatureInput.operation = schemacsv360.get_feature_operation_enum(operation)
     combineFeatureInput.isKeepToolBodies = True
 
     # Create new body

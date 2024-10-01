@@ -88,6 +88,28 @@ def get_sketch_profiles_collection(ui, sketch, profileIndices):
     return profiles
 
 
+def get_sketch_texts_collection(ui, sketch, textIndices):
+    """Get objectCollection of sketch texts with textIndices in sketch
+
+    Input:
+    . sketch: sketch object
+    . textIndices: one or more indices of texts in sketch
+    Return:
+    . texts: texts object collection for textIndices in sketch, else None
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    texts = adsk.core.ObjectCollection.create()
+    for textIndex in textIndices:
+        if textIndex < sketch.sketchTexts.count:
+            text = sketch.sketchTexts.item(textIndex)
+            texts.add(text)
+        else:
+            interface360.error_text(ui, 'Sketch %s has no text index %d' % (sketch.name, textIndex))
+            return None
+    return texts
+
+
 def get_body_faces_collection(ui, body, faceIndices):
     """Get objectCollection of body faces with faceIndices in body
 
@@ -108,27 +130,6 @@ def get_body_faces_collection(ui, body, faceIndices):
             interface360.error_text(ui, 'Body %s has no face index %d' % (body.name, faceIndex))
             return None
     return faces
-
-
-def get_feature_operation_enum(operation):
-    """Get adsk enum value for feature operation name.
-
-    Input:
-    . operation: feature operation name
-    Return:
-    . adsk enum for operation name else None when operation name is unknown
-    """
-    if operation == 'join':
-        return adsk.fusion.FeatureOperations.JoinFeatureOperation
-    if operation == 'cut':
-        return adsk.fusion.FeatureOperations.CutFeatureOperation
-    if operation == 'intersect':
-        return adsk.fusion.FeatureOperations.IntersectFeatureOperation
-    if operation == 'new_body':
-        return adsk.fusion.FeatureOperations.NewBodyFeatureOperation
-    if operation == 'new_component':
-        return adsk.fusion.FeatureOperations.NewComponentFeatureOperation
-    return None
 
 
 ################################################################################

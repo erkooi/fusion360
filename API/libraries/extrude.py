@@ -124,7 +124,8 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
 
     # Parse file lines for extrude
     resultFalse = (False, None)
-    sketchName = ''
+    profileSketchName = ''
+    textSketchName = ''
     fromBodyName = ''
     planarIndices = [0]  # default use index 0 for sketch profile or body face
     offset = 0
@@ -147,9 +148,11 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             if not result:
                 return resultFalse
         elif li == 2:
-            if lineWord in ['profile', 'face']:
+            if lineWord in ['profile', 'text', 'face']:
                 if lineWord == 'profile':
-                    sketchName = lineArr[1]
+                    profileSketchName = lineArr[1]
+                elif lineWord == 'text':
+                    textSketchName = lineArr[1]
                 elif lineWord == 'face':
                     fromBodyName = lineArr[1]
                 if len(lineArr) > 2:
@@ -197,7 +200,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
 
     # Successfully reached end of file
     locationTuple = (extrudeFilename, groupComponentName)
-    planarTuple = (sketchName, fromBodyName, planarIndices)
+    planarTuple = (profileSketchName, textSketchName, fromBodyName, planarIndices)
     extentTuple = (offset, taperAngles, extentType, distanceValues, toBodyName)
     operationTuple = (operation, participantBodyNames, resultBodyNames)
     extrudeTuple = (locationTuple, planarTuple, extentTuple, operationTuple)
@@ -253,7 +256,7 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
 
     Uses ui to report faults via Fusion360 GUI.
     """
-    verbosity = True
+    verbosity = False
 
     # Extract tuples
     object, planars = objectTuple
@@ -265,7 +268,7 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
     # . The extrudeFeatures has to be obtained from the same component that
     #   contains the object, therefore use object.parentComponent instead of
     #   hostComponent.
-    operationEnum = utilities360.get_feature_operation_enum(operation)
+    operationEnum = schemacsv360.get_feature_operation_enum(operation)
     extrudeFeatures = object.parentComponent.features.extrudeFeatures
     extrudeFeatureInput = extrudeFeatures.createInput(planars, operationEnum)
     creationOccurrence = extrudeFeatureInput.creationOccurrence
@@ -371,7 +374,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     # Extract tuples, extrudeFilename is not used
     locationTuple, planarTuple, extentTuple, operationTuple = extrudeTuple
     _, groupComponentName = locationTuple
-    sketchName, fromBodyName, planarIndices = planarTuple
+    profileSketchName, textSketchName, fromBodyName, planarIndices = planarTuple
     offset, taperAngles, extentType, distanceVales, toBodyName = extentTuple
     operation, participantBodyNames, resultBodyNames = operationTuple
 
@@ -381,27 +384,8 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     groupComponent = utilities360.find_or_create_component(hostComponent, groupComponentName)
 
     # Find object planar to extrude anywhere in hostComponent
-    objectTuple = None
-    if sketchName:
-        # Get profiles in sketch to determine profileTuple
-        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, sketchName)
-        if not sketch:
-            interface360.error_text(ui, 'Sketch %s not found' % sketchName)
-            return False
-        profiles = utilities360.get_sketch_profiles_collection(ui, sketch, planarIndices)
-        if not profiles:
-            return False
-        objectTuple = (sketch, profiles)
-    elif fromBodyName:
-        # Get faces in body to determine faceTuple
-        fromBody = utilities360.find_body_anywhere(ui, hostComponent, fromBodyName)
-        if not fromBody:
-            interface360.error_text(ui, 'From body %s not found' % fromBodyName)
-            return False
-        faces = utilities360.get_body_faces_collection(ui, fromBody, planarIndices)
-        if not faces:
-            return False
-        objectTuple = (fromBody, faces)
+    objectTuple = _find_planars_to_extrude(ui, hostComponent,
+                                           profileSketchName, textSketchName, fromBodyName, planarIndices)
 
     # Find participant bodies in hostComponent and update operationTuple
     participantBodies = []
@@ -445,6 +429,59 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
 
     interface360.print_text(ui, 'Extruded for ' + filename)
     return True
+
+
+def _find_planars_to_extrude(ui, hostComponent, profileSketchName, textSketchName, fromBodyName, planarIndices):
+    """Find planars to extrude.
+
+    The planar can be one or more profiles, or texts or faces.
+
+    Input:
+    . hostComponent: look for planar anywhere in hostComponent folder.
+    . planar type one of:
+      . profileSketchName: When != '' look for profiles in sketch
+      . textSketchName:  When != '' look for texts in sketch
+      . fromBodyName:  When != '' look for faces on from body
+    . planarIndices: List of item indices
+
+    Return:
+    . objectTuple: Object (sketch or from body) and collection of planars
+        (profiles, texts or faces), or None.
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    objectTuple = None
+    if profileSketchName:
+        # Get profiles in sketch to determine profile objectTuple
+        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, profileSketchName)
+        if not sketch:
+            interface360.error_text(ui, 'Sketch %s for profile not found' % profileSketchName)
+            return False
+        profiles = utilities360.get_sketch_profiles_collection(ui, sketch, planarIndices)
+        if not profiles:
+            return False
+        objectTuple = (sketch, profiles)
+    elif textSketchName:
+        # Get texts in sketch to determine text objectTuple
+        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, textSketchName)
+        if not sketch:
+            interface360.error_text(ui, 'Sketch %s for text not found' % textSketchName)
+            return False
+        texts = utilities360.get_sketch_texts_collection(ui, sketch, planarIndices)
+        if not texts:
+            return False
+        objectTuple = (sketch, texts)
+    elif fromBodyName:
+        # Get faces in body to determine face objectTuple
+        fromBody = utilities360.find_body_anywhere(ui, hostComponent, fromBodyName)
+        if not fromBody:
+            interface360.error_text(ui, 'From body %s not found' % fromBodyName)
+            return False
+        faces = utilities360.get_body_faces_collection(ui, fromBody, planarIndices)
+        if not faces:
+            return False
+        objectTuple = (fromBody, faces)
+    return objectTuple
 
 
 def _rename_result_bodies(ui, resultBodyNames, extrudeResult):
