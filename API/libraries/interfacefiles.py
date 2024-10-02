@@ -36,7 +36,7 @@ validCombineOperations = ['join', 'cut', 'intersect']
 validSplitToolTypes = ['plane', 'body']
 validLocalObjectTypes = ['sketch', 'plane', 'body']
 validMovecopyObjects = ['component', 'body']
-validMovecopyOperations = ['move', 'copy', 'remove', 'translate', 'rotate']
+validMovecopyOperations = ['move', 'copy', 'remove', 'light_bulb', 'translate', 'rotate']
 validMirrorOperations = ['new_component', 'new_body', 'join']
 # For assembly create actions the order is dont care, for assembly run actions
 # the order can matter.

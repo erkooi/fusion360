@@ -30,6 +30,7 @@ Movecopy CSV file format:
     . 'move', objectType, objectName, targetComponentName
     . 'copy', objectType, objectName, copyName, optional targetComponentName
     . 'remove', objectType, objectName
+    . 'light_bulb', objectType, objectName, 'on' or 'off'
   - Transform object in design 3D space:
     # translation vector in resolution units
     . 'translate', objectType, objectName, tx, ty, tz
@@ -71,7 +72,8 @@ def parse_csv_movecopy_file(ui, title, filename):
         . an hierarchical or 3D movecopy operation from validMovecopyOperations:
           - 'move', with targetComponentName
           - 'copy', with copyName and optional targetComponentName
-          - 'remove')
+          - 'remove'
+          - 'light_bulb'
           - 'translate', with translation vector3D
           - 'rotate', with rotation axis vector3D and angle
 
@@ -130,6 +132,7 @@ def _parse_operation(ui, title, filename, scale, lineArr):
       - objectName: component name or body name
       - copyName: name of copied component or body
       - targetComponentName: name of target component for move or copy
+      - lightBulbOn: switch object light bulb 'on' or 'off'
       - vector3D: translation vector or rotation axis vector
       - angle: rotation angle around rotation axis vector
 
@@ -140,6 +143,7 @@ def _parse_operation(ui, title, filename, scale, lineArr):
     # Get parameters
     copyName = ''
     targetComponentName = ''
+    lightBulbOn = True
     vector3D = None
     angle = 0.0
     try:
@@ -167,6 +171,8 @@ def _parse_operation(ui, title, filename, scale, lineArr):
                 targetComponentName = lineArr[4]  # optional for copy
         elif movecopyOperation == 'remove':
             pass  # no additional arguments for remove
+        elif movecopyOperation == 'light_bulb':
+            lightBulbOn = True if lineArr[3] == 'on' else False
         elif movecopyOperation in ['translate', 'rotate']:
             # . vector3D
             result, vector3D = schemacsv360.get_3d_vector(ui, title, filename, scale, lineArr[3:6])
@@ -181,7 +187,8 @@ def _parse_operation(ui, title, filename, scale, lineArr):
     except Exception:
         ui.messageBox('No valid movecopy transform in %s' % filename, title)
         return resultFalse
-    operationTuple = (movecopyOperation, objectType, objectName, copyName, targetComponentName, vector3D, angle)
+    operationTuple = (movecopyOperation, objectType, objectName, copyName, targetComponentName,
+                      lightBulbOn, vector3D, angle)
     return (True, operationTuple)
 
 
@@ -205,7 +212,8 @@ def movecopy_from_csv_file(ui, title, filename, hostComponent):
 
     # Perform the list of movecopy operations
     for operationTuple in movecopyOperationTuples:
-        movecopyOperation, objectType, objectName, copyName, targetComponentName, vector3D, angle = operationTuple
+        movecopyOperation, objectType, objectName, copyName, targetComponentName, \
+            lightBulbOn, vector3D, angle = operationTuple
         if objectType == 'component':
             objectOccurrence = _find_object_to_movecopy(ui, hostComponent, objectType, objectName)
             objectComponent = objectOccurrence.component
@@ -217,8 +225,11 @@ def movecopy_from_csv_file(ui, title, filename, hostComponent):
                 objectOccurrence = utilities360.copy_component_as_new_into_occurrence(objectComponent, targetOccurrence)
                 # Changing occurrence.component.name also changes occurrence.name
                 objectOccurrence.component.name = copyName
+                objectOccurrence.isLightBulbOn = False  # default make inactive copy at same location
             elif movecopyOperation == 'remove':
                 utilities360.remove_occurrence(objectOccurrence)
+            elif movecopyOperation == 'light_bulb':
+                objectOccurrence.isLightBulbOn = lightBulbOn
             elif movecopyOperation in ['translate', 'rotate']:
                 transformTuple = (movecopyOperation, vector3D, angle)
                 utilities360.transform_occurrence(ui, objectOccurrence, transformTuple)
@@ -235,8 +246,11 @@ def movecopy_from_csv_file(ui, title, filename, hostComponent):
                 targetOccurrence = utilities360.find_or_create_occurrence(ui, hostComponent, targetComponentName)
                 objectBody = utilities360.copy_body_to_occurrence(objectBody, targetOccurrence)
                 objectBody.name = copyName
+                objectBody.isLightBulbOn = False  # default make inactive copy at same location
             elif movecopyOperation == 'remove':
                 utilities360.remove_body(objectBody)
+            elif movecopyOperation == 'light_bulb':
+                objectBody.isLightBulbOn = lightBulbOn
             elif movecopyOperation in ['translate', 'rotate']:
                 transformTuple = (movecopyOperation, vector3D, angle)
                 utilities360.transform_body(ui, objectBody, transformTuple)

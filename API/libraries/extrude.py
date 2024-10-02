@@ -45,7 +45,9 @@ Extrude CSV file format:
   - 'cut', participantBodyNames
   - 'intersect', participantBodyNames
   - 'new_body'
-. 8-th line: 'extrude_results', resultBodyNames
+. Optional lines:
+  - 'extrude_results', resultBodyNames
+  - 'light_bulb', 'on' or 'off' of result bodies (default is 'on')
 
   distanceValues:
   . one distance value for single side extent, or two distance values for both
@@ -114,6 +116,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
         . participantBodyNames: body name(s) for join, cut or intersect
           operation
         . resultBodyNames: optional rename result body or bodies
+        . lightBulbOn: optional control for light bulb of result bodies
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
@@ -134,6 +137,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
     toBodyName = ''
     participantBodyNames = []
     resultBodyNames = ''
+    lightBulbOn = True
     for li, lineArr in enumerate(lineLists):
         lineWord = lineArr[0]
         if li == 0:
@@ -188,21 +192,21 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
                 operation, participantBodyNames = operationTuple
             else:
                 return resultFalse
-        elif li == 7:
+        else:
             if lineWord == 'extrude_results':
                 if len(lineArr) > 1:
                     resultBodyNames = lineArr[1:]
+            elif lineWord == 'light_bulb':
+                lightBulbOn = True if lineArr[1] == 'on' else False
             else:
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
-        else:
-            return resultFalse
 
     # Successfully reached end of file
     locationTuple = (extrudeFilename, groupComponentName)
     planarTuple = (profileSketchName, textSketchName, fromBodyName, planarIndices)
     extentTuple = (offset, taperAngles, extentType, distanceValues, toBodyName)
-    operationTuple = (operation, participantBodyNames, resultBodyNames)
+    operationTuple = (operation, participantBodyNames, resultBodyNames, lightBulbOn)
     extrudeTuple = (locationTuple, planarTuple, extentTuple, operationTuple)
     return (True, extrudeTuple)
 
@@ -260,7 +264,7 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
 
     # Extract tuples
     object, planars = objectTuple
-    operation, participantBodies, resultBodyNames = operationTuple
+    operation, participantBodies, resultBodyNames, lightBulbOn = operationTuple
     offset, taperAngles, extentType, distanceValues, toBody = extentTuple
     copiedToBody = None
 
@@ -345,6 +349,11 @@ def extrude_planars(ui, objectTuple, operationTuple, extentTuple):
     # Perform the extrude
     extrudeResult = extrudeFeatures.add(extrudeFeatureInput)
 
+    # Control light bulb of result bodies
+    for bi in range(extrudeResult.bodies.count):
+        body = extrudeResult.bodies.item(bi)
+        body.isLightBulbOn = lightBulbOn
+
     # Remove the copiedToBody
     if copiedToBody:
         utilities360.remove_body(copiedToBody)
@@ -376,7 +385,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
     _, groupComponentName = locationTuple
     profileSketchName, textSketchName, fromBodyName, planarIndices = planarTuple
     offset, taperAngles, extentType, distanceVales, toBodyName = extentTuple
-    operation, participantBodyNames, resultBodyNames = operationTuple
+    operation, participantBodyNames, resultBodyNames, lightBulbOn = operationTuple
 
     # Create groupComponent in hostComponent for extruded bodies objects, if
     # it does not already exist, else use hostComponent if groupComponentName
@@ -396,7 +405,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
                 interface360.error_text(ui, 'Participant body %s not found' % bodyName)
                 return False
             participantBodies.append(body)
-    operationTuple = (operation, participantBodies, resultBodyNames)
+    operationTuple = (operation, participantBodies, resultBodyNames, lightBulbOn)
 
     # Find to_object body in hostComponent and update extentTuple
     toBody = None
@@ -405,6 +414,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
         if not toBody:
             interface360.error_text(ui, 'To object body %s not found' % toBodyName)
             return False
+        toBody.isLightBulbOn = True  # make active
     extentTuple = (offset, taperAngles, extentType, distanceVales, toBody)
 
     # Perform the extrude feature
