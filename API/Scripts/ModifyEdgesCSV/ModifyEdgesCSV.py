@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright 2024 E. Kooistra
+# Copyright 2023 E. Kooistra
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 # limitations under the License.
 ################################################################################
 # Author: Eric Kooistra.
-# Date: 2 Mar 2024
-"""Build assembly CSV files from a design CSV file, into a toplevel design
-component in Fusion360.
+# Date: 17 Jul 2023
+"""Modify edges of body in active component in Fusion360, as defined in modify
+edges csv file.
 
-See API/libraries/builddesign.py
+See API/libraries/modifyedges.py
 """
 
 # Fusion360
@@ -33,39 +33,19 @@ import interfacefiles
 import interface360
 import utilities360
 import schemacsv360
-import importsketch
-import createplane
-import createloft
-import combinebodies
-import splitbody
-import extrude
 import modifyedges
-import movecopy
-import mirror
-import constructassembly
-import builddesign
 importlib.reload(interfacefiles)
 importlib.reload(interface360)
 importlib.reload(utilities360)
 importlib.reload(schemacsv360)
-importlib.reload(importsketch)
-importlib.reload(createplane)
-importlib.reload(createloft)
-importlib.reload(combinebodies)
-importlib.reload(splitbody)
-importlib.reload(extrude)
 importlib.reload(modifyedges)
-importlib.reload(movecopy)
-importlib.reload(mirror)
-importlib.reload(constructassembly)
-importlib.reload(builddesign)
 
 
 def run(context):
     """Run script as Fusion360 API\\Script."""
     ui = None
     try:
-        title = 'Build assembies from csv file'
+        title = 'Modify edges of bodies from csv file'
         app = adsk.core.Application.get()
         ui = app.userInterface
 
@@ -84,8 +64,8 @@ def run(context):
         if filename is None:
             return
 
-        # Build design component from CSV file in activeComponent
-        builddesign.build_design_from_csv_file(ui, title, filename, activeComponent)
+        # Modify edges of bodies from CSV file in activeComponent
+        modifyedges.modifyedges_from_csv_file(ui, title, filename, activeComponent)
 
     except Exception:
         if ui:

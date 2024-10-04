@@ -22,41 +22,44 @@ import os.path
 import math
 
 # Lists of valid key words in CSV files for generating objects in Fusion360
-validCsvFileTypes = ['sketch', 'plane',
-                     'loft', 'extrude', 'combine', 'split', 'movecopy', 'mirror',
-                     'assembly', 'design']
+validCombineOperations = ['cut', 'intersect', 'join']
+validCsvFileTypes = ['assembly', 'combine', 'design', 'extrude', 'loft', 'mirror',
+                     'modifyedges', 'movecopy', 'plane', 'sketch', 'split']
 validCsvFileExtensions = validCsvFileTypes + ['corail', 'crossrail']
-validRandomActions = ['sketch', 'plane', 'loft']
-validOrderedActions = ['extrude', 'combine', 'split', 'movecopy', 'mirror']
-validUnits = ['mm', 'cm', 'm']
+validLocalObjectTypes = ['body', 'plane', 'sketch']
+validMirrorOperations = ['join', 'new_component', 'new_body']
+validModifyEdgesOperations = ['chamfer', 'fillet', 'log_edges']
+validMovecopyObjects = ['body', 'component']
+validMovecopyOperations = ['copy', 'light_bulb', 'move', 'translate', 'remove', 'rotate']
+validOrderedActions = ['combine', 'extrude', 'mirror', 'modifyedges', 'movecopy', 'split']
 validPlaneNormals = ['x', 'y', 'z']
-validSegmentTypes = ['spline', 'line', 'arc', 'offset_curve', 'circle', 'ellipse', 'point', 'textbox']
 validRailTypes = ['co_rail', 'cross_rails']
-validCombineOperations = ['join', 'cut', 'intersect']
-validSplitToolTypes = ['plane', 'body']
-validLocalObjectTypes = ['sketch', 'plane', 'body']
-validMovecopyObjects = ['component', 'body']
-validMovecopyOperations = ['move', 'copy', 'remove', 'light_bulb', 'translate', 'rotate']
-validMirrorOperations = ['new_component', 'new_body', 'join']
+validRandomActions = ['loft', 'plane', 'sketch']
+validSegmentTypes = ['arc', 'circle', 'ellipse', 'line', 'offset_curve', 'point', 'spline', 'textbox']
+validSplitToolTypes = ['body', 'plane']
+validUnits = ['mm', 'cm', 'm']
+
 # For assembly create actions the order is dont care, for assembly run actions
 # the order can matter.
 validAssemblyActions = ['echo',
-                        'create_sketch',
-                        'multiple_create_sketch',
-                        'create_plane',
-                        'multiple_create_plane',
                         'create_loft',
+                        'create_plane',
+                        'create_sketch',
                         'multiple_create_loft',
-                        'run_extrude',
-                        'multiple_run_extrude',
+                        'multiple_create_plane',
+                        'multiple_create_sketch',
                         'run_combine',
-                        'multiple_run_combine',
-                        'run_split',
-                        'multiple_run_split',
-                        'run_movecopy',
-                        'multiple_run_movecopy',
+                        'run_extrude',
                         'run_mirror',
-                        'multiple_run_mirror']
+                        'run_modifyedges',
+                        'run_movecopy',
+                        'run_split',
+                        'multiple_run_combine',
+                        'multiple_run_extrude',
+                        'multiple_run_mirror',
+                        'multiple_run_modifyedges',
+                        'multiple_run_movecopy',
+                        'multiple_run_split']
 
 
 def value_to_str(value, toAbs=False, pointChar='.'):
@@ -1137,19 +1140,21 @@ def write_design_csv_file(fileLines):
 # - get loft folders
 # Process other objects in order per CSV file, because for actions on objects
 # can depend on other object.
-# - get extrude, combine, split, movecopy, assembly CSV files
+# - get assembly, combine, extrude, mirror, modifyedges, movecopy, split CSV
+#   files
 #
 # For folders use:
 # . multiple_create_plane, folderName, groupName
 # . multiple_create_sketch, folderName, groupName
 # . multiple_create_loft, folderName, groupName
 # For files use:
-# . run_extrude, filename, groupName
-# . run_combine, filename, groupName
-# . run_split, filename, groupName
-# . run_movecopy, filename, groupName
-# . run_mirror, filename, groupName
 # . run_assembly, filename, groupName
+# . run_combine, filename, groupName
+# . run_extrude, filename, groupName
+# . run_mirror, filename, groupName
+# . run_modifyedges, filename, groupName
+# . run_movecopy, filename, groupName
+# . run_split, filename, groupName
 def read_timeline_from_file_lines(fileLines):
     """Read timeline from fileLines of file.
 

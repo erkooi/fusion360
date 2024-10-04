@@ -53,6 +53,7 @@ import createloft
 import extrude
 import combinebodies
 import splitbody
+import modifyedges
 import movecopy
 import mirror
 
@@ -119,7 +120,7 @@ def parse_csv_assembly_file(ui, title, filename):
     return (True, assemblyTuple)
 
 
-def perform_action(ui, title, actionFilename, assemblyComponent, action):
+def perform_action(ui, title, actionFilename, assemblyComponent, action):  # noqa: C901
     """Perform action in assemblyComponent
 
     If the action CSV file with actionFilename contains an optional
@@ -161,6 +162,10 @@ def perform_action(ui, title, actionFilename, assemblyComponent, action):
         splitbody.split_body_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_split':
         splitbody.split_bodies_from_csv_files(ui, title, actionFilename, assemblyComponent)
+    elif action == 'run_modifyedges':
+        modifyedges.modifyedges_from_csv_file(ui, title, actionFilename, assemblyComponent)
+    elif action == 'multiple_run_modifyedges':
+        modifyedges.modifyedges_from_csv_files(ui, title, actionFilename, assemblyComponent)
     elif action == 'run_movecopy':
         movecopy.movecopy_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_movecopy':

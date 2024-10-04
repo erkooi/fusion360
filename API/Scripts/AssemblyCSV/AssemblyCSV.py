@@ -38,6 +38,7 @@ import createloft
 import combinebodies
 import splitbody
 import extrude
+import modifyedges
 import movecopy
 import mirror
 import constructassembly
@@ -51,6 +52,7 @@ importlib.reload(createloft)
 importlib.reload(combinebodies)
 importlib.reload(splitbody)
 importlib.reload(extrude)
+importlib.reload(modifyedges)
 importlib.reload(movecopy)
 importlib.reload(mirror)
 importlib.reload(constructassembly)

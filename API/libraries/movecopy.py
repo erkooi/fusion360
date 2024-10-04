@@ -124,7 +124,7 @@ def _parse_operation(ui, title, filename, scale, lineArr):
     . lineArr: list of csv entries from a line
 
     Return:
-    . result: True when valid operationTuple, else False. An invalid tranform
+    . result: True when valid operationTuple, else False. An invalid transform
       is ignored and replaced by 'nop' to indicate no operation.
     . operationTuple:
       - movecopyOperation: movecopy operation from validMovecopyOperations

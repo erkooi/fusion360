@@ -30,8 +30,8 @@ files for generating objects in Fusion360:
 
 Schema sections in point txt file:
 
-. Object keyword: sketch, plane, loft, extrude, combine, split, movecopy,
-  mirror.
+. Object keyword: sketch, plane, loft, extrude, combine, split, modifyedges,
+  movecopy, mirror.
   - interfacefiles.write_csv_files()
 
 . Object keyword: sketch, cross_rails
@@ -135,6 +135,9 @@ def write_csv_files_for_timeline_file(timelineFilename):
 
     # Write split CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'split')
+
+    # Write modifyedges CSV files into folder(s)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'modifyedges', units)
 
     # Write movecopy CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'movecopy', units)
