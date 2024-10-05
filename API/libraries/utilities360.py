@@ -132,6 +132,75 @@ def get_body_faces_collection(ui, body, faceIndices):
     return faces
 
 
+def get_body_edges_collection(ui, body, itemSelect, itemIndices):
+    """Collect edges in body.
+
+    Input:
+    . body: body object, with the faces and edges to look for
+    . itemSelect: If 'faces' then collect edges from faces, else if 'edges' then
+        collect edges directly.
+    . itemIndices: Indices of the faces or edges
+    """
+    edgeCollection = adsk.core.ObjectCollection.create()
+    if itemSelect == 'faces':
+        for fi in itemIndices:
+            if fi < body.faces.count:
+                for edge in body.faces.item(fi).edges:
+                    edgeCollection.add(edge)
+            else:
+                interface360.error_text(ui, 'Body %s has no face index %d' % (body.name, fi))
+                return None
+    elif itemSelect == 'edges':
+        for ei in itemIndices:
+            if ei < body.edges.count:
+                edge = body.edges.item(ei)
+                edgeCollection.add(edge)
+            else:
+                interface360.error_text(ui, 'Body %s has no edge index %d' % (body.name, ei))
+                return None
+    else:
+        interface360.error_text(ui, 'Unknown body itemSelect %s' % itemSelect)
+        return None
+    return edgeCollection
+
+
+################################################################################
+# Log objects features based on object name
+
+def log_body_edges(ui, body, bodyName):
+    """Log edge index, length and point on edge for all body edges.
+
+    To ease finding body edge index, using GUI.
+    """
+    interface360.print_text(ui, 'Edges of body %s:' % bodyName)
+    for ei in range(body.edges.count):
+        edge = body.edges.item(ei)
+        # cm * 10 to have value in mm
+        scale = 10
+        edgeLength = edge.length * scale
+        x = edge.pointOnEdge.x * scale
+        y = edge.pointOnEdge.y * scale
+        z = edge.pointOnEdge.z * scale
+        interface360.print_text(ui, '  %d, %.2f, [%.2f, %.2f, %.2f]' % (ei, edgeLength, x, y, z))
+
+
+def log_body_faces(ui, body, bodyName):
+    """Log face index, area and point on face for all body faces.
+
+    To ease finding body face index, using GUI.
+    """
+    interface360.print_text(ui, 'Faces of body %s:' % bodyName)
+    for fi in range(body.faces.count):
+        face = body.faces.item(fi)
+        # cm * 10 to have value in mm
+        scale = 10
+        faceArea = face.area * scale**2
+        x = face.centroid.x * scale
+        y = face.centroid.y * scale
+        z = face.centroid.z * scale
+        interface360.print_text(ui, '  %d, %.2f, [%.2f, %.2f, %.2f]' % (fi, faceArea, x, y, z))
+
+
 ################################################################################
 # Find object based on object name
 

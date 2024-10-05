@@ -183,79 +183,24 @@ def modifyedges_from_csv_file(ui, title, filename, hostComponent):
                                     (bodyName, hostComponent.name))
             return False
         if modifyedgesOperation == 'log_faces':
-            log_body_faces(ui, body, bodyName)
+            utilities360.log_body_faces(ui, body, bodyName)
         elif modifyedgesOperation == 'log_edges':
-            log_body_edges(ui, body, bodyName)
+            utilities360.log_body_edges(ui, body, bodyName)
         elif modifyedgesOperation == 'fillet':
-            apply_fillets(body, size, itemSelect, itemIndices)
+            apply_fillets(ui, body, size, itemSelect, itemIndices)
         elif modifyedgesOperation == 'chamfer':
-            apply_chamfers(body, size, angle, itemSelect, itemIndices)
+            apply_chamfers(ui, body, size, angle, itemSelect, itemIndices)
         else:
             return False
     interface360.print_text(ui, 'Modified edges for ' + filename)
     return True
 
 
-def log_body_edges(ui, body, bodyName):
-    """Log edge index, length and point on edge for all body edges.
-
-    To ease finding body edge index, using GUI.
-    """
-    interface360.print_text(ui, 'Edges of body %s:' % bodyName)
-    for ei in range(body.edges.count):
-        edge = body.edges.item(ei)
-        # cm * 10 to have value in mm
-        scale = 10
-        edgeLength = edge.length * scale
-        x = edge.pointOnEdge.x * scale
-        y = edge.pointOnEdge.y * scale
-        z = edge.pointOnEdge.z * scale
-        interface360.print_text(ui, '  %d, %.2f, [%.2f, %.2f, %.2f]' % (ei, edgeLength, x, y, z))
-
-
-def log_body_faces(ui, body, bodyName):
-    """Log face index, area and point on face for all body faces.
-
-    To ease finding body face index, using GUI.
-    """
-    interface360.print_text(ui, 'Faces of body %s:' % bodyName)
-    for fi in range(body.faces.count):
-        face = body.faces.item(fi)
-        # cm * 10 to have value in mm
-        scale = 10
-        faceArea = face.area * scale**2
-        x = face.pointOnFace.x * scale
-        y = face.pointOnFace.y * scale
-        z = face.pointOnFace.z * scale
-        interface360.print_text(ui, '  %d, %.2f, [%.2f, %.2f, %.2f]' % (fi, faceArea, x, y, z))
-
-
-def _collect_edges(body, itemSelect, itemIndices):
-    """Collect edges in body.
-
-    Input:
-    . body: body object, with the faces and edges to look for
-    . itemSelect: If 'faces' then collect edges from faces, else if 'edges' then
-        collect edges directly.
-    . itemIndices: Indices of the faces or edges
-    """
-    edgeCollection = adsk.core.ObjectCollection.create()
-    if itemSelect == 'faces':
-        for fi in itemIndices:
-            for edge in body.faces.item(fi).edges:
-                edgeCollection.add(edge)
-    elif 'edges':
-        for ei in itemIndices:
-            edge = body.edges.item(ei)
-            edgeCollection.add(edge)
-    return edgeCollection
-
-
-def apply_fillets(body, radius, itemSelect, itemIndices):
+def apply_fillets(ui, body, radius, itemSelect, itemIndices):
     """Apply fillet with radius to edges of body.
     """
     # Collect edges
-    edgeCollection = _collect_edges(body, itemSelect, itemIndices)
+    edgeCollection = utilities360.get_body_edges_collection(ui, body, itemSelect, itemIndices)
 
     # Prepare fillet
     radiusInput = adsk.core.ValueInput.createByReal(radius)
@@ -270,11 +215,12 @@ def apply_fillets(body, radius, itemSelect, itemIndices):
     return filletResult
 
 
-def apply_chamfers(body, distance, angle, itemSelect, itemIndices):
+def apply_chamfers(ui, body, distance, angle, itemSelect, itemIndices):
     """Apply chamfer with distance to edges of body.
     """
     # Collect edges
-    edgeCollection = _collect_edges(body, itemSelect, itemIndices)
+    edgeCollection = utilities360.get_body_edges_collection(ui, body, itemSelect, itemIndices)
+    interface360.print_text(ui, 'edgeCollection ' + str(edgeCollection.count))
 
     # Prepare chamfer
     distanceInput = adsk.core.ValueInput.createByReal(distance)
