@@ -26,9 +26,14 @@ Modify edges CSV file format:
 . second line: resolution 'mm' or 'cm'
 . next lines: series of one or more edge modifications from
      validModifyEdgesOperations:
+  . 'log_faces', bodyName
   . 'log_edges', bodyName
-  . 'fillet', bodyName, radius, edgeIndices
-  . 'chamfer', bodyName, distance, edgeIndices
+  . 'fillet', bodyName, radius, 'edges', edgeIndices
+  . 'fillet', bodyName, radius, 'faces', faceIndices
+  . 'chamfer', bodyName, distance, angle, 'edges', edgeIndices
+  . 'chamfer', bodyName, distance, angle, 'faces', faceIndices
+
+With radius and distance in resolution units and angle in degrees.
 
 Look for bodyName in hostComponent or in optional specific body search
 component name in the bodyName, separated by a slash.
@@ -55,13 +60,7 @@ def parse_csv_modifyedges_file(ui, title, filename):
     . modifyedgesTuple:
       - modifyedgesFilename: name of the modifyedges file
       - modifyedgesOperationTuples[]: list of one or more modifyedges
-        operations, each with:
-        . modifyedgesOperation: 'log_edges', 'fillet' or 'chamfer' in
-          validModifyEdgesOperations
-        . bodyName: component name or body name
-        . size: radius for fillet, or distance for chamfer
-        . angle: angle for chamfer
-        . list of one or more edge indices
+        operations.
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
@@ -112,12 +111,13 @@ def _parse_operation(ui, title, filename, scale, lineArr):
     Return:
     . result: True when valid operationTuple, else False.
     . operationTuple:
-      . modifyedgesOperation: 'log_edges', 'fillet' or 'chamfer' in
-        validModifyEdgesOperations
+      . modifyedgesOperation: operation in validModifyEdgesOperations
       . bodyName: component name or body name
       . size: radius for fillet, or distance for chamfer
       . angle: angle for chamfer
-      . list of one or more edge indices
+      . itemSelect: use 'faces' to define edges or use 'edges' to directly
+        specify the edges
+      . itemIndices: list of one or more indices of faces or edges
 
     Uses ui, title, filename to interact with user and report faults via
     Fusion360 GUI.
@@ -127,7 +127,8 @@ def _parse_operation(ui, title, filename, scale, lineArr):
     bodyName = ''
     size = 0
     angle = 0
-    edgeIndices = []
+    itemSelect = ''
+    itemIndices = []
     try:
         # Read the modifyedges operation
         modifyedgesOperation = lineArr[0]
@@ -138,15 +139,20 @@ def _parse_operation(ui, title, filename, scale, lineArr):
         bodyName = lineArr[1]
         if modifyedgesOperation == 'fillet':
             size = float(lineArr[2]) * scale
-            edgeIndices = interfacefiles.convert_entries_to_integers(lineArr[3:])
-        if modifyedgesOperation == 'chamfer':
+            itemSelect = lineArr[3]
+            itemIndices = interfacefiles.convert_entries_to_integers(lineArr[4:])
+        elif modifyedgesOperation == 'chamfer':
             size = float(lineArr[2]) * scale
             angle = float(lineArr[3])
-            edgeIndices = interfacefiles.convert_entries_to_integers(lineArr[4:])
+            itemSelect = lineArr[4]
+            itemIndices = interfacefiles.convert_entries_to_integers(lineArr[5:])
+        if itemSelect and itemSelect not in interfacefiles.validModifyEdgesItems:
+            ui.messageBox('No valid modifyedges item %s in %s' % (itemSelect, filename), title)
+            return resultFalse
     except Exception:
         ui.messageBox('No valid modifyedges operation in %s' % filename, title)
         return resultFalse
-    operationTuple = (modifyedgesOperation, bodyName, size, angle, edgeIndices)
+    operationTuple = (modifyedgesOperation, bodyName, size, angle, itemSelect, itemIndices)
     return (True, operationTuple)
 
 
@@ -170,18 +176,20 @@ def modifyedges_from_csv_file(ui, title, filename, hostComponent):
 
     # Perform the list of modifyedges operations
     for operationTuple in modifyedgesOperationTuples:
-        modifyedgesOperation, bodyName, size, angle, edgeIndices = operationTuple
+        modifyedgesOperation, bodyName, size, angle, itemSelect, itemIndices = operationTuple
         body = utilities360.find_body_anywhere(ui, hostComponent, bodyName)
         if not body:
             interface360.error_text(ui, 'Body not found in path of body name %s, and not in host component %s' %
                                     (bodyName, hostComponent.name))
             return False
-        if modifyedgesOperation == 'log_edges':
+        if modifyedgesOperation == 'log_faces':
+            log_body_faces(ui, body, bodyName)
+        elif modifyedgesOperation == 'log_edges':
             log_body_edges(ui, body, bodyName)
         elif modifyedgesOperation == 'fillet':
-            apply_fillets(body, size, edgeIndices)
+            apply_fillets(body, size, itemSelect, itemIndices)
         elif modifyedgesOperation == 'chamfer':
-            apply_chamfers(body, size, angle, edgeIndices)
+            apply_chamfers(body, size, angle, itemSelect, itemIndices)
         else:
             return False
     interface360.print_text(ui, 'Modified edges for ' + filename)
@@ -191,7 +199,7 @@ def modifyedges_from_csv_file(ui, title, filename, hostComponent):
 def log_body_edges(ui, body, bodyName):
     """Log edge index, length and point on edge for all body edges.
 
-    To ease finding edge index, using GUI.
+    To ease finding body edge index, using GUI.
     """
     interface360.print_text(ui, 'Edges of body %s:' % bodyName)
     for ei in range(body.edges.count):
@@ -205,14 +213,49 @@ def log_body_edges(ui, body, bodyName):
         interface360.print_text(ui, '  %d, %.2f, [%.2f, %.2f, %.2f]' % (ei, edgeLength, x, y, z))
 
 
-def apply_fillets(body, radius, edgeIndices):
+def log_body_faces(ui, body, bodyName):
+    """Log face index, area and point on face for all body faces.
+
+    To ease finding body face index, using GUI.
+    """
+    interface360.print_text(ui, 'Faces of body %s:' % bodyName)
+    for fi in range(body.faces.count):
+        face = body.faces.item(fi)
+        # cm * 10 to have value in mm
+        scale = 10
+        faceArea = face.area * scale**2
+        x = face.pointOnFace.x * scale
+        y = face.pointOnFace.y * scale
+        z = face.pointOnFace.z * scale
+        interface360.print_text(ui, '  %d, %.2f, [%.2f, %.2f, %.2f]' % (fi, faceArea, x, y, z))
+
+
+def _collect_edges(body, itemSelect, itemIndices):
+    """Collect edges in body.
+
+    Input:
+    . body: body object, with the faces and edges to look for
+    . itemSelect: If 'faces' then collect edges from faces, else if 'edges' then
+        collect edges directly.
+    . itemIndices: Indices of the faces or edges
+    """
+    edgeCollection = adsk.core.ObjectCollection.create()
+    if itemSelect == 'faces':
+        for fi in itemIndices:
+            for edge in body.faces.item(fi).edges:
+                edgeCollection.add(edge)
+    elif 'edges':
+        for ei in itemIndices:
+            edge = body.edges.item(ei)
+            edgeCollection.add(edge)
+    return edgeCollection
+
+
+def apply_fillets(body, radius, itemSelect, itemIndices):
     """Apply fillet with radius to edges of body.
     """
     # Collect edges
-    edgeCollection = adsk.core.ObjectCollection.create()
-    for ei in edgeIndices:
-        edge = body.edges.item(ei)
-        edgeCollection.add(edge)
+    edgeCollection = _collect_edges(body, itemSelect, itemIndices)
 
     # Prepare fillet
     radiusInput = adsk.core.ValueInput.createByReal(radius)
@@ -227,14 +270,11 @@ def apply_fillets(body, radius, edgeIndices):
     return filletResult
 
 
-def apply_chamfers(body, distance, angle, edgeIndices):
+def apply_chamfers(body, distance, angle, itemSelect, itemIndices):
     """Apply chamfer with distance to edges of body.
     """
     # Collect edges
-    edgeCollection = adsk.core.ObjectCollection.create()
-    for ei in edgeIndices:
-        edge = body.edges.item(ei)
-        edgeCollection.add(edge)
+    edgeCollection = _collect_edges(body, itemSelect, itemIndices)
 
     # Prepare chamfer
     distanceInput = adsk.core.ValueInput.createByReal(distance)
