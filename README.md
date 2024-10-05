@@ -48,8 +48,9 @@ Functions to parse and excecute action CSV files in Fusion360:
 * createplane.py - create a plane from three points defined in a CSV file.
 * createloft.py  - create a loft from sketch profiles and rails defined in a CSV file.
 * combinebodies.py - combine bodies defined in a CSV file
-* extrude.py  - extrude sketch profile defined in a CSV file.
+* extrude.py  - extrude sketch profile or text defined in a CSV file.
 * splitbody.py - split body defined in a CSV file.
+* modifyedges.py - modify edges of body with fillet or chamfer operation defined in a CSV file.
 * movecopy.py - move, copy, remove, or transform operation defined in a CSV file.
 * mirror.py - mirror body or component defined in a CSV file.
 * constructassembly.py - construct assembly defined in a CSV file, using sketches, planes, bodies
@@ -69,6 +70,7 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 * CreatePlaneCSV, CreatePlanesCSV - Create plane as defined in CSV file.
 * SplitBodyCSV, SplitBodyMultipleCSV - Split body as defined in CSV file.
 * CombineBodiesCSV, CombineBodiesMultipleCSV - Combine bodies as defined in CSV file.
+* ModifyEdgesCSV - Modify edges of body with fillet or chamfer operation as defined in CSV file.
 * MoveCopyCSV - Move, copy, remove or transform an object as defined in CSV file.
 * MirrorCSV - Mirror object as defined in CSV file.
 
@@ -79,7 +81,7 @@ The Example script demonstrates some script development basics in Fusion360 by p
 ![Print text in TEXT COMMANDS window in Fusion360](doc/print_text_v2.jpg)
 
 #### 3.3.2 ImportSketchCSV and ImportSketchesCSV scripts with csv_timeline360.py
-The snail_points.txt file defines three sketches of a snail in Fusion360. The three sketches are made in different offset planes of the XY, YZ and ZX origin planes. First in test/snail run 'python ../../csv_timeline360.py -f snail_points.txt' on the command line in a terminal, to create separate CSV files in a csv/sketches folder from snail_points.txt. One CSV file can be read into Fusion360 using the ImportSketchCSV script, or all three CSV files can be read at once into Fusion360 using the ImportSketchesCSV script.
+The test/snail/snail_points.txt file defines three sketches of a snail in Fusion360. The three sketches are made in different offset planes of the XY, YZ and ZX origin planes. First in test/snail run 'python ../../csv_timeline360.py -f snail_points.txt' on the command line in a terminal, to create separate CSV files in a csv/sketches folder from snail_points.txt. One CSV file can be read into Fusion360 using the ImportSketchCSV script, or all three CSV files can be read at once into Fusion360 using the ImportSketchesCSV script.
 
 ![Read sketches into Fusion360 from CSV files](doc/snail_3d_v2.jpg)
 
@@ -87,6 +89,8 @@ The snail_points.txt file defines three sketches of a snail in Fusion360. The th
 The csv_timeline360.py creates CSV files from F35B/f35b_points.txt for a F35B plane fuselage and wing. First in F35B/ run 'python ../csv_timeline360.py -f f35b_points.txt' on the command line in a terminal, to create separate CSV files in a csv/ folder. The F35B design in the F35B-CSV assembly component shown below, can then be generated in Fusion360 from these CSV files, by running the AssemblyCSV Script with the csv/F35B-CSV/F35B-points.csv file in the Fusion360 GUI (takes about 2 minutes).
 
 ![F35B created from CSV files](doc/f35b_csv.jpg)
+
+The test/hatches/hatches.txt file shows how to use sketch, extrude, text, modifyedges with fillet and chamfer.
 
 #### 3.3.4 DesignCSV script with csv_timeline360.py
 Additional timeline actions for the F35B-CSV assembly component are defined in f35b-pin-holes.txt and f35b-aileron.txt. First create F35B-pin-holes.csv and F35B-aileron.csv using csv_timeline360.py on the command line in a terminal. After that the AssemblyCSV Script in Fusion360 can be used to perform the additional timeline actions defined in the assembly CSV files F35B-pin-holes.csv and in F35B-aileron.csv.

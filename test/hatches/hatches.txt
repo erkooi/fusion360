@@ -1,0 +1,514 @@
+################################################################################
+# Copyright 2024 E. Kooistra
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+# Author: Eric Kooistra.
+# Date: 26 Sep 2024
+#
+# Create four hatches in a cylinder for 3D print, each with a larger gap
+#
+# Usage:
+# > D:\git\fusion360\test\hatches>python ..\..\csv_timeline360.py -f hatches.txt
+
+parameters
+  # Cylinder
+  cylinderRadius, 50
+  cylinderThickness, 4
+  cylinderLenght, 70
+  # Hatches
+  hatchWidth, cylinderRadius * 2 - 10
+  hatchCamfer, 10
+  hatchLength, cylinderLenght - 20
+  scaleR, 0.5
+  scaleX, 0.8 * scaleR
+  scaleZ, 0.8
+  # Gaps
+  gap, 0.5
+  g_A, gap        # = 0.5 mm
+  g_B, gap + 0.1  # = 0.6 mm
+  g_C, gap + 0.2  # = 0.7 mm
+  g_D, gap + 0.3  # = 0.8 mm
+  # Texts
+  textBoxX, 10
+  textBoxY, 5
+  textHeight, 6  # mm
+  textOffset, 0.4
+  textShift, 40
+  # Edge reshape
+  edgeChamfer, 2.2
+  edgeAngle, 40
+  edgeFillet, 0.4
+
+
+################################################################################
+# Cylinder
+
+sketch, csv/actions, z_0_cylinder
+offset_plane, z, 0
+circle
+  0, 0, $cylinderRadius
+  0, 0, $cylinderRadius - $cylinderThickness
+
+extrude, csv/actions, cylinder
+profile, z_0_cylinder, 0
+offset, -$cylinderLenght / 2
+taper_angle, 0
+extent_type, distance, $cylinderLenght
+operation, new_body
+extrude_results, cylinder
+
+
+################################################################################
+# Hatches
+
+################################################################################
+# Hatch A
+
+sketch, csv/actions, outer_hatch_A
+offset_plane, y, $cylinderRadius
+line
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+  $hatchWidth / 2 - $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2 + $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+ -$hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+ -$hatchWidth / 2 + $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2 - $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+offset_curve
+  0, 0, $g_A
+
+sketch, csv/actions, inner_hatch_A
+offset_plane, y, $scaleR * $cylinderRadius
+line
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+offset_curve
+  0, 0, $g_A
+
+loft, csv/actions, hatch_outer_cutter_A
+profiles
+  outer_hatch_A, 0
+  inner_hatch_A, 0
+
+loft, csv/actions, hatch_inner_cutter_A
+profiles
+  outer_hatch_A, 1
+  inner_hatch_A, 1
+
+combine, csv/actions, hatch_cutter_A
+operation, cut
+combine_bodies
+  hatch_outer_cutter_A
+  hatch_inner_cutter_A
+remove_bodies
+  hatch_outer_cutter_A
+  hatch_inner_cutter_A
+
+split, csv/actions, split_cutter_A
+split_body, cylinder
+split_tool, body, hatch_cutter_A
+splitted_bodies
+  gap_A
+  hatch_A
+  cylinder_A
+remove_bodies
+  cylinder
+  hatch_cutter_A
+  gap_A
+
+################################################################################
+# Hatch B
+
+sketch, csv/actions, outer_hatch_B
+offset_plane, x, -$cylinderRadius
+line
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+  $hatchWidth / 2 - $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2 + $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+ -$hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+ -$hatchWidth / 2 + $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2 - $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+offset_curve
+  0, 0, $g_B
+
+sketch, csv/actions, inner_hatch_B
+offset_plane, x, -$scaleR * $cylinderRadius
+line
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+offset_curve
+  0, 0, $g_B
+
+loft, csv/actions, hatch_outer_cutter_B
+profiles
+  outer_hatch_B, 0
+  inner_hatch_B, 0
+
+loft, csv/actions, hatch_inner_cutter_B
+profiles
+  outer_hatch_B, 1
+  inner_hatch_B, 1
+
+combine, csv/actions, hatch_cutter_B
+operation, cut
+combine_bodies
+  hatch_outer_cutter_B
+  hatch_inner_cutter_B
+remove_bodies
+  hatch_outer_cutter_B
+  hatch_inner_cutter_B
+
+split, csv/actions, split_cutter_B
+split_body, cylinder_A
+split_tool, body, hatch_cutter_B
+splitted_bodies
+  gap_B
+  hatch_B
+  cylinder_B
+remove_bodies
+  cylinder_A
+  hatch_cutter_B
+  gap_B
+
+################################################################################
+# Hatch C
+
+sketch, csv/actions, outer_hatch_C
+offset_plane, y, -$cylinderRadius
+line
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+  $hatchWidth / 2 - $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2 + $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+ -$hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+ -$hatchWidth / 2 + $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2 - $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+offset_curve
+  0, 0, $g_C
+
+sketch, csv/actions, inner_hatch_C
+offset_plane, y, -$scaleR * $cylinderRadius
+line
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+offset_curve
+  0, 0, $g_C
+
+loft, csv/actions, hatch_outer_cutter_C
+profiles
+  outer_hatch_C, 0
+  inner_hatch_C, 0
+
+loft, csv/actions, hatch_inner_cutter_C
+profiles
+  outer_hatch_C, 1
+  inner_hatch_C, 1
+
+combine, csv/actions, hatch_cutter_C
+operation, cut
+combine_bodies
+  hatch_outer_cutter_C
+  hatch_inner_cutter_C
+remove_bodies
+  hatch_outer_cutter_C
+  hatch_inner_cutter_C
+
+split, csv/actions, split_cutter_C
+split_body, cylinder_B
+split_tool, body, hatch_cutter_C
+splitted_bodies
+  gap_C
+  hatch_C
+  cylinder_C
+remove_bodies
+  cylinder_B
+  hatch_cutter_C
+  gap_C
+
+################################################################################
+# Hatch D
+
+sketch, csv/actions, outer_hatch_D
+offset_plane, x, $cylinderRadius
+line
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+  $hatchWidth / 2 - $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2 + $hatchCamfer,  $hatchLength / 2
+ -$hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+ -$hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+ -$hatchWidth / 2 + $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2 - $hatchCamfer, -$hatchLength / 2
+  $hatchWidth / 2,                -$hatchLength / 2 + $hatchCamfer
+  $hatchWidth / 2,                 $hatchLength / 2 - $hatchCamfer
+offset_curve
+  0, 0, $g_D
+
+sketch, csv/actions, inner_hatch_D
+offset_plane, x, $scaleR * $cylinderRadius
+line
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *   $hatchLength / 2
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+  $scaleX *  -$hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX * (-$hatchWidth / 2 + $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX * ( $hatchWidth / 2 - $hatchCamfer), $scaleZ *  -$hatchLength / 2
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * (-$hatchLength / 2 + $hatchCamfer)
+  $scaleX *   $hatchWidth / 2,                 $scaleZ * ( $hatchLength / 2 - $hatchCamfer)
+offset_curve
+  0, 0, $g_D
+
+loft, csv/actions, hatch_outer_cutter_D
+profiles
+  outer_hatch_D, 0
+  inner_hatch_D, 0
+
+loft, csv/actions, hatch_inner_cutter_D
+profiles
+  outer_hatch_D, 1
+  inner_hatch_D, 1
+
+combine, csv/actions, hatch_cutter_D
+operation, cut
+combine_bodies
+  hatch_outer_cutter_D
+  hatch_inner_cutter_D
+remove_bodies
+  hatch_outer_cutter_D
+  hatch_inner_cutter_D
+
+split, csv/actions, split_cutter_D
+split_body, cylinder_C
+split_tool, body, hatch_cutter_D
+splitted_bodies
+  gap_D
+  hatch_D
+  cylinder_ABCD
+remove_bodies
+  cylinder_C
+  hatch_cutter_D
+  gap_D
+
+################################################################################
+# Chamfers
+modifyedges, csv/actions, hatch_chamfers
+log_faces, hatch_A
+log_edges, hatch_A
+chamfer, hatch_A, $edgeChamfer, $edgeAngle, edges, 0, 1, 2, 3, 4, 5, 6, 7
+chamfer, hatch_B, $edgeChamfer, $edgeAngle, edges, 0, 1, 2, 3, 4, 5, 6, 7
+chamfer, hatch_C, $edgeChamfer, $edgeAngle, edges, 0, 1, 2, 3, 4, 5, 6, 7
+chamfer, hatch_D, $edgeChamfer, $edgeAngle, edges, 0, 1, 2, 3, 4, 5, 6, 7
+
+modifyedges, csv/actions, hatch_fillets
+log_faces, hatch_A
+log_edges, hatch_A
+fillet, hatch_A, $edgeFillet, faces, 13
+fillet, hatch_B, $edgeFillet, faces, 13
+fillet, hatch_C, $edgeFillet, faces, 13
+fillet, hatch_D, $edgeFillet, faces, 13
+#fillet, hatch_A, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44
+#fillet, hatch_B, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44
+#fillet, hatch_C, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44
+#fillet, hatch_D, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44
+
+################################################################################
+# Texts, on ellipse shield to keep characters together in one body
+# . use light bulb off to join only the specified body
+
+sketch, csv/actions, text_ellipse
+offset_plane, y, 0
+ellipse
+ 0, 0, $textBoxX, 0, 0, $textBoxY
+
+sketch, csv/actions, text_A
+offset_plane, y, $textOffset
+textbox
+ -$textBoxX, -$textBoxY, $textBoxX, $textBoxY, $g_A, $textHeight, True, True
+
+sketch, csv/actions, text_B
+offset_plane, y, $textOffset
+textbox
+ -$textBoxX, -$textBoxY, $textBoxX, $textBoxY, $g_B, $textHeight, True, True
+
+sketch, csv/actions, text_C
+offset_plane, y, $textOffset
+textbox
+ -$textBoxX, -$textBoxY, $textBoxX, $textBoxY, $g_C, $textHeight, True, True
+
+sketch, csv/actions, text_D
+offset_plane, y, $textOffset
+textbox
+ -$textBoxX, -$textBoxY, $textBoxX, $textBoxY, $g_D, $textHeight, True, True
+
+extrude, csv/actions, text_ellipse
+profile, text_ellipse, 0
+# use small offset to avoid problems where faces and edges are nearly coincident
+offset, 0.01
+taper_angle, 0
+extent_type, distance, -$cylinderThickness * 0.8
+operation, new_body
+extrude_results, text_ellipse_A
+
+movecopy, csv/actions, text_ellipses
+light_bulb, body, text_ellipse_A, off
+copy, body, text_ellipse_A, text_ellipse_B
+copy, body, text_ellipse_A, text_ellipse_C
+copy, body, text_ellipse_A, text_ellipse_D
+
+extrude, csv/actions, text_A
+text, text_A, 0
+offset, $textOffset
+taper_angle, 0
+extent_type, to_object, text_ellipse_A
+operation, join
+extrude_results, text_A
+light_bulb, off
+
+extrude, csv/actions, text_B
+text, text_B, 0
+offset, $textOffset
+taper_angle, 0
+extent_type, to_object, text_ellipse_B
+operation, join
+extrude_results, text_B
+light_bulb, off
+
+extrude, csv/actions, text_C
+text, text_C, 0
+offset, $textOffset
+taper_angle, 0
+extent_type, to_object, text_ellipse_C
+operation, join
+extrude_results, text_C
+light_bulb, off
+
+extrude, csv/actions, text_D
+text, text_D, 0
+offset, $textOffset
+taper_angle, 0
+extent_type, to_object, text_ellipse_D
+operation, join
+extrude_results, text_D
+
+movecopy, csv/actions, texts
+light_bulb, body, text_A, on
+light_bulb, body, text_B, on
+light_bulb, body, text_C, on
+copy, body, text_A, text_A_cylinder
+copy, body, text_B, text_B_cylinder
+copy, body, text_C, text_C_cylinder
+copy, body, text_D, text_D_cylinder
+translate, body, text_A, 0, $cylinderRadius, 0
+translate, body, text_B, 0, $cylinderRadius, 0
+translate, body, text_C, 0, $cylinderRadius, 0
+translate, body, text_D, 0, $cylinderRadius, 0
+rotate,    body, text_B, 0, 0, 1, 90
+rotate,    body, text_C, 0, 0, 1, 180
+rotate,    body, text_D, 0, 0, 1, 270
+translate, body, text_A_cylinder, 0, $cylinderRadius, -$cylinderLenght / 2 + $textHeight
+translate, body, text_B_cylinder, 0, $cylinderRadius, -$cylinderLenght / 2 + $textHeight
+translate, body, text_C_cylinder, 0, $cylinderRadius, -$cylinderLenght / 2 + $textHeight
+translate, body, text_D_cylinder, 0, $cylinderRadius, -$cylinderLenght / 2 + $textHeight
+rotate,    body, text_A_cylinder, 0, 0, 1, $textShift
+rotate,    body, text_B_cylinder, 0, 0, 1, $textShift + 90
+rotate,    body, text_C_cylinder, 0, 0, 1, $textShift + 180
+rotate,    body, text_D_cylinder, 0, 0, 1, $textShift + 270
+
+combine, csv/actions, cylinder_ABCD_text
+operation, join
+combine_bodies
+  cylinder_ABCD
+  text_A_cylinder
+  text_B_cylinder
+  text_C_cylinder
+  text_D_cylinder
+remove_bodies
+  cylinder_ABCD
+  text_A_cylinder
+  text_B_cylinder
+  text_C_cylinder
+  text_D_cylinder
+
+combine, csv/actions, hatch_A_text
+operation, join
+combine_bodies
+  hatch_A
+  text_A
+remove_bodies
+  hatch_A
+  text_A
+
+combine, csv/actions, hatch_B_text
+operation, join
+combine_bodies
+  hatch_B
+  text_B
+remove_bodies
+  hatch_B
+  text_B
+
+combine, csv/actions, hatch_C_text
+operation, join
+combine_bodies
+  hatch_C
+  text_C
+remove_bodies
+  hatch_C
+  text_C
+
+combine, csv/actions, hatch_D_text
+operation, join
+combine_bodies
+  hatch_D
+  text_D
+remove_bodies
+  hatch_D
+  text_D
+
+################################################################################
+# Assembly
+
+assembly, csv, cylinder_hatches
+
+echo, --------------------------------------------------------------------------
+echo, Created cylinder with hatches !
+echo, --------------------------------------------------------------------------
