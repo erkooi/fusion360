@@ -83,9 +83,6 @@ import schemacsv360
 import interface360
 import utilities360
 
-validExtrudeExtentType = ['distance', 'to_object']
-validExtrudeOperations = ['join', 'cut', 'intersect', 'new_body']
-
 
 def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function is too complex)
     """Parse extrude CSV file.
@@ -174,7 +171,7 @@ def parse_csv_extrude_file(ui, title, filename):  # noqa: C901 (ignore function 
             if lineWord == 'taper_angle':
                 taperAngles.append(math.radians(float(lineArr[1])))  # one side
                 if len(lineArr) > 2:
-                    taperAngles[1] = math.radians(float(lineArr[2]))  # two sided
+                    taperAngles.append(math.radians(float(lineArr[2])))  # two sided
             else:
                 interface360.error_text(ui, 'Unexpected key word %s at li = %d' % (lineWord, li))
                 return resultFalse
@@ -397,14 +394,7 @@ def extrude_from_csv_file(ui, title, filename, hostComponent):
                                            profileSketchName, textSketchName, fromBodyName, planarIndices)
 
     # Find participant bodies in hostComponent and update operationTuple
-    participantBodies = []
-    if operation in ['join', 'cut', 'intersect']:
-        for bodyName in participantBodyNames:
-            body = utilities360.find_body_anywhere(ui, hostComponent, bodyName)
-            if not body:
-                interface360.error_text(ui, 'Participant body %s not found' % bodyName)
-                return False
-            participantBodies.append(body)
+    participantBodies = utilities360.find_participant_bodies(ui, hostComponent, participantBodyNames, operation)
     operationTuple = (operation, participantBodies, resultBodyNames, lightBulbOn)
 
     # Find to_object body in hostComponent and update extentTuple
@@ -463,34 +453,13 @@ def _find_planars_to_extrude(ui, hostComponent, profileSketchName, textSketchNam
     objectTuple = None
     if profileSketchName:
         # Get profiles in sketch to determine profile objectTuple
-        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, profileSketchName)
-        if not sketch:
-            interface360.error_text(ui, 'Sketch %s for profile not found' % profileSketchName)
-            return False
-        profiles = utilities360.get_sketch_profiles_collection(ui, sketch, planarIndices)
-        if not profiles:
-            return False
-        objectTuple = (sketch, profiles)
+        objectTuple = utilities360.find_sketch_and_profiles(ui, hostComponent, profileSketchName, planarIndices)
     elif textSketchName:
         # Get texts in sketch to determine text objectTuple
-        sketch = utilities360.find_sketch_anywhere(ui, hostComponent, textSketchName)
-        if not sketch:
-            interface360.error_text(ui, 'Sketch %s for text not found' % textSketchName)
-            return False
-        texts = utilities360.get_sketch_texts_collection(ui, sketch, planarIndices)
-        if not texts:
-            return False
-        objectTuple = (sketch, texts)
+        objectTuple = utilities360.find_sketch_and_texts(ui, hostComponent, textSketchName, planarIndices)
     elif fromBodyName:
         # Get faces in body to determine face objectTuple
-        fromBody = utilities360.find_body_anywhere(ui, hostComponent, fromBodyName)
-        if not fromBody:
-            interface360.error_text(ui, 'From body %s not found' % fromBodyName)
-            return False
-        faces = utilities360.get_body_faces_collection(ui, fromBody, planarIndices)
-        if not faces:
-            return False
-        objectTuple = (fromBody, faces)
+        objectTuple = utilities360.find_body_and_faces(ui, hostComponent, fromBodyName, planarIndices)
     return objectTuple
 
 

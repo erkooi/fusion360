@@ -56,6 +56,7 @@ import splitbody
 import modifyedges
 import movecopy
 import mirror
+import revolve
 
 
 def parse_csv_assembly_file(ui, title, filename):
@@ -174,6 +175,10 @@ def perform_action(ui, title, actionFilename, assemblyComponent, action):  # noq
         mirror.mirror_from_csv_file(ui, title, actionFilename, assemblyComponent)
     elif action == 'multiple_run_mirror':
         mirror.mirror_from_csv_files(ui, title, actionFilename, assemblyComponent)
+    elif action == 'run_revolve':
+        revolve.revolve_from_csv_file(ui, title, actionFilename, assemblyComponent)
+    elif action == 'multiple_run_revolve':
+        revolve.revolve_from_csv_files(ui, title, actionFilename, assemblyComponent)
     else:
         interface360.error_text(ui, 'Unknown action: ' + action)
         return False

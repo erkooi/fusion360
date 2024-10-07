@@ -26,6 +26,14 @@ import interface360
 ################################################################################
 # Get object based on component, indices, operation
 
+def object_collection_to_list(objectCollection):
+    """Convert collection of objects into list of objects."""
+    objectList = []
+    for oi in range(objectCollection.count):
+        objectList.append(objectCollection.item(oi))
+    return objectList
+
+
 def get_root_component(component):
     """Get rootComponent of component in design hierarchy.
 
@@ -86,6 +94,28 @@ def get_sketch_profiles_collection(ui, sketch, profileIndices):
             interface360.error_text(ui, 'Sketch %s has no profile index %d' % (sketch.name, profileIndex))
             return None
     return profiles
+
+
+def get_sketch_lines_collection(ui, sketch, lineIndices):
+    """Get objectCollection of sketch lines with lineIndices in sketch
+
+    Input:
+    . sketch: sketch object
+    . lineIndices: one or more indices of lines in sketch
+    Return:
+    . lines: lines object collection for lineIndices in sketch, else None
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    lines = adsk.core.ObjectCollection.create()
+    for lineIndex in lineIndices:
+        if lineIndex < sketch.sketchCurves.sketchLines.count:
+            line = sketch.sketchCurves.sketchLines.item(lineIndex)
+            lines.add(line)
+        else:
+            interface360.error_text(ui, 'Sketch %s has no line index %d' % (sketch.name, lineIndex))
+            return None
+    return lines
 
 
 def get_sketch_texts_collection(ui, sketch, textIndices):
@@ -162,6 +192,36 @@ def get_body_edges_collection(ui, body, itemSelect, itemIndices):
         interface360.error_text(ui, 'Unknown body itemSelect %s' % itemSelect)
         return None
     return edgeCollection
+
+
+def get_axis_line(ui, hostComponent, axisName, sketchName, lineIndex):
+    """Get axis line object
+
+    Input:
+    . hostComponent: Use construction axis from hostComponent
+    . axisName: when != '' then use construction axis x, y, or z from
+        hostComponent
+    . sketchName: when != 0 then use sketch line with lineIndex as axis
+    . lineIndex: index of line in sketch
+    Return:
+    . axisLine: axis line object, or None when not found
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    axisLine = None
+    if axisName:
+        # Look in hostComponent
+        if axisName == 'x':
+            axisLine = hostComponent.xConstructionAxis
+        elif axisName == 'y':
+            axisLine = hostComponent.yConstructionAxis
+        elif axisName == 'z':
+            axisLine = hostComponent.zConstructionAxis
+    elif sketchName:
+        # Use sketch line
+        _, lines = find_sketch_and_lines(ui, hostComponent, sketchName, [lineIndex])
+        axisLine = lines.item(0)
+    return axisLine
 
 
 ################################################################################
@@ -353,6 +413,56 @@ def find_sketch_anywhere(ui, hostComponent, sketchName):
     return None
 
 
+def find_sketch_and_items(ui, hostComponent, sketchName, itemName, itemIndices):
+    """Find sketch and items.
+
+    Input:
+    . hostComponent: look for sketch anywhere in hostComponent folder.
+    . sketchName: look for items in sketch
+    . itemName: items to look for in sketch, can be 'profile', 'line', or 'text'
+    . itemIndices: List of item indices
+
+    Return:
+    . sketchTuple: Sketch and collection of items
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    # Get sketch
+    sketch = find_sketch_anywhere(ui, hostComponent, sketchName)
+    if not sketch:
+        interface360.error_text(ui, 'Sketch %s for %s not found' % (sketchName, itemName))
+        return False
+    # Get sketch items collection
+    if itemName == 'profile':
+        items = get_sketch_profiles_collection(ui, sketch, itemIndices)
+    elif itemName == 'line':
+        items = get_sketch_lines_collection(ui, sketch, itemIndices)
+    elif itemName == 'text':
+        items = get_sketch_texts_collection(ui, sketch, itemIndices)
+    else:
+        interface360.error_text(ui, 'Unknown sketch item %s' % itemName)
+        return None
+    if not items:
+        return False
+    sketchTuple = (sketch, items)
+    return sketchTuple
+
+
+def find_sketch_and_profiles(ui, hostComponent, profileSketchName, profileIndices):
+    """Find sketch and profiles."""
+    return find_sketch_and_items(ui, hostComponent, profileSketchName, 'profile', profileIndices)
+
+
+def find_sketch_and_lines(ui, hostComponent, lineSketchName, lineIndices):
+    """Find sketch and lines."""
+    return find_sketch_and_items(ui, hostComponent, lineSketchName, 'line', lineIndices)
+
+
+def find_sketch_and_texts(ui, hostComponent, textSketchName, textIndices):
+    """Find sketch and texts."""
+    return find_sketch_and_items(ui, hostComponent, textSketchName, 'text', textIndices)
+
+
 def find_plane_anywhere(ui, hostComponent, planeName):
     """Find (first) plane with planeName anywhere in hostComponent, or in the
     plane search component name specified in planeName.
@@ -495,6 +605,54 @@ def find_bodies_collection_anywhere(ui, hostComponent, bodyNames):
                                     (bodyName, hostComponent.name))
             result = False
     return (result, bodies)
+
+
+def find_body_and_faces(ui, hostComponent, bodyName, faceIndices):
+    """Find body and faces.
+
+    Input:
+    . hostComponent: look for body anywhere in hostComponent folder.
+    . bodyName: look for faces in body
+    . faceIndices: List of face indices
+
+    Return:
+    . bodyTuple: Body and collection of faces
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    # Get faces in body to determine bodyTuple
+    body = find_body_anywhere(ui, hostComponent, bodyName)
+    if not body:
+        interface360.error_text(ui, 'Body %s for faces not found' % bodyName)
+        return False
+    faces = get_body_faces_collection(ui, body, faceIndices)
+    if not faces:
+        return False
+    bodyTuple = (body, faces)
+    return bodyTuple
+
+
+def find_participant_bodies(ui, hostComponent, participantBodyNames, operation):
+    """Find participant bodies for operation.
+
+    Input:
+    . hostComponent: look for participant body anywhere in hostComponent folder.
+    . participantBodyNames: names of participant bodies
+
+    Return:
+    . participantBodies: List of
+
+    Uses ui to report faults via Fusion360 GUI.
+    """
+    # Find participant bodies in hostComponent and update operationTuple
+    participantBodies = []
+    if operation in ['join', 'cut', 'intersect']:
+        for bodyName in participantBodyNames:
+            body = find_body_anywhere(ui, hostComponent, bodyName)
+            if not body:
+                interface360.error_text(ui, 'Participant body %s not found' % bodyName)
+                return False
+            participantBodies.append(body)
 
 
 def find_occurrences_anywhere(hostComponent, componentName):

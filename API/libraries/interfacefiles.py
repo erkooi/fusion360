@@ -24,7 +24,7 @@ import math
 # Lists of valid key words in CSV files for generating objects in Fusion360
 validCombineOperations = ['cut', 'intersect', 'join']
 validCsvFileTypes = ['assembly', 'combine', 'design', 'extrude', 'loft', 'mirror',
-                     'modifyedges', 'movecopy', 'plane', 'sketch', 'split']
+                     'modifyedges', 'movecopy', 'plane', 'revolve', 'sketch', 'split']
 validCsvFileExtensions = validCsvFileTypes + ['corail', 'crossrail']
 validLocalObjectTypes = ['body', 'plane', 'sketch']
 validMirrorOperations = ['join', 'new_component', 'new_body']
@@ -32,7 +32,7 @@ validModifyEdgesOperations = ['chamfer', 'fillet', 'log_edges', 'log_faces']
 validModifyEdgesItems = ['edges', 'faces']
 validMovecopyObjects = ['body', 'component']
 validMovecopyOperations = ['copy', 'light_bulb', 'move', 'translate', 'remove', 'rotate']
-validOrderedActions = ['combine', 'extrude', 'mirror', 'modifyedges', 'movecopy', 'split']
+validOrderedActions = ['combine', 'extrude', 'mirror', 'modifyedges', 'movecopy', 'revolve', 'split']
 validPlaneNormals = ['x', 'y', 'z']
 validRailTypes = ['co_rail', 'cross_rails']
 validRandomActions = ['loft', 'plane', 'sketch']
@@ -54,12 +54,14 @@ validAssemblyActions = ['echo',
                         'run_mirror',
                         'run_modifyedges',
                         'run_movecopy',
+                        'run_revolve',
                         'run_split',
                         'multiple_run_combine',
                         'multiple_run_extrude',
                         'multiple_run_mirror',
                         'multiple_run_modifyedges',
                         'multiple_run_movecopy',
+                        'multiple_run_revolve',
                         'multiple_run_split']
 
 
@@ -1141,8 +1143,8 @@ def write_design_csv_file(fileLines):
 # - get loft folders
 # Process other objects in order per CSV file, because for actions on objects
 # can depend on other object.
-# - get assembly, combine, extrude, mirror, modifyedges, movecopy, split CSV
-#   files
+# - get assembly, combine, extrude, mirror, modifyedges, movecopy, revolve,
+#   split CSV files
 #
 # For folders use:
 # . multiple_create_plane, folderName, groupName
@@ -1155,6 +1157,7 @@ def write_design_csv_file(fileLines):
 # . run_mirror, filename, groupName
 # . run_modifyedges, filename, groupName
 # . run_movecopy, filename, groupName
+# . run_revolve, filename, groupName
 # . run_split, filename, groupName
 def read_timeline_from_file_lines(fileLines):
     """Read timeline from fileLines of file.

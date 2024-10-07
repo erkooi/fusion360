@@ -19,7 +19,11 @@
 # Create four hatches in a cylinder for 3D print, each with a larger gap
 #
 # Usage:
-# > D:\git\fusion360\test\hatches>python ..\..\csv_timeline360.py -f hatches.txt
+# . Create CSV files in terminal with:
+#   > D:\git\fusion360\test\hatches>python ..\..\csv_timeline360.py
+#     -f hatches.txt
+# . In Fusion 360 open cylinder_hatches.assembly.csv with:
+#   Utilities/Add-Ins/AssemblyCSV script
 
 parameters
   # Cylinder
@@ -341,10 +345,12 @@ chamfer, hatch_D, $edgeChamfer, $edgeAngle, edges, 0, 1, 2, 3, 4, 5, 6, 7
 modifyedges, csv/actions, hatch_fillets
 log_faces, hatch_A
 log_edges, hatch_A
+# use face to define the edges
 fillet, hatch_A, $edgeFillet, faces, 13
 fillet, hatch_B, $edgeFillet, faces, 13
 fillet, hatch_C, $edgeFillet, faces, 13
 fillet, hatch_D, $edgeFillet, faces, 13
+## equivalent define the edges of face
 #fillet, hatch_A, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44
 #fillet, hatch_B, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44
 #fillet, hatch_C, $edgeFillet, edges, 33, 36, 38, 40, 41, 42, 43, 44

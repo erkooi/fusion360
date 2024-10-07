@@ -31,7 +31,7 @@ files for generating objects in Fusion360:
 Schema sections in point txt file:
 
 . Object keyword: sketch, plane, loft, extrude, combine, split, modifyedges,
-  movecopy, mirror.
+  movecopy, mirror, revolve.
   - interfacefiles.write_csv_files()
 
 . Object keyword: sketch, cross_rails
@@ -144,6 +144,9 @@ def write_csv_files_for_timeline_file(timelineFilename):
 
     # Write mirror CSV files into folder(s)
     nofFiles += interfacefiles.write_csv_files(fileLines, 'mirror')
+
+    # Write revolve CSV files into folder(s)
+    nofFiles += interfacefiles.write_csv_files(fileLines, 'revolve', units)
 
     ############################################################################
     # Write assembly CSV file

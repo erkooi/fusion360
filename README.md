@@ -53,6 +53,7 @@ Functions to parse and excecute action CSV files in Fusion360:
 * modifyedges.py - modify edges of body with fillet or chamfer operation defined in a CSV file.
 * movecopy.py - move, copy, remove, or transform operation defined in a CSV file.
 * mirror.py - mirror body or component defined in a CSV file.
+* revolve.py - revolve profile defined in a CSV file.
 * constructassembly.py - construct assembly defined in a CSV file, using sketches, planes, bodies
 * buildassemblies.py - build multiple assemblies into an toplevel design component defined in a CSV file
 
@@ -73,6 +74,7 @@ The path to the API/Scripts directory needs to be set in Fusion360 via menu Pref
 * ModifyEdgesCSV - Modify edges of body with fillet or chamfer operation as defined in CSV file.
 * MoveCopyCSV - Move, copy, remove or transform an object as defined in CSV file.
 * MirrorCSV - Mirror object as defined in CSV file.
+* RevolveCSV - Revolve profile as defined in CSV file.
 
 ### 3.3 Example scripts
 ### 3.3.1 Example script
@@ -91,6 +93,7 @@ The csv_timeline360.py creates CSV files from F35B/f35b_points.txt for a F35B pl
 ![F35B created from CSV files](doc/f35b_csv.jpg)
 
 The test/hatches/hatches.txt file shows how to use sketch, extrude, text, modifyedges with fillet and chamfer.
+The test/wheel/wheel.txt file shows how to use sketch, revolve.
 
 #### 3.3.4 DesignCSV script with csv_timeline360.py
 Additional timeline actions for the F35B-CSV assembly component are defined in f35b-pin-holes.txt and f35b-aileron.txt. First create F35B-pin-holes.csv and F35B-aileron.csv using csv_timeline360.py on the command line in a terminal. After that the AssemblyCSV Script in Fusion360 can be used to perform the additional timeline actions defined in the assembly CSV files F35B-pin-holes.csv and in F35B-aileron.csv.
