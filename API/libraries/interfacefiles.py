@@ -32,9 +32,15 @@ validModifyEdgesOperations = ['chamfer', 'fillet', 'log_edges', 'log_faces']
 validModifyEdgesItems = ['edges', 'faces']
 validMovecopyObjects = ['body', 'component']
 validMovecopyOperations = ['copy', 'light_bulb', 'move', 'translate', 'remove', 'rotate']
+# . The order of actions in validOrderedActions matters. E.g. combine actions
+#   have to be performed in order, because a combine action may dependent on a
+#   previous combine result.
 validOrderedActions = ['combine', 'extrude', 'mirror', 'modifyedges', 'movecopy', 'revolve', 'split']
 validPlaneNormals = ['x', 'y', 'z']
 validRailTypes = ['co_rail', 'cross_rails']
+# . The order of actions in validRandomActions does not matter. The order
+#   in which e.g. lofts are performed does not matter, because lofts do not
+#   depend on other lofts and do not cut, intersect or join.
 validRandomActions = ['loft', 'plane', 'sketch']
 validSegmentTypes = ['arc', 'circle', 'ellipse', 'line', 'offset_curve', 'point', 'spline', 'textbox']
 validSplitToolTypes = ['body', 'plane']
