@@ -220,7 +220,7 @@ def apply_chamfers(ui, body, distance, angle, itemSelect, itemIndices):
     """
     # Collect edges
     edgeCollection = utilities360.get_body_edges_collection(ui, body, itemSelect, itemIndices)
-    interface360.print_text(ui, 'edgeCollection ' + str(edgeCollection.count))
+    interface360.print_text(ui, 'edgeCollection ' + str(edgeCollection.count), False)
 
     # Prepare chamfer
     distanceInput = adsk.core.ValueInput.createByReal(distance)
