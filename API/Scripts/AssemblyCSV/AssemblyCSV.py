@@ -74,6 +74,7 @@ def run(context):
         if not design:
             ui.messageBox('No active Fusion design', title)
             return
+        design.designIntent = adsk.fusion.DesignIntentTypes.HybridDesignIntentType 
         activeComponent = design.activeComponent
 
         # Prompt user for CSV filename
